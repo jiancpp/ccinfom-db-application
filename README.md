@@ -17,14 +17,14 @@ It models the relationships between users, artists, and their fan activities, in
 
 ## ⚙️ Setup & Workflow for SQL Writing
 
-### ** Import or Update Files
+### 1️⃣ Import or Update Files
 Clone this repository to save locally and open on Visual Studio
 
-### ** Run on MySQL Workbench
-Open SQL Scripts on MySQL Workbench and run 'create_tables.sql' to create the database locally
+### 2️⃣ Run on MySQL Workbench
+Open SQL Scripts on MySQL Workbench and run 'create_tables.sql' to create the database locally.
 You can edit the SQL scripts on both MySQL Workbench and Visual Studio simultaneously
 
-### ** Commit Changes to GitHub
+### 3️⃣ Commit Changes to GitHub
 Using the Visual Studio or your terminal, commit and push your changes to the SQL files once saved
 
 ---
