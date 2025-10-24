@@ -34,17 +34,20 @@ CREATE TABLE `users` (
 
 
 --
--- Table structure for table `artists`
+-- Table structure for table `Artist`
 --
-DROP TABLE IF EXISTS `artists`;
+DROP TABLE IF EXISTS `Artist`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `artists` (
-	`id` INT(11) NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(255) NOT NULL,
-    `debut_date` DATE NOT NULL,
-    `fanclub_members` INT NOT NULL DEFAULT 0,  -- need ba toh dito or aggregation na lang sa view
-    PRIMARY KEY (`id`)
+CREATE TABLE `Artist` (
+	`Artist_ID` INT(11) NOT NULL AUTO_INCREMENT,
+	`Manager_ID` INT(11) NOT NULL,
+    `Artist_Name` VARCHAR(255) NOT NULL,
+	`Country` VARCHAR(255),
+	`Activity_Status` ENUM('Active', 'Inactive', 'Hiatus') NOT NULL,
+    `Debut_Date` DATE NOT NULL,
+    `Debut_Days` INT NOT NULL,
+    PRIMARY KEY (`Artist_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -202,6 +205,56 @@ CREATE TABLE `Ticket_Tier` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+DROP TABLE IF EXISTS `Manager`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Manager` (
+	`Manager_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Manager_Name` VARCHAR(255) NOT NULL,
+	`Contact_Num` VARCHAR(11),
+    `Contact_Email` VARCHAR(255),
+    `Agency_Address` VARCHAR(255),
+    PRIMARY KEY (`Manager_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `Member_Detail`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Member_Detail` (
+	`Member_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Artist_ID` INT(11) NOT NULL,
+    `Member_Name` VARCHAR(255) NOT NULL,
+    `Role` VARCHAR(255),
+    `Activity_Status` ENUM('Active', 'Inactive', 'Hiatus') NOT NULL,
+    `Birth_Date` DATE, 
+    `Age` INT(2),
+    PRIMARY KEY (`Member_ID`),
+    UNIQUE KEY `uk_artist_member_id` (`Artist_ID`, `Member_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `Artist_Event`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Artist_Event` (
+	`Artist_ID` INT(11) NOT NULL,
+	`Event_ID` INT(11) NOT NULL,
+    PRIMARY KEY (`Artist_ID`, `Event_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `Setlist`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Setlist` (
+	`Artist_ID` INT(11) NOT NULL,
+	`Event_ID` INT(11) NOT NULL,
+    `Song_Name` VARCHAR(255) NOT NULL,
+    `Play_Order` INT(11) NOT NULL,
+    PRIMARY KEY (`Artist_ID`, `Event_ID`, `Play_Order`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 -- ==============================================
 --              TRANSACTION TABLES
