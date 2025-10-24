@@ -68,6 +68,11 @@ ADD CONSTRAINT fk_ticket_seat
     FOREIGN KEY (`Seat_ID`) REFERENCES Seat(`Seats_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+-- ==========================================================
+--   ARTIST CORE AND SUBTABLES
+-- ==========================================================
+
 -- 
 -- Constraints for `Artist`
 -- 
