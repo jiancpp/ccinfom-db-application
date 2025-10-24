@@ -43,7 +43,7 @@ CREATE TABLE `Artist` (
 	`Artist_ID` INT(11) NOT NULL AUTO_INCREMENT,
 	`Manager_ID` INT(11) NOT NULL,
     `Artist_Name` VARCHAR(255) NOT NULL,
-	`Country` VARCHAR(255),
+	`Nationality` VARCHAR(255),
 	`Activity_Status` ENUM('Active', 'Inactive', 'Hiatus') NOT NULL,
     `Debut_Date` DATE NOT NULL,
     `Debut_Days` INT NOT NULL,
