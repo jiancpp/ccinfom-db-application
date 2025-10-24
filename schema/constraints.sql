@@ -67,3 +67,38 @@ ADD CONSTRAINT fk_tickets_tiers
 ADD CONSTRAINT fk_tickets_seats
     FOREIGN KEY (`Seat_ID`) REFERENCES Seats(`Seats_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 
+-- Constraints for `Artist`
+-- 
+ALTER TABLE Artist
+ADD CONSTRAINT fk_artist_manager
+    FOREIGN KEY (`Manager_ID`) REFERENCES Manager(`Manager_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 
+-- Constraints for `Member_Detail`
+-- 
+ALTER TABLE Member_Detail
+ADD CONSTRAINT fk_artist_member_detail
+    FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 
+-- Constraints for `Artist_Event`
+-- 
+ALTER TABLE Artist_Event
+ADD CONSTRAINT fk_artist_event
+    FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT fk_event_artist
+    FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 
+-- Constraints for `Setlist`
+-- 
+ALTER TABLE Setlist
+ADD CONSTRAINT fk_setlist_artist_event
+	FOREIGN KEY (`Artist_ID`, `Event_ID`) REFERENCES Artist_Event(`Artist_ID`, `Event_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
