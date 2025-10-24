@@ -80,12 +80,12 @@ CREATE TABLE `merchandise` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for `Events`
+-- Table structure for `Event`
 --
-DROP TABLE IF EXISTS `Events`;
+DROP TABLE IF EXISTS `Event`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `events` (
+CREATE TABLE `Event` (
     `Event_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Event_Name` VARCHAR(100) NOT NULL,
     `Event_Type` SET('Concert', 'Fanmeet', 'Hi Touch', 'Cupsleeve') NOT NULL,
@@ -125,12 +125,12 @@ CREATE TABLE `fanclubs` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for `Venues`
+-- Table structure for `Venue`
 --
-DROP TABLE IF EXISTS `Venues`;
+DROP TABLE IF EXISTS `Venue`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Venues` (
+CREATE TABLE `Venue` (
 	`Venue_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Venue_Name` VARCHAR(255) NOT NULL, 
     `Location` VARCHAR(255) NOT NULL, 
@@ -144,10 +144,10 @@ CREATE TABLE `Venues` (
 -- 
 -- Table structure for table 'Section'
 --
-DROP TABLE IF EXISTS `Sections`;
+DROP TABLE IF EXISTS `Section`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Sections` (
+CREATE TABLE `Section` (
 	`Section_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Venue_ID` INT(11) NOT NULL, 
     `Section_Name` VARCHAR(255) NOT NULL, 
@@ -160,9 +160,9 @@ CREATE TABLE `Sections` (
 
 
 --
--- Table structure for table `Seats`
+-- Table structure for table `Seat`
 --
-DROP TABLE IF EXISTS `Seats`;
+DROP TABLE IF EXISTS `Seat`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Seats` (
@@ -225,12 +225,12 @@ CREATE TABLE `merchandise_sales` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for `Ticket_Purchases`
+-- Table structure for `Ticket_Purchase`
 --
-DROP TABLE IF EXISTS `Ticket_Purchases`;
+DROP TABLE IF EXISTS `Ticket_Purchase`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Ticket_Purchases` (
+CREATE TABLE `Ticket_Purchase` (
     `Ticket_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `User_ID` INT NOT NULL,
     `Event_ID` INT NOT NULL,

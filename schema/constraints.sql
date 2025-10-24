@@ -9,17 +9,17 @@ USE dbApp;
 -- ==========================================================
 
 --
--- Constraints for `Events`
+-- Constraints for `Event`
 --
 ALTER TABLE Events
-ADD CONSTRAINT fk_events_artists
-    FOREIGN KEY (`Artist_ID`) REFERENCES Artists(`Artist_ID`)
+ADD CONSTRAINT fk_event_artist
+    FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT fk_events_fanclubss
-    FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclubs(`Fanclub_ID`)
+ADD CONSTRAINT fk_event_fanclub
+    FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclub(`Fanclub_ID`)
     ON DELETE SET NULL ON UPDATE CASCADE,
-ADD CONSTRAINT fk_events_venue
-    FOREIGN KEY (`Venue_ID`) REFERENCES Venues(`Venue_ID`)
+ADD CONSTRAINT fk_event_venue
+    FOREIGN KEY (`Venue_ID`) REFERENCES Venue(`Venue_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT chk_event_host_xor
 CHECK (
@@ -28,42 +28,42 @@ CHECK (
 );
 
 -- 
--- Constraints for `Sections`
+-- Constraints for `Section`
 -- 
-ALTER TABLE Sections
-ADD CONSTRAINT fk_sections_venues
-    FOREIGN KEY (`Venue_ID`) REFERENCES Venues(`Venue_ID`)
+ALTER TABLE Section
+ADD CONSTRAINT fk_section_venue
+    FOREIGN KEY (`Venue_ID`) REFERENCES Venue(`Venue_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
 -- Constraints for `Seats`
 -- 
-ALTER TABLE Seats
-ADD CONSTRAINT fk_seats_venues
-    FOREIGN KEY (`Venue_ID`) REFERENCES Venues(`Venue_ID`)
+ALTER TABLE Seat
+ADD CONSTRAINT fk_seat_venue
+    FOREIGN KEY (`Venue_ID`) REFERENCES Venue(`Venue_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
 -- Constraints for `Ticket_Tier`
 -- 
-ALTER TABLE Ticket_Tiers
-ADD CONSTRAINT fk_tiers_events
-    FOREIGN KEY (`Event_ID`) REFERENCES Events(`Event_ID`)
+ALTER TABLE Ticket_Tier
+ADD CONSTRAINT fk_tier_event
+    FOREIGN KEY (`Event_ID`) REFERENCES `Event`(`Event_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
 -- Constraints for `Ticket_Purchases`
 -- 
-ALTER TABLE Ticket_Purchases
-ADD CONSTRAINT fk_tickets_users
-    FOREIGN KEY (`User_ID`) REFERENCES Users(`User_ID`)
+ALTER TABLE Ticket_Purchase
+ADD CONSTRAINT fk_tickets_user
+    FOREIGN KEY (`User_ID`) REFERENCES User(`User_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT fk_tickets_events
-    FOREIGN KEY (`Event_ID`) REFERENCES Events(`Event_ID`)
+ADD CONSTRAINT fk_ticket_event
+    FOREIGN KEY (`Event_ID`) REFERENCES `Events`(`Event_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT fk_tickets_tiers
-    FOREIGN KEY (`Tier_ID`) REFERENCES Ticket_Tiers(`Tier_ID`)
+ADD CONSTRAINT fk_ticket_tier
+    FOREIGN KEY (`Tier_ID`) REFERENCES Ticket_Tier(`Tier_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT fk_tickets_seats
-    FOREIGN KEY (`Seat_ID`) REFERENCES Seats(`Seats_ID`)
+ADD CONSTRAINT fk_ticket_seat
+    FOREIGN KEY (`Seat_ID`) REFERENCES Seat(`Seats_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
