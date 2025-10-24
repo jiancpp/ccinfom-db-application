@@ -80,26 +80,23 @@ CREATE TABLE `merchandise` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for `events`
+-- Table structure for `Events`
 --
-DROP TABLE IF EXISTS `events`;
+DROP TABLE IF EXISTS `Events`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `events` (
-    `id` INT(11) NOT NULL AUTO_INCREMENT,
-    `title` VARCHAR(100) NOT NULL,
-    `type` SET('Concert', 'Fanmeet', 'Hi Touch', 'Cupsleeve') NOT NULL,
-    `artist_id` INT,
-    `fanclub_id` INT,
-    `venue_id` INT NOT NULL,
-    `event_date` DATETIME NOT NULL,
-    `description` VARCHAR(255) NOT NULL,
-
-    PRIMARY KEY (`id`),
+    `Event_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Event_Name` VARCHAR(100) NOT NULL,
+    `Event_Type` SET('Concert', 'Fanmeet', 'Hi Touch', 'Cupsleeve') NOT NULL,
+	`Date` DATETIME NOT NULL,
+    `Venue_ID` INT NOT NULL,
+	
+    PRIMARY KEY (`Event_ID`),
     -- FOREIGN KEY (`artist_id`) REFERENCES artists(`id`),
     -- FOREIGN KEY (`fanclub_id`) REFERENCES fanclubs(`id`),
     -- FOREIGN KEY (`venue_id`) REFERENCES venues(`id`),
-    UNIQUE (`venue_id`, `event_date`)
+    UNIQUE (`Venue_ID`, `Date`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -128,60 +125,78 @@ CREATE TABLE `fanclubs` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for `venues`
+-- Table structure for `Venues`
 --
-DROP TABLE IF EXISTS `venues`;
+DROP TABLE IF EXISTS `Venues`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `venues` (
-	`id` INT(11) NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(255) NOT NULL, 
-    `location` VARCHAR(255) NOT NULL, 
-    `capacity` INT NOT NULL CHECK (capacity > 0),
+CREATE TABLE `Venues` (
+	`Venue_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Venue_Name` VARCHAR(255) NOT NULL, 
+    `Location` VARCHAR(255) NOT NULL, 
+    `Capacity` INT NOT NULL CHECK (capacity > 0),
     
-    PRIMARY KEY (`id`),
-    UNIQUE (`name`, `location`) -- Prevents duplicate venues with the same name and location
+    PRIMARY KEY (`Venue_ID`),
+    UNIQUE (`Venue_Name`, `Location`) -- Prevents duplicate venues with the same name and location
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+-- 
+-- Table structure for table 'Section'
 --
--- Table structure for table `seats`
---
-DROP TABLE IF EXISTS `seats`;
+DROP TABLE IF EXISTS `Sections`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `seats` (
-	`id` INT(11) NOT NULL AUTO_INCREMENT,
-    `venue_id` INT(11) NOT NULL,
-    `section` VARCHAR(100) NOT NULL,
-    `row_number` VARCHAR(5) NOT NULL, 
-    `seat_number` VARCHAR(5) NOT NULL,
+CREATE TABLE `Sections` (
+	`Section_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Venue_ID` INT(11) NOT NULL, 
+    `Section_Name` VARCHAR(255) NOT NULL, 
+    `Max_Capacity` INT NOT NULL CHECK (Max_Capacity > 0),
     
-    PRIMARY KEY (`id`),
-	UNIQUE (`venue_id`, `section`, `row_number`, `seat_number`) -- Prevents duplicates of the seat
+    PRIMARY KEY (`Section_ID`),
+    UNIQUE (`Section_Name`, `Venue_ID`) -- Prevents duplicate venues with the same name and location
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-    -- FOREIGN KEY (`venue_id`) REFERENCES venues(`id`)
+
+--
+-- Table structure for table `Seats`
+--
+DROP TABLE IF EXISTS `Seats`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Seats` (
+	`Seat_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Venue_ID` INT(11) NOT NULL,
+    `Section_ID` INT(11) NOT NULL,
+    `Row_Number` INT NOT NULL, 
+    `Seat_Number` INT NOT NULL,
+    
+    PRIMARY KEY (`Seat_ID`),
+	UNIQUE (`Venue_ID`, `Section_ID`, `Row_Number`, `Seat_Number`) -- Prevents duplicates of the seat
+
+    -- FOREIGN KEY (`venue_id`) REFERENCES venues(`venue_id`)
 	-- 	ON DELETE CASCADE ON UPDATE CASCADE,
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for `ticket_tier`
+-- Table structure for `Ticket_Tier`
 --
-DROP TABLE IF EXISTS `ticket_tier`;
+DROP TABLE IF EXISTS `Ticket_Tier`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ticket_tier` (
-    `id` INT(11) NOT NULL AUTO_INCREMENT,
-    `event_id` INT NOT NULL,
-    `tier_name` VARCHAR(100) NOT NULL DEFAULT 'General Admissions',
-    `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    `total_quantity` INT NOT NULL DEFAULT 0,
-    `quantity_sold` INT NOT NULL DEFAULT 0,
-
-    PRIMARY KEY (`id`),
-    UNIQUE (`event_id`, `tier_name`)
-    -- FOREIGN KEY (`event_id`) REFERENCES events(`id`),
+CREATE TABLE `Ticket_Tier` (
+    `Tier_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Event_ID` INT NOT NULL,
+    `Tier_Name` VARCHAR(100) NOT NULL DEFAULT 'General Admissions',
+    `Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    `Total_Quantity` INT NOT NULL DEFAULT 0,
+	`Benefits` VARCHAR(150),
+	
+	PRIMARY KEY (`Tier_ID`),
+    UNIQUE (`Event_ID`, `Tier_Name`)
+    -- FOREIGN KEY (`Event_ID`) REFERENCES events(`Event_ID`),
     -- -- Ensures that there is enough slots available
     -- CONSTRAINT check_qty CHECK (`quantity_sold` <= `total_quantity`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
@@ -210,24 +225,24 @@ CREATE TABLE `merchandise_sales` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for `ticket_sales`
+-- Table structure for `Ticket_Purchases`
 --
-DROP TABLE IF EXISTS `ticket_sales`;
+DROP TABLE IF EXISTS `Ticket_Purchases`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ticket_sales` (
-    `id` INT(11) NOT NULL AUTO_INCREMENT,
-    `user_id` INT NOT NULL,
-    `event_id` INT NOT NULL,
-    `tier_id` INT NOT NULL,
-    `seat_id` INT,
-    `purchase_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+CREATE TABLE `Ticket_Purchases` (
+    `Ticket_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `User_ID` INT NOT NULL,
+    `Event_ID` INT NOT NULL,
+    `Tier_ID` INT NOT NULL,
+    `Seat_ID` INT,
+    `Purchase_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (`id`)
-    -- FOREIGN KEY (`user_id`) REFERENCES users(`id`),
-    -- FOREIGN KEY (`event_id`) REFERENCES events(`id`),
-    -- FOREIGN KEY (`tier_id`) REFERENCES ticket_tier(`id`),
-    -- FOREIGN KEY (`seat_id`) REFERENCES seats(`id`),
+    PRIMARY KEY (`Ticket_ID`)
+    -- FOREIGN KEY (`user_id`) REFERENCES Users(`Ticket_ID`),
+    -- FOREIGN KEY (`event_id`) REFERENCES Events(`Event_ID`),
+    -- FOREIGN KEY (`tier_id`) REFERENCES Ticket_Tier(`Tier_ID`),
+    -- FOREIGN KEY (`seat_id`) REFERENCES Seats(`Seat_ID`),
 
     -- -- Ensures that only one seat per event and tier is sold
     -- -- (works for free seating where seat is NULL)
