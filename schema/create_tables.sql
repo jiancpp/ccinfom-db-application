@@ -18,10 +18,10 @@ DROP TABLE IF EXISTS `Fan`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Fan` (
     `Fan_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Username` VARCHAR(50) NOT NULL,
-    `First_Name` VARCHAR(50) NOT NULL,
-    `Last_Name` VARCHAR(50) NOT NULL,
-    `Email` VARCHAR(50) NOT NULL,
+    `Username` VARCHAR(255) NOT NULL,
+    `First_Name` VARCHAR(255) NOT NULL,
+    `Last_Name` VARCHAR(255) NOT NULL,
+    `Email` VARCHAR(255) NOT NULL,
     `Date_Joined` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `Days_Since` INT(11) NOT NULL,
     
