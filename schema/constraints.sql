@@ -14,12 +14,7 @@ USE dbApp;
 ALTER TABLE Event
 ADD CONSTRAINT fk_event_venue
     FOREIGN KEY (`Venue_ID`) REFERENCES Venue(`Venue_ID`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT chk_event_host_xor
-CHECK (
-    (artist_id IS NOT NULL AND fanclub_id IS NULL)
- OR (artist_id IS NULL AND fanclub_id IS NOT NULL)
-);
+    ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
 -- Constraints for `Section`
@@ -42,7 +37,7 @@ ADD CONSTRAINT fk_seat_venue
 -- 
 ALTER TABLE Ticket_Tier
 ADD CONSTRAINT fk_tier_event
-    FOREIGN KEY (`Event_ID`) REFERENCES `Event`(`Event_ID`)
+    FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
@@ -53,13 +48,13 @@ ADD CONSTRAINT fk_tickets_fan
     FOREIGN KEY (`Fan_ID`) REFERENCES Fan(`Fan_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_ticket_event
-    FOREIGN KEY (`Event_ID`) REFERENCES `Events`(`Event_ID`)
+    FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_ticket_tier
     FOREIGN KEY (`Tier_ID`) REFERENCES Ticket_Tier(`Tier_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_ticket_seat
-    FOREIGN KEY (`Seat_ID`) REFERENCES Seat(`Seats_ID`)
+    FOREIGN KEY (`Seat_ID`) REFERENCES Seat(`Seat_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 
@@ -128,10 +123,10 @@ ADD CONSTRAINT fk_fanevent_event
 -- 
 -- Constraints for `Fanclub_Membership`
 -- 
-ALTER TABLE Fanclub_Membershiip
+ALTER TABLE Fanclub_Membership
 ADD CONSTRAINT fk_membership_fan
     FOREIGN KEY (`Fan_ID`) REFERENCES Fan(`Fan_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_membership_fanclub
-    FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclub(`Fan_ID`)
+    FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclub(`Fanclub_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
