@@ -91,11 +91,15 @@ CREATE TABLE `Event` (
     `Event_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Event_Name` VARCHAR(100) NOT NULL,
     `Event_Type` SET('Concert', 'Fanmeet', 'Hi Touch', 'Cupsleeve') NOT NULL,
-	`Date` DATETIME NOT NULL,
     `Venue_ID` INT(11) NOT NULL,
+	`Start_Date` DATE NOT NULL,
+	`End_Date` DATE NOT NULL,
+	`Start_Time` TIME NOT NULL,
+	`End_Time` TIME,
 	
     PRIMARY KEY (`Event_ID`),
-    UNIQUE (`Venue_ID`, `Date`)
+	CONSTRAINT is_valid_date CHECK(`End_Date` >= `Start_Date`),
+	CONSTRAINT is_valid_time CHECK(`End_Time` > `Start_Time`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -113,16 +117,13 @@ DROP TABLE IF EXISTS `Fanclub`;
 CREATE TABLE `Fanclub` (
     `Fanclub_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Fanclub_Name` VARCHAR(255) NOT NULL,
-    `Artist_ID` INT(11) NOT NULL,
+    `Artist_ID` INT NOT NULL,
     
     PRIMARY KEY (`Fanclub_ID`),
-    UNIQUE (`Fanclub_Name`, `Artist_ID`)
+    UNIQUE (`Fanclub_Name`, `Artist_ID`)     -- Ensures that no two fanclubs of the same artist share a name
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for `Artist_Event`
---
 DROP TABLE IF EXISTS `Artist_Event`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -148,58 +149,6 @@ CREATE TABLE `Fanclub_Event` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for `Venue`
---
-DROP TABLE IF EXISTS `Venue`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Venue` (
-	`Venue_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Venue_Name` VARCHAR(255) NOT NULL, 
-    `Location` VARCHAR(255) NOT NULL, 
-    `Capacity` INT NOT NULL CHECK (capacity > 0),
-    
-    PRIMARY KEY (`Venue_ID`),
-    UNIQUE (`Venue_Name`, `Location`) -- Prevents duplicate venues with the same name and location
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
--- 
--- Table structure for table 'Section'
---
-DROP TABLE IF EXISTS `Section`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Section` (
-	`Section_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Venue_ID` INT(11) NOT NULL, 
-    `Section_Name` VARCHAR(255) NOT NULL, 
-    `Max_Capacity` INT NOT NULL CHECK (Max_Capacity > 0),
-    
-    PRIMARY KEY (`Section_ID`),
-    UNIQUE (`Section_Name`, `Venue_ID`) -- Prevents duplicate venues with the same name and location
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `Seat`
---
-DROP TABLE IF EXISTS `Seat`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Seat` (
-	`Seat_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Venue_ID` INT(11) NOT NULL,
-    `Section_ID` INT(11) NOT NULL,
-    `Row_Number` INT NOT NULL, 
-    `Seat_Number` INT NOT NULL,
-    
-    PRIMARY KEY (`Seat_ID`),
-	UNIQUE (`Venue_ID`, `Section_ID`, `Row_Number`, `Seat_Number`) -- Prevents duplicates of the seat
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for `Ticket_Tier`
 --
 DROP TABLE IF EXISTS `Ticket_Tier`;
@@ -218,6 +167,59 @@ CREATE TABLE `Ticket_Tier` (
 
     -- -- Ensures that there is enough slots available
     -- CONSTRAINT check_qty CHECK (`quantity_sold` <= `total_quantity`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for `Venue`
+--
+DROP TABLE IF EXISTS `Venue`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Venue` (
+	`Venue_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Venue_Name` VARCHAR(255) NOT NULL, 
+    `City` VARCHAR(255),
+	`Country` VARCHAR(255) N    OT NULL,
+    `Capacity` INT NOT NULL CHECK (capacity > 0),
+    
+    PRIMARY KEY (`Venue_ID`),
+    UNIQUE (`Venue_Name`, `Country`, `City`) -- Prevents duplicate venues with the same name and location
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- 
+-- Table structure for table 'Section'
+--
+DROP TABLE IF EXISTS `Section`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Section` (
+	`Section_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Venue_ID` INT(11) NOT NULL, 
+    `Section_Name` VARCHAR(255) NOT NULL, 
+    `Max_Capacity` INT NOT NULL CHECK (Max_Capacity > 0),
+    
+    PRIMARY KEY (`Section_ID`),
+    UNIQUE (Venue_ID, Section_Name) -- Prevents duplicate venues with the same name and location
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `Seat`
+--
+DROP TABLE IF EXISTS `Seat`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Seat` (
+	`Seat_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Venue_ID` INT(11) NOT NULL,
+    `Section_ID` INT(11) NOT NULL,
+    `Seat_Row` VARCHAR(2) NOT NULL, 
+    `Seat_Number` INT NOT NULL,
+    
+    PRIMARY KEY (`Seat_ID`),
+	UNIQUE (`Venue_ID`, `Section_ID`, `Seat_Row`, `Seat_Number`) -- Prevents duplicates of the seat
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -300,7 +302,7 @@ CREATE TABLE `Ticket_Purchase` (
     PRIMARY KEY (`Ticket_ID`),
     -- Ensures that only one seat per event and tier is sold
     -- (works for free seating where seat is NULL)
-    CONSTRAINT is_ticket_unique UNIQUE (event_id, tier_id, seat_id)
+    CONSTRAINT is_ticket_unique UNIQUE (Event_ID, Tier_ID, Seat_ID)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
