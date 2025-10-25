@@ -281,21 +281,6 @@ CREATE TABLE `Order` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 -- 
--- Table structure for `Purchase`
---
-DROP TABLE IF EXISTS `Purchase`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Purchase` (
-	`Purchase_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Order_ID` INT(11) NOT NULL,
-    `Purchase_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    PRIMARY KEY (`Purchase_ID`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
--- 
 -- Table structure for `Purchase List`
 --
 DROP TABLE IF EXISTS `Purchase_List`;
@@ -303,7 +288,7 @@ DROP TABLE IF EXISTS `Purchase_List`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Purchase_List` (
     `Purchase_List_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Purchase_ID` INT(11) NOT NULL,
+    `Order_ID` INT(11) NOT NULL,
     `Merchandise_ID` INT(11) NOT NULL,
     `Quantity` INT(5) NOT NULL DEFAULT 1,
 
