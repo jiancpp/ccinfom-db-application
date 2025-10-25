@@ -93,12 +93,9 @@ CREATE TABLE `Event` (
     `Event_Name` VARCHAR(100) NOT NULL,
     `Event_Type` SET('Concert', 'Fanmeet', 'Hi Touch', 'Cupsleeve') NOT NULL,
 	`Date` DATETIME NOT NULL,
-    `Venue_ID` INT NOT NULL,
+    `Venue_ID` INT(11) NOT NULL,
 	
     PRIMARY KEY (`Event_ID`),
-    -- FOREIGN KEY (`artist_id`) REFERENCES artists(`id`),
-    -- FOREIGN KEY (`fanclub_id`) REFERENCES fanclubs(`id`),
-    -- FOREIGN KEY (`venue_id`) REFERENCES venues(`id`),
     UNIQUE (`Venue_ID`, `Date`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -168,7 +165,7 @@ CREATE TABLE `Section` (
 DROP TABLE IF EXISTS `Seat`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Seats` (
+CREATE TABLE `Seat` (
 	`Seat_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Venue_ID` INT(11) NOT NULL,
     `Section_ID` INT(11) NOT NULL,
@@ -177,9 +174,6 @@ CREATE TABLE `Seats` (
     
     PRIMARY KEY (`Seat_ID`),
 	UNIQUE (`Venue_ID`, `Section_ID`, `Row_Number`, `Seat_Number`) -- Prevents duplicates of the seat
-
-    -- FOREIGN KEY (`venue_id`) REFERENCES venues(`venue_id`)
-	-- 	ON DELETE CASCADE ON UPDATE CASCADE,
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -191,7 +185,7 @@ DROP TABLE IF EXISTS `Ticket_Tier`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Ticket_Tier` (
     `Tier_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Event_ID` INT NOT NULL,
+    `Event_ID` INT(11) NOT NULL,
     `Tier_Name` VARCHAR(100) NOT NULL DEFAULT 'General Admissions',
     `Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `Total_Quantity` INT NOT NULL DEFAULT 0,
@@ -199,7 +193,7 @@ CREATE TABLE `Ticket_Tier` (
 	
 	PRIMARY KEY (`Tier_ID`),
     UNIQUE (`Event_ID`, `Tier_Name`)
-    -- FOREIGN KEY (`Event_ID`) REFERENCES events(`Event_ID`),
+
     -- -- Ensures that there is enough slots available
     -- CONSTRAINT check_qty CHECK (`quantity_sold` <= `total_quantity`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
@@ -291,15 +285,10 @@ CREATE TABLE `Ticket_Purchase` (
     `Seat_ID` INT(11),
     `Purchase_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (`Ticket_ID`)
-    -- FOREIGN KEY (`user_id`) REFERENCES Users(`Ticket_ID`),
-    -- FOREIGN KEY (`event_id`) REFERENCES Events(`Event_ID`),
-    -- FOREIGN KEY (`tier_id`) REFERENCES Ticket_Tier(`Tier_ID`),
-    -- FOREIGN KEY (`seat_id`) REFERENCES Seats(`Seat_ID`),
-
-    -- -- Ensures that only one seat per event and tier is sold
-    -- -- (works for free seating where seat is NULL)
-    -- CONSTRAINT is_ticket_unique UNIQUE (event_id, tier_id, seat_id)
+    PRIMARY KEY (`Ticket_ID`),
+    -- Ensures that only one seat per event and tier is sold
+    -- (works for free seating where seat is NULL)
+    CONSTRAINT is_ticket_unique UNIQUE (event_id, tier_id, seat_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -324,7 +313,3 @@ CREATE TABLE `fanclub_membership` (
     -- FOREIGN KEY (`fanclub_id`) REFERENCES fanclubs(`id`) ON DELETE CASCADE,
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
-
-
-
