@@ -121,18 +121,29 @@ CREATE TABLE `Fanclub` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for `Artist_Event`
+--
+DROP TABLE IF EXISTS `Artist_Event`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Artist_Event` (
+	`Artist_ID` INT(11) NOT NULL,
+	`Event_ID` INT(11) NOT NULL,
+    PRIMARY KEY (`Artist_ID`, `Event_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for `Fanclub_Event`
 --
 DROP TABLE IF EXISTS `Fanclub_Event`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Fanclub_Event` (
-    `Fanclub_Event_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Fanclub_ID` INT(11) NOT NULL,
     `Event_ID` INT(11) NOT NULL,
     
-    PRIMARY KEY (`Fanclub_Event_ID`),
-    UNIQUE (`Fanclub_ID`, `Event_ID`)
+    PRIMARY KEY (`Fanclub_ID`, `Event_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -169,7 +180,6 @@ CREATE TABLE `Section` (
     UNIQUE (`Section_Name`, `Venue_ID`) -- Prevents duplicate venues with the same name and location
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
 
 --
 -- Table structure for table `Seat`
@@ -237,16 +247,6 @@ CREATE TABLE `Member_Detail` (
     `Age` INT(2),
     PRIMARY KEY (`Member_ID`),
     UNIQUE KEY `uk_artist_member_id` (`Artist_ID`, `Member_ID`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-DROP TABLE IF EXISTS `Artist_Event`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Artist_Event` (
-	`Artist_ID` INT(11) NOT NULL,
-	`Event_ID` INT(11) NOT NULL,
-    PRIMARY KEY (`Artist_ID`, `Event_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

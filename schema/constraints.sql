@@ -11,13 +11,7 @@ USE dbApp;
 --
 -- Constraints for `Event`
 --
-ALTER TABLE Events
-ADD CONSTRAINT fk_event_artist
-    FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT fk_event_fanclub
-    FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclub(`Fanclub_ID`)
-    ON DELETE SET NULL ON UPDATE CASCADE,
+ALTER TABLE Event
 ADD CONSTRAINT fk_event_venue
     FOREIGN KEY (`Venue_ID`) REFERENCES Venue(`Venue_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
@@ -110,17 +104,8 @@ ADD CONSTRAINT fk_setlist_artist_event
 
 
 -- ==========================================================
---   FAN CORE AND SUBTABLES
+--   FAN SUBTABLES
 -- ==========================================================
-
-
--- 
--- Constraints for `Fan`
--- 
-ALTER TABLE Fan
-ADD CONSTRAINT fk_artist_manager
-    FOREIGN KEY (`Manager_ID`) REFERENCES Manager(`Manager_ID`)
-    ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
 -- Constraints for `Fanclub`
@@ -135,7 +120,7 @@ ADD CONSTRAINT fk_fanclub_artist
 ALTER TABLE Fanclub_Event
 ADD CONSTRAINT fk_fanevent_fanclub
     FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclub(`Fanclub_ID`)
-    ON DELETE CASCADE ON UPDATE CASCADE;
+    ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_fanevent_event
     FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
@@ -146,7 +131,7 @@ ADD CONSTRAINT fk_fanevent_event
 ALTER TABLE Fanclub_Membershiip
 ADD CONSTRAINT fk_membership_fan
     FOREIGN KEY (`Fan_ID`) REFERENCES Fan(`Fan_ID`)
-    ON DELETE CASCADE ON UPDATE CASCADE;
+    ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_membership_fanclub
     FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclub(`Fan_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
