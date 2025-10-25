@@ -60,7 +60,7 @@ CREATE TABLE `Merchandise` (
     `ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Name` VARCHAR(100) NOT NULL,
     `Artist_ID` INT(11) NOT NULL,
-    `Event_ID` INT(11) NOT NULL,
+    `Event_ID` INT(11),
     `Fanclub_ID` INT(11),
     `Description` VARCHAR(500) DEFAULT NULL,
     `Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
