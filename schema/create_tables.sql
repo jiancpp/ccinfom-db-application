@@ -272,7 +272,6 @@ DROP TABLE IF EXISTS `Order`;
 CREATE TABLE `Order` (
     `Order_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Fan_ID` INT(11) NOT NULL,
-    `Event_ID` INT(11) NOT NULL,
     `Order_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
 
