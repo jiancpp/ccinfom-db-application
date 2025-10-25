@@ -285,10 +285,10 @@ DROP TABLE IF EXISTS `Ticket_Purchase`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Ticket_Purchase` (
     `Ticket_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `User_ID` INT NOT NULL,
-    `Event_ID` INT NOT NULL,
-    `Tier_ID` INT NOT NULL,
-    `Seat_ID` INT,
+    `User_ID` INT(11) NOT NULL,
+    `Event_ID` INT(11) NOT NULL,
+    `Tier_ID` INT(11) NOT NULL,
+    `Seat_ID` INT(11),
     `Purchase_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`Ticket_ID`)
