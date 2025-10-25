@@ -130,3 +130,43 @@ ADD CONSTRAINT fk_membership_fan
 ADD CONSTRAINT fk_membership_fanclub
     FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclub(`Fanclub_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
+
+
+-- ==========================================================
+--   MERCHANDISE SUBTABLES
+-- ==========================================================
+-- 
+-- Constraints for `Merchandise`
+-- 
+ALTER TABLE `Merchandise`
+ADD CONSTRAINT fk_merch_artist
+    FOREIGN KEY (`Artist_ID`) REFERENCES `Artist`(`Artist_ID`)
+    ON UPDATE CASCADE,
+ADD CONSTRAINT fk_merch_event
+    FOREIGN KEY (`Event_ID`) REFERENCES `Event`(`Event_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT fk_merch_fanclub
+    FOREIGN KEY (`Fanclub_ID`) REFERENCES `Fanclub`(`Fanclub_ID`)
+    ON UPDATE CASCADE;
+
+-- 
+-- Constraints for `Order`
+-- 
+ALTER TABLE `Order`
+ADD CONSTRAINT fk_order_event
+    FOREIGN KEY (`Event_ID`) REFERENCES `Event`(`Event_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT fk_order_user
+    FOREIGN KEY (`Fan_ID`) REFERENCES `Fan`(`Fan_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 
+-- Constraints for `Purchase_List`
+-- 
+ALTER TABLE `Purchase_List`
+ADD CONSTRAINT fk_purchaselist_order
+    FOREIGN KEY (`Order_ID`) REFERENCES `Order`(`Order_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT fk_purchaselist_merch
+    FOREIGN KEY (`Merchandise_ID`) REFERENCES `Merchandise`(`ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
