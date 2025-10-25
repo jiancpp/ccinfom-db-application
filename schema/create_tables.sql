@@ -11,24 +11,23 @@ USE dbApp;
 -- ===============================================
 
 --
--- Table structure for table `users`
+-- Table structure for table `Fan`
 --
-DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `Fan`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `users` (
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `username` VARCHAR(50) NOT NULL,
-    `first_name` VARCHAR(50) NOT NULL,
-    `last_name` VARCHAR(50) NOT NULL,
-    `email` VARCHAR(50) NOT NULL,
-    `date_joined` DATE NOT NULL,  -- is this really needed
+CREATE TABLE `Fan` (
+    `Fan_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Username` VARCHAR(50) NOT NULL,
+    `First_Name` VARCHAR(50) NOT NULL,
+    `Last_Name` VARCHAR(50) NOT NULL,
+    `Email` VARCHAR(50) NOT NULL,
+    `Date_Joined` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `Days_Since` INT(11) NOT NULL,
     
     PRIMARY KEY (`id`),
-
-    -- Ensures non-duplication of username/email
-    UNIQUE (`username`),
-    UNIQUE (`email`)
+    UNIQUE (`Username`),
+    UNIQUE (`Email`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -106,21 +105,18 @@ CREATE TABLE `Event` (
 -- ================================================
 
 --
--- Table structure for `fanclubs`
+-- Table structure for `Fanclub`
 --
-DROP TABLE IF EXISTS `fanclubs`;
+DROP TABLE IF EXISTS `Fanclub`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `fanclubs` (
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `fanclub_name` VARCHAR(50) NOT NULL,
-    `artist_id` INT NOT NULL,
-    `num_members` INT NOT NULL DEFAULT 0,
+CREATE TABLE `Fanclub` (
+    `Fanclub_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Fanclub_Name` VARCHAR(255) NOT NULL,
+    `Artist_ID` INT NOT NULL,
     
-    PRIMARY KEY (`id`),
-    UNIQUE (`fanclub_name`, `artist_id`)     -- Ensures that no two fanclubs of the same artist share a name
-    -- FOREIGN KEY (`artist_id`) REFERENCES artists(`id`),
-
+    PRIMARY KEY (`Fanclub_ID`),
+    UNIQUE (`Fanclub_Name`, `Artist_ID`)     -- Ensures that no two fanclubs of the same artist share a name
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -279,7 +275,7 @@ DROP TABLE IF EXISTS `Ticket_Purchase`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Ticket_Purchase` (
     `Ticket_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `User_ID` INT(11) NOT NULL,
+    `Fan_ID` INT(11) NOT NULL,
     `Event_ID` INT(11) NOT NULL,
     `Tier_ID` INT(11) NOT NULL,
     `Seat_ID` INT(11),
@@ -293,23 +289,18 @@ CREATE TABLE `Ticket_Purchase` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `fanclub_membership`
+-- Table structure for table `Fanclub_Membership`
 --
-DROP TABLE IF EXISTS `fanclub_membership`;
+DROP TABLE IF EXISTS `Fanclub_Membership`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `fanclub_membership` (
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `user_id` INT NOT NULL,
-    `fanclub_id` INT NOT NULL,
-    `date_joined` DATE NOT NULL,
+CREATE TABLE `Fanclub_Membership` (
+    `Membership_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Fan_ID` INT NOT NULL,
+    `Fanclub_ID` INT NOT NULL,
+    `Date_Joined` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
-    PRIMARY KEY (`id`),
-    UNIQUE (`user_id`, `fanclub_id`) -- Ensures that a user does not join a fanclub twice
-
-    -- -- Removes membership records upon user deletion
-    -- FOREIGN KEY (`user_id`) REFERENCES users(`id`) ON DELETE CASCADE,
-    -- -- Removes membership records upon fanclub deletion
-    -- FOREIGN KEY (`fanclub_id`) REFERENCES fanclubs(`id`) ON DELETE CASCADE,
+    PRIMARY KEY (`Membership_ID`),
+    UNIQUE (`Fan_ID`, `Fanclub_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
