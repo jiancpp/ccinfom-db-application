@@ -51,33 +51,28 @@ CREATE TABLE `Artist` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 -- 
--- Table structure for `merchandise`
+-- Table structure for `Merchandise`
 --
-DROP TABLE IF EXISTS `merchandise`;
+DROP TABLE IF EXISTS `Merchandise`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `merchandise` (
-    `id` INT(11) NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(100) NOT NULL,
-    `artist_id` INT NOT NULL,
-    `event_id` INT(11) NOT NULL,
-    `fanclub_id` INT,
-    `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    `quantity_stock` INT NOT NULL,
+CREATE TABLE `Merchandise` (
+    `ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Name` VARCHAR(100) NOT NULL,
+    `Artist_ID` INT(11) NOT NULL,
+    `Event_ID` INT(11) NOT NULL,
+    `Fanclub_ID` INT(11),
+    `Description` VARCHAR(500) DEFAULT NULL,
+    `Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    `Initial_Stock` INT(6) NOT NULL DEFAULT 0,
+    `Quantity_Stock` INT(6) NOT NULL DEFAULT 0,
 
-    PRIMARY KEY (`id`),
-    UNIQUE (`event_id`, `name`),
-    CHECK (`price` >= 0),
-    CHECK (`quantity_stock` >= 0)
+    PRIMARY KEY (`ID`),
+    UNIQUE (`Event_ID`, `Name`),
 
-    -- FOREIGN KEY (`artist_id`) REFERENCES artists(`id`)
-    --     ON UPDATE CASCADE,
-    -- FOREIGN KEY (`event_id`) REFERENCES events(`id`)
-    --     ON DELETE CASCADE
-    --     ON UPDATE CASCADE,
-    -- FOREIGN KEY (`fanclub_id`) REFERENCES fanclubs(`id`)
-    --     ON UPDATE CASCADE,
-
+	CHECK (`Price` >= 0),
+    CHECK (`Initial_Stock` >= 0),
+    CHECK (`Quantity_Stock` >= 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -269,19 +264,51 @@ CREATE TABLE `Setlist` (
 -- ==============================================
 
 -- 
--- Table structure for `merchandise sales`
+-- Table structure for `order`
 --
-DROP TABLE IF EXISTS `merchandise_sales`;
+DROP TABLE IF EXISTS `Order`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `merchandise_sales` (
-   `order_number` INT NOT NULL AUTO_INCREMENT,
-   `merchandise_id` INT NOT NULL,
-   `user_id` INT NOT NULL,
+CREATE TABLE `Order` (
+    `Order_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `User_ID` INT(11) NOT NULL,
+    `Event_ID` INT(11) NOT NULL,
+    `Order_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
 
-    PRIMARY KEY (order_number)
-    -- FOREIGN KEY (merchandise_id) REFERENCES merchandise(id),
-    -- FOREIGN KEY (user_id) REFERENCES users(id)
+    PRIMARY KEY (`Order_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- 
+-- Table structure for `Purchase`
+--
+DROP TABLE IF EXISTS `Purchase`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Purchase` (
+	`Purchase_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Order_ID` INT(11) NOT NULL,
+    `Purchase_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (`Purchase_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- 
+-- Table structure for `Purchase List`
+--
+DROP TABLE IF EXISTS `Purchase_List`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Purchase_List` (
+    `Purchase_List_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Purchase_ID` INT(11) NOT NULL,
+    `Merchandise_ID` INT(11) NOT NULL,
+    `Quantity` INT(5) NOT NULL DEFAULT 1,
+
+    PRIMARY KEY (`Purchase_List_ID`),
+	CHECK (`quantity` > 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
