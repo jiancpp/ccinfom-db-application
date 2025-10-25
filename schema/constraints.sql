@@ -164,9 +164,6 @@ ADD CONSTRAINT fk_merch_fanclub
 -- Constraints for `Order`
 -- 
 ALTER TABLE `Order`
-ADD CONSTRAINT fk_order_event
-    FOREIGN KEY (`Event_ID`) REFERENCES `Event`(`Event_ID`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_order_user
     FOREIGN KEY (`Fan_ID`) REFERENCES `Fan`(`Fan_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
