@@ -131,6 +131,17 @@ ADD CONSTRAINT fk_membership_fanclub
     FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclub(`Fanclub_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- 
+-- Constraints for `Artist_Follower`
+-- 
+ALTER TABLE Artist_Follower
+ADD CONSTRAINT fk_artist_follower
+    FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT fk_follower_artist
+    FOREIGN KEY (`Fan_ID`) REFERENCES Fan(`Fan_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
 
 -- ==========================================================
 --   MERCHANDISE SUBTABLES
