@@ -130,6 +130,16 @@ ADD CONSTRAINT fk_fanclub_artist
     FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- Constraints for `Fanclub_Event`
+-- 
+ALTER TABLE Fanclub_Event
+ADD CONSTRAINT fk_fanevent_fanclub
+    FOREIGN KEY (`Fanclub_ID`) REFERENCES Fanclub(`Fanclub_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+ADD CONSTRAINT fk_fanevent_event
+    FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- 
 -- Constraints for `Fanclub_Membership`
 -- 

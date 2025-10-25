@@ -113,10 +113,26 @@ DROP TABLE IF EXISTS `Fanclub`;
 CREATE TABLE `Fanclub` (
     `Fanclub_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Fanclub_Name` VARCHAR(255) NOT NULL,
-    `Artist_ID` INT NOT NULL,
+    `Artist_ID` INT(11) NOT NULL,
     
     PRIMARY KEY (`Fanclub_ID`),
-    UNIQUE (`Fanclub_Name`, `Artist_ID`)     -- Ensures that no two fanclubs of the same artist share a name
+    UNIQUE (`Fanclub_Name`, `Artist_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for `Fanclub_Event`
+--
+DROP TABLE IF EXISTS `Fanclub_Event`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Fanclub_Event` (
+    `Fanclub_Event_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Fanclub_ID` INT(11) NOT NULL,
+    `Event_ID` INT(11) NOT NULL,
+    
+    PRIMARY KEY (`Fanclub_Event_ID`),
+    UNIQUE (`Fanclub_ID`, `Event_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
