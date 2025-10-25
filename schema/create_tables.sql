@@ -271,7 +271,7 @@ DROP TABLE IF EXISTS `Order`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Order` (
     `Order_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `User_ID` INT(11) NOT NULL,
+    `Fan_ID` INT(11) NOT NULL,
     `Event_ID` INT(11) NOT NULL,
     `Order_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
