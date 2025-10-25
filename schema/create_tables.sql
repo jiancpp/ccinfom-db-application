@@ -25,7 +25,7 @@ CREATE TABLE `Fan` (
     `Date_Joined` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `Days_Since` INT(11) NOT NULL,
     
-    PRIMARY KEY (`id`),
+    PRIMARY KEY (`Fan_ID`),
     UNIQUE (`Username`),
     UNIQUE (`Email`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
