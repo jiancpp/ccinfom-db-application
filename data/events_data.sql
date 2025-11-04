@@ -10,3 +10,6 @@ VALUES  ('BLACKPINK Comeback Tour', 'Concert', 1, '2026-08-10', '2026-08-11', '2
         ('ZB1 Hi-Five Session', 'Hi Touch', 3, '2026-10-18', '2026-10-18', '11:00:00', '13:00:00'),
         ('AKMU Birthday Cupsleeve Cafe', 'Cupsleeve', 4, '2026-11-25', '2026-11-25', '10:00:00', '17:00:00'),
         ('AESPA Artist Showcase', 'Concert,Fanmeet,Hi Touch', 2, '2026-12-07', '2026-12-07', '18:30:00', '22:30:00');
+        
+        
+select * FROM event;

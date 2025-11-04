@@ -94,8 +94,10 @@ CREATE TABLE `Event` (
 	`End_Time` TIME,
 	
     PRIMARY KEY (`Event_ID`),
-	CONSTRAINT is_valid_date CHECK(`End_Date` >= `Start_Date`),
-	CONSTRAINT is_valid_time CHECK(`End_Date` = `Start_Date` AND `End_Time` > `Start_Time`)
+	CONSTRAINT is_valid_datetime CHECK(
+		(`End_Date` > `Start_Date`) OR
+		(`End_Date` = `Start_Date` AND `End_Time` > `Start_Time`)
+	)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
