@@ -116,6 +116,7 @@ A virtual environment isolates project dependencies from your global Python inst
 2.  **Install packages:**
     ```bash
     pip install -r requirements.txt
+    pip install flask mysql-connector-python
     ```
 
 ### 3\. Configure Git (Optional but Recommended)
