@@ -59,4 +59,133 @@ Using the Visual Studio or your terminal, commit and push your changes to the SQ
 
 ---
 
+That's a fantastic idea\! A **README file** is essential for any project, especially a school project, as it clearly documents the setup process for you and your collaborators.
+
+Here is the complete **README.md** file based on the **Step-by-Step MySQL-Flask Integration Checklist**, designed to be placed in your project's root directory (`/jiancpp`).
+
+-----
+
+# 🚀 Project Setup: MySQL-Flask Integration Checklist
+
+This document guides you through setting up and running the Flask application, ensuring proper connection to the local MySQL database used in SQL Workbench.
+
+## Prerequisites
+
+Before starting, ensure you have the following:
+
+1.  **Python 3.x** installed.
+2.  **MySQL Server** running locally (via SQL Workbench, XAMPP, etc.).
+3.  **Visual Studio Code** (or your preferred editor).
+4.  The project structure (including the `data/`, `model/`, `schema/`, and `view/` folders) is in place.
+
+-----
+
+## 🛠️ Phase 1: Environment and Dependencies Setup
+
+This phase ensures all required software libraries are installed and your project workspace is clean.
+
+### 1\. Create and Activate Virtual Environment
+
+A virtual environment isolates project dependencies from your global Python installation.
+
+1.  **Navigate to the project root** (`/jiancpp`) in your terminal.
+2.  **Create the environment:**
+    ```bash
+    python -m venv .venv
+    ```
+3.  **Activate the environment:**
+      * **Windows (Command Prompt/PowerShell):**
+        ```bash
+        .venv\Scripts\activate
+        ```
+      * **macOS/Linux (Bash/Zsh):**
+        ```bash
+        source .venv/bin/activate
+        ```
+    *(Your terminal prompt should now start with `(.venv)`).*
+
+### 2\. Install Project Dependencies
+
+1.  **Create `requirements.txt`** in the project root with the following content:
+    ```
+    Flask
+    Flask-SQLAlchemy
+    PyMySQL
+    python-dotenv
+    ```
+2.  **Install packages:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+### 3\. Configure Git (Optional but Recommended)
+
+1.  **Create `.gitignore`** in the project root.
+2.  **Add exclusions** to prevent committing sensitive files and large environments:
+    ```
+    # Virtual Environment
+    .venv/
+
+    # Sensitive Credentials
+    .env
+
+    # Python Files
+    __pycache__/
+    *.pyc
+    ```
+
+-----
+
+## 🔒 Phase 2: Secure Database Connection
+
+This phase securely provides the Flask application with the necessary credentials to connect to your local MySQL server.
+
+1.  **Create `.env` File**
+    Create a file named **`.env`** in the project root. **Do NOT commit this file to Git.**
+
+2.  **Populate `.env`**
+    Replace the placeholder values with your actual MySQL credentials used by SQL Workbench:
+
+    ```
+    # MySQL Database Credentials
+    MYSQL_USER=your_mysql_username
+    MYSQL_PASS=your_strong_password
+    MYSQL_HOST=localhost 
+    MYSQL_DB=your_schema_name 
+    ```
+
+-----
+
+## 💻 Phase 3: Run the Flask Application
+
+Once the environment and credentials are set up, you can start the application.
+
+1.  **Verify Model Mapping**
+
+      * Check **`model/models.py`** to ensure your SQLAlchemy model classes (table definitions) accurately match the columns and names of the tables in your MySQL schema.
+
+2.  **Run the Application**
+
+      * Ensure your **MySQL Server is running**.
+      * In your activated `(.venv)` terminal, run the entry point script:
+        ```bash
+        python run.py
+        ```
+
+3.  **Access the Application**
+
+      * The terminal will display the running address (e.g., `http://127.0.0.1:5000/`).
+      * Open this address in your web browser. If successful, the page will display data fetched directly from your MySQL database.
+
+-----
+
+## Troubleshooting Common Errors
+
+| Error Message | Cause | Solution |
+| :--- | :--- | :--- |
+| `WinError 2: The system cannot find the file specified` (during pip install) | Lack of permissions or incomplete environment creation. | **Run the installation process again from a terminal started with "Run as administrator."** |
+| `Can't connect to MySQL server` | Flask cannot reach the database. | 1. Ensure your **MySQL server service is running**. 2. Double-check all values in the **`.env`** file (User, Password, Host, DB name) are correct. |
+| `No module named 'flask'` | Environment not active. | Stop the script and run **`.venv\Scripts\activate`** (Windows) or **`source .venv/bin/activate`** (Mac/Linux) before trying to run `python run.py` again. |
+
+-----
 
