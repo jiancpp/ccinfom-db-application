@@ -2,18 +2,10 @@ from flask import Flask, render_template, session, redirect, url_for, flash
 import mysql.connector
 from mysql.connector import Error
 
+from model.config import DB_CONFIG
+
 app = Flask(__name__)
 app.secret_key = 'change-this-secret-key-123'
-
-# ============================================
-#           DATABASE CONFIGURATION
-# ============================================
-DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',          # Change this
-    'password': 'your_password',  # Change this
-    'database': 'dbApp'
-}
 
 def get_db_connection():
     """Return a MySQL connection or None on failure."""
@@ -42,13 +34,29 @@ def index():
 
 
 @app.route('/artists')
-def artists():
+def artists():    
     return render_template('artists.html')
 
 
 @app.route('/events')
 def events():
-    return render_template('events.html')
+    conn = get_db_connection()
+    events = []
+
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT Event_Name, Start_Date
+            FROM Event
+            ORDER BY Event_Name
+            """
+        )
+        events = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+    return render_template('events.html', events=events)
 
 
 @app.route('/merchandise')
@@ -86,9 +94,25 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('index'))
 
+@app.route('/test_db')
+def test_db():
+    import mysql.connector
+    from model.config import DB_CONFIG
+
+    conn = mysql.connector.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+    cursor.execute("SELECT DATABASE();")
+    current_db = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM Event;")
+    event_count = cursor.fetchone()[0]
+    cursor.close()
+    conn.close()
+    return f"Connected to: {current_db}, found {event_count} events."
+
 
 # ============================================
 #           ENTRY POINT
 # ============================================
 if __name__ == '__main__':
     app.run(debug=True)
+    

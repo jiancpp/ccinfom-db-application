@@ -3,7 +3,8 @@
 --  Add foreign keys on 'constraints.sql'
 -- ==========================================================
 
-CREATE DATABASE IF NOT EXISTS `dbApp`;
+DROP DATABASE dbApp;
+CREATE DATABASE dbApp;
 USE dbApp;
 
 -- ===============================================
@@ -94,7 +95,7 @@ CREATE TABLE `Event` (
 	
     PRIMARY KEY (`Event_ID`),
 	CONSTRAINT is_valid_date CHECK(`End_Date` >= `Start_Date`),
-	CONSTRAINT is_valid_time CHECK(`End_Time` > `Start_Time`)
+	CONSTRAINT is_valid_time CHECK(`End_Date` = `Start_Date` AND `End_Time` > `Start_Time`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -175,7 +176,7 @@ CREATE TABLE `Venue` (
 	`Venue_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Venue_Name` VARCHAR(255) NOT NULL, 
     `City` VARCHAR(255),
-	`Country` VARCHAR(255) N    OT NULL,
+	`Country` VARCHAR(255) NOT NULL,
     `Capacity` INT NOT NULL CHECK (capacity > 0),
     
     PRIMARY KEY (`Venue_ID`),
