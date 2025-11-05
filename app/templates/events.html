@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Artists - K-Pop Fan Hub{% endblock %}
+{% block content %}
+<style>
+    .event-card {
+        list-style: none;
+    }
+</style>
+<h1>🎤 Events</h1>
+{% if events %}
+    <ul class="grid">
+        {% for event in events %}
+            <li class="event-card card">
+                <h3>{{ event.Event_Name }}</h3>
+                <p>{{event.venue.Venue_Name}} ({{ event.Start_Date }})</p>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No events found.</p>
+{% endif %}
+{% endblock %}

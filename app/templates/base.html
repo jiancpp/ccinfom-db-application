@@ -230,25 +230,39 @@
 </head>
 <body>
     <!-- Navigation Bar -->
-    <nav>
-        <div class="logo">🎵 K-Pop Fan Hub</div>
-        <ul>
-            <li><a href="{{ url_for('index') }}">Home</a></li>
-            <li><a href="{{ url_for('artists') }}">Artists</a></li>
-            <li><a href="{{ url_for('events') }}">Events</a></li>
-            <li><a href="{{ url_for('shop') }}">Shop</a></li>
-            <a href="{{ url_for('fanclubs') }}">Fanclubs</a>
-        </ul>
-        <div class="user-info">
-            {% if session.get('username') %}
+    <nav>        
+        {% if session.get('username') %}
+            <div class="logo">🎵 K-Pop Fan Hub</div>
+
+            <ul>
+                <li><a href="{{ url_for('main_routes.index') }}">Home</a></li>
+                <li><a href="{{ url_for('main_routes.artists') }}">Artists</a></li>
+                <li><a href="{{ url_for('main_routes.events') }}">Events</a></li>
+                <li><a href="{{ url_for('main_routes.merchandise') }}">Shop</a></li>
+                <li><a href="{{ url_for('main_routes.fanclubs') }}">Fanclubs</a></li>
+            </ul>
+            <div class="user-info">
                 <span>Hi, {{ session.get('username') }}!</span>
-                <a href="{{ url_for('profile') }}" class="btn btn-outline">Profile</a>
-                <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
-            {% else %}
-                <a href="{{ url_for('login') }}" class="btn">Login</a>
-                <a href="{{ url_for('register') }}" class="btn btn-outline">Sign Up</a>
-            {% endif %}
-        </div>
+                <a href="{{ url_for('main_routes.profile') }}" class="btn btn-outline">Profile</a>
+                <a href="{{ url_for('main_routes.logout') }}" class="btn btn-secondary">Logout</a>
+            </div>
+        {% else %}
+            <a href="{{ url_for('main_routes.index') }}"><div class="logo">🎵 K-Pop Fan Hub</div></a>
+            
+            <!-- Remove Later. Testing Only -->
+            <ul>
+                <li><a href="{{ url_for('main_routes.index') }}">Home</a></li>
+                <li><a href="{{ url_for('main_routes.artists') }}">Artists</a></li>
+                <li><a href="{{ url_for('main_routes.events') }}">Events</a></li>
+                <li><a href="{{ url_for('main_routes.merchandise') }}">Shop</a></li>
+                <li><a href="{{ url_for('main_routes.fanclubs') }}">Fanclubs</a></li>
+            </ul>
+
+            <div class="user-info">
+                <a href="{{ url_for('main_routes.login') }}" class="btn">Login</a>
+                <a href="{{ url_for('main_routes.register') }}" class="btn btn-outline">Sign Up</a>
+            </div>
+        {% endif %}
     </nav>
     
     <!-- Main Content Container -->

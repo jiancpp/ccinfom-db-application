@@ -1,14 +1,9 @@
-Copy this to your own config.py
-
 # ============================================
 #           DATABASE CONFIGURATION
 # ============================================
 
 # Change according to you MySQL Workbench Credentials
 # Don't commit once done setting ups
-DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',          # Change this
-    'password': 'Your password!',  # Change this
-    'database': 'dbApp'
-}
+DB_USER = "root"
+DB_PASS = "Weloveinfom143!"
+DB_NAME = "dbApp"
