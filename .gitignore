@@ -3,4 +3,4 @@ __pycache__
 .venv/
 
 # Database Credentials 
-config/config.py
+app/config.py
