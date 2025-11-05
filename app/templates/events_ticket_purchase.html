@@ -1,0 +1,16 @@
+{% extends "events.html" %}
+{% block title %}Artists - K-Pop Fan Hub{% endblock %}
+{% block content %}
+<h3>{{ event.Event_Name }}</h3>
+<!-- Show Details -->
+<p>Show Date: date time</p>
+<p>Venue: </p>
+
+<!-- Ticket Pricing -->
+<ul>
+    {% for tier in event.ticket_tiers %}
+        <li>{{ tier.Tier_Name }}</li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

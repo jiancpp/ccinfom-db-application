@@ -4,7 +4,6 @@ from app.models import *
 
 main_routes = Blueprint('main_routes', __name__)
 
-
 # ============================================
 #           CORE PAGES
 # ============================================
@@ -77,3 +76,12 @@ def test_db():
     conn.close()
     return f"Connected to: {current_db}, found {event_count} events."
 
+
+# ============================================
+#           Event Subpages
+# ============================================
+
+@main_routes.route('/buy_ticket/<int:event_id>')
+def buy_ticket(event_id):
+    event = Event.query.get_or_404(event_id)
+    return render_template("events_ticket_purchase.html", event=event)

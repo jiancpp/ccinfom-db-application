@@ -3,16 +3,74 @@
 {% block content %}
 <style>
     .event-card {
+        display: flex;
+        flex-direction: column;
+        list-style: none;
+        justify-content: space-between; /* ensures top and bottom spacing */
+        height: 100%; /* make all cards equal height */
+    }
+
+    .event-card h3{
+        margin-bottom: 3px;
+    }
+
+    .event-card .event-details .event-type {
+        display: inline-block;
+        font-size: 14px;
+        font-style: italic;
+        color: white;
+        margin-bottom: 8px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .event-card .event-details li{
         list-style: none;
     }
+
+    .event-card .event-details li:last-child {
+        margin-bottom: 5px;
+    }
+
+    .event-card .event-details .buy-ticket {
+        margin-top: auto;   /* pushes to the bottom */
+        flex-shrink: 0;   /* prevents it from squishing */
+        align-self: flex-start;
+        align-content: center;
+    }
+
+
 </style>
 <h1>🎤 Events</h1>
 {% if events %}
     <ul class="grid">
         {% for event in events %}
             <li class="event-card card">
-                <h3>{{ event.Event_Name }}</h3>
-                <p>{{event.venue.Venue_Name}} ({{ event.Start_Date }})</p>
+                <span>
+                    <h3>{{ event.Event_Name }}</h3>
+                    <ul class="event-details">
+                        <li>
+                            {% for t in event.Event_Type %}
+                            <span class="event-type">{{ t }}</span>
+                            {% endfor %}
+                        </li>
+                        <li>
+                            {{ event.venue.Venue_Name }}
+                        </li>
+                        <li>
+                            {% if event.Start_Date != event.End_Date %}
+                                {{ event.Start_Date }} to {{ event.End_Date }}
+                            {% else %}
+                                {{ event.Start_Date }}
+                            {% endif %}
+                        </li>
+                    </ul>
+                </span>
+                <a href="{{ url_for('main_routes.buy_ticket', event_id=event.Event_ID) }}" class="btn buy-ticket">
+                    Buy Tickets
+                </a>
+                  
             </li>
         {% endfor %}
     </ul>

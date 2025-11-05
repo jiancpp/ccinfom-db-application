@@ -316,7 +316,7 @@ CREATE TABLE `Ticket_Purchase` (
     PRIMARY KEY (`Ticket_ID`),
     -- Ensures that only one seat per event and tier is sold
     -- (works for free seating where seat is NULL)
-    CONSTRAINT is_ticket_unique UNIQUE (Event_ID, Tier_ID, Seat_ID)
+    CONSTRAINT is_ticket_unique UNIQUE (`Event_ID`, `Tier_ID`, `Seat_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

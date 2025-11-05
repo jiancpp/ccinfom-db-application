@@ -11,5 +11,16 @@ VALUES  ('BLACKPINK Comeback Tour', 'Concert', 1, '2026-08-10', '2026-08-11', '2
         ('AKMU Birthday Cupsleeve Cafe', 'Cupsleeve', 4, '2026-11-25', '2026-11-25', '10:00:00', '17:00:00'),
         ('AESPA Artist Showcase', 'Concert,Fanmeet,Hi Touch', 2, '2026-12-07', '2026-12-07', '18:30:00', '22:30:00');
         
-        
-select * FROM event;
+INSERT INTO Ticket_Tier(Event_ID, Tier_Name, Price, Total_Quantity, Benefits)      
+VALUES  (1,'VIP Pit', 15125.00, 1000, 'Early Entry, Sound Check Access'),
+        (1, 'Lower Bowl Premium', 11550.00, 4000, 'Priority Entry, Exclusive Photocard'),
+        (1, 'Lower Bowl Regular', 9900.00, 5000, 'Souvenir Ticket'),
+        (1, 'Upper Bowl', 6600.00, 8000, NULL),
+        (1, 'General Admission', 4950.00, 2000, NULL);
+
+
+
+
+
+
+select * FROM ticket_tier;
