@@ -167,7 +167,16 @@ Once the environment and credentials are set up, you can start the application.
 
       * Check **`app/models.py`** to ensure your SQLAlchemy model classes (table definitions) accurately match the columns and names of the tables in your MySQL schema.
 
-2.  **Run the Application**
+2. **(Database Related) Initialize Seats**
+
+    *  Run create_tables.sql, constraints.sql in your workbench
+    *  In your terminal, run the python code to populate seats:
+        ```bash
+        python populate_seats.py
+        ```
+    * (Optional) Run all sql files in data. Can be done while running application
+      
+3.  **Run the Application**
 
       * Ensure your **MySQL Server is running**.
       * In your activated `(.venv)` terminal, run the entry point script:
@@ -181,10 +190,13 @@ Once the environment and credentials are set up, you can start the application.
         flask run
         ```
 
-3.  **Access the Application**
+4.  **Access the Application**
 
       * The terminal will display the running address (e.g., `http://127.0.0.1:5000/`).
       * Open this address in your web browser. If successful, the page will display data fetched directly from your MySQL database.
+
+
+    ```
 
 -----
 
