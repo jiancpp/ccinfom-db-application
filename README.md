@@ -141,18 +141,20 @@ A virtual environment isolates project dependencies from your global Python inst
 
 This phase securely provides the Flask application with the necessary credentials to connect to your local MySQL server.
 
-1.  **Create `.env` File**
-    Create a file named **`.env`** in the project root. **Do NOT commit this file to Git.**
+1.  **Create `config.py` File**
+    Create a file named **`config.py`** in the app folder. **Do NOT commit this file to Git.**
 
-2.  **Populate `.env`**
+2.  **Populate `app/config.py`**
     Replace the placeholder values with your actual MySQL credentials used by SQL Workbench:
 
     ```
-    # MySQL Database Credentials
-    MYSQL_USER=your_mysql_username
-    MYSQL_PASS=your_strong_password
-    MYSQL_HOST=localhost 
-    MYSQL_DB=your_schema_name 
+    # ============================================
+    #           DATABASE CONFIGURATION
+    # ============================================
+    
+    DB_USER = "root"
+    DB_PASS = "YourPassword"
+    DB_NAME = "dbApp"
     ```
 
 -----
@@ -163,7 +165,7 @@ Once the environment and credentials are set up, you can start the application.
 
 1.  **Verify Model Mapping**
 
-      * Check **`model/models.py`** to ensure your SQLAlchemy model classes (table definitions) accurately match the columns and names of the tables in your MySQL schema.
+      * Check **`app/models.py`** to ensure your SQLAlchemy model classes (table definitions) accurately match the columns and names of the tables in your MySQL schema.
 
 2.  **Run the Application**
 
@@ -171,6 +173,12 @@ Once the environment and credentials are set up, you can start the application.
       * In your activated `(.venv)` terminal, run the entry point script:
         ```bash
         python run.py
+        ```
+
+        or
+
+        ```bash
+        flask run
         ```
 
 3.  **Access the Application**
