@@ -32,6 +32,14 @@ ADD CONSTRAINT fk_seat_venue
     FOREIGN KEY (`Venue_ID`) REFERENCES Venue(`Venue_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
+ALTER TABLE Tier_Section
+ADD CONSTRAINT fk_tier
+	FOREIGN KEY (`Tier_ID`) REFERENCES Ticket_Tier(`Tier_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT fk_section
+	FOREIGN KEY (`Section_ID`) REFERENCES Section(`Section_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- 
 -- Constraints for `Ticket_Tier`
 -- 

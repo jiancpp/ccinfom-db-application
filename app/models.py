@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
-from sqlalchemy.dialects.mysql import SET
+from sqlalchemy.dialects.mysql import SET, TINYINT
 from sqlalchemy import DECIMAL, text
 
 db = SQLAlchemy()
@@ -57,7 +57,7 @@ class Venue(db.Model):
 
     # Constraint 
     __table_args__ = (
-        db.UniqueConstraint("Venue_Name", "Country", "City"),
+        db.UniqueConstraint("Venue_Name", "Country", "City", name="is_venue_unique"),
         db.CheckConstraint("Capacity > 0"),
     )
 
@@ -76,6 +76,7 @@ class Section(db.Model):
     # Relationships
     venue = db.relationship("Venue", back_populates="sections")
     seats = db.relationship("Seat", back_populates="section", cascade="all, delete-orphan")
+    ticket_tiers = db.relationship("Ticket_Tier", secondary="Tier_Section", back_populates="sections")
 
     # Constraints
     __table_args__ = (
@@ -96,7 +97,7 @@ class Seat(db.Model):
         db.ForeignKey("Section.Section_ID", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False
     )
-    Seat_Row = db.Column(db.String(2), nullable=False)
+    Seat_Row = db.Column(db.String(5), nullable=False)
     Seat_Number = db.Column(db.Integer, nullable=False)
 
     # Relationship
@@ -121,10 +122,13 @@ class Ticket_Tier(db.Model):
     Price = db.Column(DECIMAL(10,2), nullable=False, server_default=text("0.00"))
     Total_Quantity = db.Column(db.Integer, nullable=False, server_default=text("0"))
     Benefits = db.Column(db.String(150))
+    Is_Reserved_Seating = db.Column(TINYINT, server_default=text("0"))
+
 
     # Relationships
     event = db.relationship("Event", back_populates="ticket_tiers")
     ticket_purchases = db.relationship("Ticket_Purchase", back_populates="ticket_tier", cascade="all, delete-orphan")
+    sections = db.relationship("Section", secondary="Tier_Section", back_populates="ticket_tiers")
 
     # Constraints
     __table_args__ = (
@@ -132,11 +136,18 @@ class Ticket_Tier(db.Model):
         db.CheckConstraint("Price >= 0", name="tier_price_nonnegative"),
     )
 
+class TierSection(db.Model):
+    __tablename__ = "Tier_Section"
+
+    Tier_ID = db.Column(db.Integer, db.ForeignKey("Ticket_Tier.Tier_ID"), primary_key=True)
+    Section_ID = db.Column(db.Integer, db.ForeignKey("Section.Section_ID"), primary_key=True)
+
+
 class Ticket_Purchase(db.Model):
     __tablename__ = "Ticket_Purchase"
 
     Ticket_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    # Fan_ID = db.Column(db.Integer, db.ForeignKey(...))
+    Fan_ID = db.Column(db.Integer, nullable=False)
     Event_ID = db.Column(
         db.Integer,
         db.ForeignKey("Event.Event_ID", ondelete="CASCADE", onupdate="CASCADE"),

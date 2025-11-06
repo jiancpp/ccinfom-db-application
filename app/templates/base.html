@@ -279,5 +279,47 @@
         <!-- Page Content -->
         {% block content %}{% endblock %}
     </div>
+
+    <script>
+        // Format "YYYY-MM-DD" to "Month Day, Year"
+        function toFormattedDate(dateString) {
+          if (!dateString) return "";
+          const date = new Date(dateString);
+          return date.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric"
+          });
+        }
+    
+        // Format "HH:MM:SS" (24h) to "HH:MM AM/PM"
+        function toFormattedTime(timeString) {
+          if (!timeString) return "";
+          const [hours, minutes, seconds] = timeString.split(":");
+          const date = new Date();
+          date.setHours(hours, minutes, seconds || 0);
+          return date.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true
+          });
+        }
+    
+        // Automatically format all `.date` and `.time` spans
+        document.addEventListener("DOMContentLoaded", () => {
+          document.querySelectorAll('.date').forEach(p => {
+            const raw = p.textContent.trim();
+            const label = p.dataset.label || "";
+            if (raw) p.textContent = `${label ? label + ": " : ""}${toFormattedDate(raw)}`;
+          });
+    
+          document.querySelectorAll('.time').forEach(p => {
+            const raw = p.textContent.trim();
+            if (raw) p.textContent = toFormattedTime(raw);
+          });
+        });
+      </script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>

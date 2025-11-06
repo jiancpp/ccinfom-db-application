@@ -1,16 +1,333 @@
 {% extends "events.html" %}
 {% block title %}Artists - K-Pop Fan Hub{% endblock %}
 {% block content %}
+<style>
+    .event-type {
+        display: inline-block;
+        font-size: 14px;
+        font-style: italic;
+        color: white;
+        margin-bottom: 8px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .tier-benefits {
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+      color: #444;
+      margin: 5px 0 8px 0;
+      font-style: italic;
+  }
+
+    .tier-benefits.show {
+        opacity: 1;
+    }
+
+    #seatLabel {
+        margin-top: 8px;
+    }
+
+    .seat {
+        display: inline-block;
+        width: 22px;
+        height: 22px;
+        font-size: 8px;
+        margin: 0 1.5px;
+        background-color: #eee;
+        border-radius: 5px;
+        line-height: 22px;
+        text-align: center;
+        cursor: pointer;
+        border: 1px solid #ccc;
+    }
+
+    input[type="radio"]:checked + .seat {
+        background-color: #6c5ce7;
+        color: white;
+    }
+
+    .seat:hover {
+        background-color: #a29bfe;
+    }
+
+    .seat-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    #paginationDiv {
+        display: flex;
+        flex-direction: wrap;
+        width: 100%;
+
+        align-content: center;
+        justify-content: center;
+    }
+
+    .icon-btn {
+        background: none;
+        border: none;
+        padding: 6px 10px;
+        cursor: pointer;
+        color: #6c5ce7;
+        font-size: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s ease;
+
+        vertical-align: middle; /* fixes misalignment */
+        line-height: 1;         /* keeps icon height tight */
+
+    }
+
+    .pagination-info {
+        font-size: 14px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        vertical-align: middle;
+    }
+
+    .icon-btn:disabled {
+        display: none;
+    }
+
+    .icon-btn:hover:not(:disabled) {
+        color: #a29bfe;
+    }
+
+    .payment {
+        margin-top: 30px;
+    }
+</style>
+
 <h3>{{ event.Event_Name }}</h3>
+{% for t in event.Event_Type %}
+    <span class="event-type">{{ t }}</span>
+{% endfor %}
 <!-- Show Details -->
-<p>Show Date: date time</p>
-<p>Venue: </p>
+<p>
+    <span class="date">{{ event.Start_Date }}</span> • 
+    <span class="time">{{ event.Start_Time }}</span>
+     - 
+    <span class="time">{{ event.End_Time }}</span>
+</p>
+<p>{{ event.venue.Venue_Name }}, {{ event.venue.City }}, {{ event.venue.Country }}</p>
 
 <!-- Ticket Pricing -->
-<ul>
-    {% for tier in event.ticket_tiers %}
-        <li>{{ tier.Tier_Name }}</li>
-    {% endfor %}
-</ul>
 
+<h2>Buy Tickets</h2>
+<form class="form-group" method="POST">
+    <input type="hidden" name="event_id" value="{{ event.Event_ID }}">
+
+    <label for="ticket_tier">Select Ticket Tier</label>
+    <select name="ticket_tier" id="ticket_tier" required>
+        <option value="">-- Choose Tier --</option>
+        {% for tier in event.ticket_tiers %}
+        <option value="{{ tier.Tier_ID }}">{{ tier.Tier_Name }} - ₱{{ tier.Price }}</option>
+    {% endfor %}
+    </select>
+
+    <!-- Load after tier is selected -->
+    <p id="tier_benefits" class="tier-benefits"></p>
+
+    <label for="section">Select Section</label>
+    <select name="section" id="section" required>
+        <option value="">-- Choose Section --</option>
+    </select>
+
+    <label id="seatLabel" for="seat_id"></label>
+    <div id="seatMap"></div>
+    <div id="pagination"></div>
+
+    <input type="hidden" name="seat_id" id="seat_id">
+
+    <button class="btn payment" type="submit">Proceed to Payment</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+    // Build tier -> sections & benefits mapping
+    const tierSections = {
+        {% for tier in event.ticket_tiers %}
+        "{{ tier.Tier_ID }}": {
+            "IsReserved": {{ tier.Is_Reserved_Seating }},
+            "Benefits": "{{ tier.Benefits|escape }}",
+            "Sections": [
+                {% for section in tier.sections %}
+                    {id: "{{ section.Section_ID }}", name: "{{ section.Section_Name }}"}
+                {% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    };
+
+    console.log(tierSections);
+
+    const tierSelect = document.getElementById("ticket_tier");
+    const benefitDescription = document.getElementById("tier_benefits");
+    const sectionSelect = document.getElementById("section");
+
+    /** For Pagination **/
+    const eventId = {{ event.Event_ID }};
+    const seatMapLabel = document.getElementById("seatLabel")
+    const seatMapDiv = document.getElementById("seatMap");
+    const paginationDiv = document.getElementById("pagination")
+    const seatIdInput = document.getElementById("seat_id");
+
+    let currentPage = 1;
+    const perPage = 450;
+    let totalSeats = 0;
+    let totalPages = 0;
+    let selectedSeatId = null;
+
+    let tierId = null;
+
+    tierSelect.addEventListener("change", () => {
+        unloadSeatMap();
+
+        if (tierSelect.value == "") {
+            tierId = null;
+        } else {
+            tierId = tierSelect.value;
+        }
+        
+        const tierData = tierSections[tierId];
+
+        // Show/hide tier benefits
+        if(tierData && tierData.Benefits) {
+            benefitDescription.textContent = `Benefits: ${tierData.Benefits}`;
+            benefitDescription.classList.add("show"); // fade in
+        } else {
+            benefitDescription.classList.remove("show"); // fade out
+            benefitDescription.textContent = "";
+        }
+
+        // Populate section dropdown
+        sectionSelect.innerHTML = '<option value="">-- Choose Section --</option>';
+        if(tierData && tierData.Sections) {
+            tierData.Sections.forEach(section => {
+                const opt = document.createElement("option");
+                opt.value = section.id;
+                opt.textContent = section.name;
+                sectionSelect.appendChild(opt);
+            });
+        }
+    });
+
+    sectionSelect.addEventListener("change", () => {
+        const tierData = tierSections[tierId];
+        currentPage = 1;
+
+        // if tier is reserved seating
+        console.log(tierData.IsReserved)
+        if (tierData.IsReserved === 1 && sectionSelect.value !== "") {
+            seatMapLabel.textContent = "Select Seat"
+            loadSeats()
+        } else {
+            unloadSeatMap()
+        }
+    });
+
+    async function loadSeats() {
+        const sectionId = sectionSelect.value;
+        seatMapDiv.innerHTML = "<p>Loading seats...</p>"
+        paginationDiv.innerHTML = ""
+
+        // Look for get_seats in routes.py
+        const res = await fetch(`/events/buy_ticket/${eventId}/${sectionId}/seats?page=${currentPage}&per_page=${perPage}`);
+        const data = await res.json();
+
+        totalSeats = data.total;
+        totalPages = Math.ceil(totalSeats / perPage);
+
+        seatMapDiv.innerHTML = ""
+        renderSeats(data.seats)
+        renderPagination();
+    }
+
+    function renderSeats(seats) {
+        const frag = document.createDocumentFragment();
+        let currentRow = null;
+        let rowDiv = null;
+
+        seats.forEach((seat, index) => {
+            if (seat.seat_row !== currentRow) {
+                currentRow = seat.seat_row;
+
+                const rowLabel = document.createElement("div");
+                rowLabel.textContent = `Row ${currentRow}`;
+                rowLabel.style.fontWeight = "bold";
+                rowLabel.style.marginRight = "4px";
+
+                rowDiv = document.createElement("div");
+                rowDiv.className = "seat-row";
+                frag.appendChild(rowDiv);
+            }
+
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = "seat";
+            input.id = `${seat.seat_row}${seat.seat_number}`
+            input.value = seat.id
+            input.hidden = true;
+
+            const label = document.createElement("label");
+            label.htmlFor = input.id;
+            label.className = "seat";
+            label.textContent = `${seat.seat_row}${seat.seat_number}`
+
+            input.addEventListener("change", () => {
+                selectedSeatId = seat.id;
+                seatIdInput.value = seat.id;
+            })
+
+            rowDiv.appendChild(input);
+            rowDiv.appendChild(label);
+        })
+        seatMapDiv.appendChild(frag)
+    }
+
+    function renderPagination() {
+        const prevBtn = document.createElement("button");
+        prevBtn.type = "button";
+        prevBtn.className = "icon-btn";
+        prevBtn.innerHTML = "&#11164;"; 
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.onclick = () => { currentPage--; loadSeats(); };
+
+        const nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.className = "icon-btn";
+        nextBtn.innerHTML = "&#11166;";
+        nextBtn.disabled = currentPage >= totalPages;
+        nextBtn.onclick = () => { currentPage++; loadSeats(); };
+
+        const info = document.createElement("span");
+        info.textContent = ` Page ${currentPage} of ${totalPages} `;
+        info.className = "pagination-info"
+
+        paginationDiv.appendChild(prevBtn);
+        paginationDiv.appendChild(info);
+        paginationDiv.appendChild(nextBtn);
+    }
+
+    function unloadSeatMap() {
+        seatMapLabel.textContent = ""
+        seatMapDiv.innerHTML = "";
+        paginationDiv.innerHTML = "";
+        seatIdInput.value = "";
+        selectedSeatId = null;
+        totalSeats = 0;
+        totalPages = 0;
+    }
+
+</script>
 {% endblock %}

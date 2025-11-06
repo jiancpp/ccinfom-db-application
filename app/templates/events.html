@@ -60,9 +60,10 @@
                         </li>
                         <li>
                             {% if event.Start_Date != event.End_Date %}
-                                {{ event.Start_Date }} to {{ event.End_Date }}
+                                <span class="date">{{ event.Start_Date }}</span> to 
+                                <span class="date">{{ event.End_Date }}</span>
                             {% else %}
-                                {{ event.Start_Date }}
+                                <span class="date">{{ event.Start_Date }}</span>
                             {% endif %}
                         </li>
                     </ul>
@@ -78,3 +79,6 @@
     <p>No events found.</p>
 {% endif %}
 {% endblock %}
+
+{% block scripts %}{% endblock %}
+
