@@ -188,3 +188,81 @@ class Ticket_Purchase(db.Model):
 # ============================================
 #  Tables assigned to: @phlmn
 # ============================================
+# merchandise
+class Merchandise(db.Model):
+    __tablename__ = "Merchandise"
+    Merchandise_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Merchandise_Name = db.Column(db.String(100), nullable=False)
+    
+    Artist_ID = db.Column(
+        db.Integer,
+        db.ForeignKey("Artist.Artist_ID", ondelete="CASCADE", onupdate="CASCADE"))
+    Event_ID = db.Column(
+        db.Integer,
+        db.ForeignKey("Event.Event_ID", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False)
+    Fanclub_ID = db.Column(
+        db.Integer,
+        db.ForeignKey("Fanclub.Fanclub_ID", ondelete="CASCADE", onupdate="CASCADE"))
+    
+    Merchandise_Description = db.Column(db.String(500), nullable=False)
+    Merchandise_Price = db.Column(DECIMAL(10,2), nullable=False, server_default=text("0.00"))
+    Initial_Stock = db.Column(db.Integer, nullable=False, server_default=text("0"))
+    Quantity_Stock = db.Column(db.Integer, nullable=False, server_default=text("0"))
+    
+    # Relationships
+    artist = db.relationship("Artist", back_populates="merchandise")
+    event = db.relationship("Event", back_populates="merchandise")
+    fanclub = db.relationship("Fanclub", back_populates="merchandise")
+    purchase_list = db.relationship("Purchase_List", back_populates="merchandise", cascade="all, delete")
+    
+    # Constraints
+    __table_args__ = (
+        db.UniqueConstraint("Merchandise_ID", "Merchandise_name"),
+        db.CheckConstraint("Merchandise_Price > 0.00", "Initial_Stock > 0", "Quantity_Stock > 0"),
+    )
+    
+#order
+class Order(db.Model):
+    __tablename__ = "Order"
+    Order_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    
+    Fan_ID = db.Column(
+        db.Integer,
+        db.ForeignKey("Fan.Fan_ID", ondelete="CASCADE", onupdate="CASCADE"))
+    
+    Order_Date = db.Column(db.DateTime, nullable=False, default=func.now())
+    Order_Status = db.Column(SET('Pending', 'Paid', 'Cancelled'), nullable=False, default='Pending')
+    
+    # Relationships
+    fan = db.relationship("Fan", back_populates="orders")
+    purchase_list = db.relationship("Purchase_List", back_populates="order", cascade="all, delete")
+    
+    # Constraints
+    __table_args__ = (
+        db.UniqueConstraint("Order_ID")
+    )
+    
+#purchase list
+class Purchase_List(db.Model):
+    __tablename__ = "Purchase_List"
+    Purchase_List_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Order_ID = db.Column(
+        db.Integer,
+        db.ForeignKey("Order.Order_ID", ondelete="CASCADE", onupdate="CASCADE"))
+    
+    Merchandise_ID = db.Column(
+        db.Integer,
+        db.ForeignKey("Merchandise.Merchandise_ID", ondelete="CASCADE", onupdate="CASCADE"))
+    
+    Quantity_Purchased = db.Column(db.Integer, nullable=False, default=1)
+    
+    # Relationships
+    order = db.relationship("Order", back_populates="purchase_list")
+    merchandise = db.relationship("Merchandise", back_populates="purchase_list")
+    
+    # Constraints
+    __table_args__ = (
+        db.UniqueConstraint("Purchase_List_ID"),
+        db.CheckConstraint("Quantity_Purchased > 0.00")
+    )
