@@ -272,6 +272,9 @@ class Artist(db.Model):
 
     # Relationships
     manager = db.relationship("Manager", back_populates="artist")
+    member_detail = db.relationship("Member_Detail", back_populates="artist")
+    artist_follower = db.relationship("Artist_Follower", back_populates="artist")
+    artist_event = db.relationship("Artist_Event", back_populates="artist")
 
 class Member_Detail(db.Model):
     __tablename__ = "Member_Detail"
@@ -290,7 +293,7 @@ class Member_Detail(db.Model):
     Age = db.Column(db.Integer, nullable=False)
 
     # Relationships
-    artist = db.relationship("Artist", back_populates="Member_Details")
+    artist = db.relationship("Artist", back_populates="member_detail")
 
 class Manager(db.Model):
     __tablename__ = "Manager"
@@ -301,13 +304,18 @@ class Manager(db.Model):
     Contact_Email = db.Column(db.String(100), nullable=True)
     Agency_Address = db.Column(db.String(100), nullable=True)
 
-class SetList(db.Model):
-    __tablename__ = "SetList"
+    artist = db.relationship("Artist", back_populates="manager")
+
+class Setlist(db.Model):
+    __tablename__ = "Setlist"
 
     Artist_ID = db.Column(db.Integer, primary_key=True)
     Event_ID = db.Column(db.Integer, primary_key=True)
     Song_Name = db.Column(db.String(100), nullable=True)
     Play_Order = db.Column(db.Integer, nullable = False)
+
+    artist = db.relationship("Artist", back_populates="setlist")
+    event = db.relationship("Event", back_populates="setlist")
 
 class Artist_Follower(db.Model):
     __tablename__ = "Artist_Follower"
@@ -315,11 +323,17 @@ class Artist_Follower(db.Model):
     Artist_ID = db.Column(db.Integer, primary_key=True)
     Fan_ID = db.Column(db.Integer, primary_key=True)
 
+    artist = db.relationship("Artist", back_populates="artist_follower")
+    fan = db.relationship("Fan", back_populates="artist_follower")
+
 class Artist_Event(db.Model):
     __tablename__ = "Artist_Event"
 
     Artist_ID = db.Column(db.Integer, primary_key=True)
     Event_ID = db.Column(db.Integer, primary_key=True)
+
+    artist = db.relationship("Artist", back_populates="artist_event")
+    event = db.relationship("Event", back_populates="artist_event")
 
 # ============================================
 #  Tables assigned to: @phlmn
