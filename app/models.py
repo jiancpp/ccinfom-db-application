@@ -232,6 +232,26 @@ class Manager(db.Model):
     Contact_Email = db.Column(db.String(100), nullable=True)
     Agency_Address = db.Column(db.String(100), nullable=True)
 
+class SetList(db.Model):
+    __tablename__ = "SetList"
+
+    Artist_ID = db.Column(db.Integer, primary_key=True)
+    Event_ID = db.Column(db.Integer, primary_key=True)
+    Song_Name = db.Column(db.String(100), nullable=True)
+    Play_Order = db.Column(db.Integer, nullable = False)
+
+class Artist_Follower(db.Model):
+    __tablename__ = "Artist_Follower"
+
+    Artist_ID = db.Column(db.Integer, primary_key=True)
+    Fan_ID = db.Column(db.Integer, primary_key=True)
+
+class Artist_Event(db.Model):
+    __tablename__ = "Artist_Event"
+
+    Artist_ID = db.Column(db.Integer, primary_key=True)
+    Event_ID = db.Column(db.Integer, primary_key=True)
+
 # ============================================
 #  Tables assigned to: @phlmn
 # ============================================
