@@ -58,13 +58,13 @@ DROP TABLE IF EXISTS `Merchandise`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Merchandise` (
-    `ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Name` VARCHAR(100) NOT NULL,
+    `Merchandise_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Merchandise_Name` VARCHAR(100) NOT NULL,
     `Artist_ID` INT(11) NOT NULL,
     `Event_ID` INT(11),
     `Fanclub_ID` INT(11),
-    `Description` VARCHAR(500) DEFAULT NULL,
-    `Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    `Merchanidse_Description` VARCHAR(500) DEFAULT NULL,
+    `Merchandise_Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `Initial_Stock` INT(6) NOT NULL DEFAULT 0,
     `Quantity_Stock` INT(6) NOT NULL DEFAULT 0,
 
@@ -289,7 +289,7 @@ CREATE TABLE `Order` (
     `Order_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Fan_ID` INT(11) NOT NULL,
     `Order_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
+    `Order_Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
 
     PRIMARY KEY (`Order_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
