@@ -11,10 +11,13 @@ main_routes = Blueprint('main_routes', __name__)
 # ============================================
 @main_routes.route('/')
 def index():
-    
+    #added
     artists, events = [], []
-    tier = Ticket_Tier.query.get(10)
-    print([s.Section_Name for s in tier.sections])
+    tier = Ticket_Tier.query.get(10)  
+    if tier:
+        print([s.Section_Name for s in tier.sections])
+    else:
+        print("error")
 
     return render_template('index.html', artists=artists, events=events)
 

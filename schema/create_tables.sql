@@ -63,15 +63,15 @@ CREATE TABLE `Merchandise` (
     `Artist_ID` INT(11) NOT NULL,
     `Event_ID` INT(11),
     `Fanclub_ID` INT(11),
-    `Merchanidse_Description` VARCHAR(500) DEFAULT NULL,
+    `Merchandise_Description` VARCHAR(500) DEFAULT NULL,
     `Merchandise_Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `Initial_Stock` INT(6) NOT NULL DEFAULT 0,
     `Quantity_Stock` INT(6) NOT NULL DEFAULT 0,
 
-    PRIMARY KEY (`ID`),
-    UNIQUE (`Event_ID`, `Name`),
+    PRIMARY KEY (`Merchandise_ID`),
+    UNIQUE (`Event_ID`, `Merchandise_Name`),
 
-	CHECK (`Price` >= 0),
+	CHECK (`Merchandise_Price` >= 0),
     CHECK (`Initial_Stock` >= 0),
     CHECK (`Quantity_Stock` >= 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

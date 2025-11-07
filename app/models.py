@@ -31,8 +31,9 @@ class Event(db.Model):
     ticket_purchases = db.relationship("Ticket_Purchase", back_populates="event", cascade="all, delete-orphan")
     # artist_events
     # fanclub_events
-    # merchandises
-
+    # merchandises - added from pia
+    merchandise = db.relationship("Merchandise", back_populates="event")
+    
     # Constraints
     __table_args__ = (
         db.CheckConstraint(
@@ -123,6 +124,7 @@ class Ticket_Tier(db.Model):
     Total_Quantity = db.Column(db.Integer, nullable=False, server_default=text("0"))
     Benefits = db.Column(db.String(150))
     Is_Reserved_Seating = db.Column(TINYINT, server_default=text("0"))
+    
 
 
     # Relationships
@@ -211,14 +213,14 @@ class Merchandise(db.Model):
     Quantity_Stock = db.Column(db.Integer, nullable=False, server_default=text("0"))
     
     # Relationships
-    artist = db.relationship("Artist", back_populates="merchandise")
+    #artist = db.relationship("Artist", back_populates="merchandise")
     event = db.relationship("Event", back_populates="merchandise")
-    fanclub = db.relationship("Fanclub", back_populates="merchandise")
+    #fanclub = db.relationship("Fanclub", back_populates="merchandise")
     purchase_list = db.relationship("Purchase_List", back_populates="merchandise", cascade="all, delete")
     
     # Constraints
     __table_args__ = (
-        db.UniqueConstraint("Merchandise_ID", "Merchandise_name"),
+        db.UniqueConstraint("Merchandise_ID", "Merchandise_Name"),
         db.CheckConstraint("Merchandise_Price > 0.00", "Initial_Stock > 0", "Quantity_Stock > 0"),
     )
     
@@ -235,13 +237,14 @@ class Order(db.Model):
     Order_Status = db.Column(SET('Pending', 'Paid', 'Cancelled'), nullable=False, default='Pending')
     
     # Relationships
-    fan = db.relationship("Fan", back_populates="orders")
+    #fan = db.relationship("Fan", back_populates="Orders")
     purchase_list = db.relationship("Purchase_List", back_populates="order", cascade="all, delete")
     
     # Constraints
     __table_args__ = (
-        db.UniqueConstraint("Order_ID")
+        db.UniqueConstraint("Order_ID"),
     )
+
     
 #purchase list
 class Purchase_List(db.Model):
@@ -264,5 +267,5 @@ class Purchase_List(db.Model):
     # Constraints
     __table_args__ = (
         db.UniqueConstraint("Purchase_List_ID"),
-        db.CheckConstraint("Quantity_Purchased > 0.00")
+        db.CheckConstraint("Quantity_Purchased > 0.00"),
     )
