@@ -8,6 +8,8 @@
 -- 3. Re-enable foreign key checks
 -- SET foreign_key_checks = 1;
 
+-- hello testt
+
 INSERT INTO Venue (Venue_Name, City, Country, Capacity) 
 VALUES  ("Philippine Arena", "Bocaue, Bulacan", "Philippines", 55000),
         ("SM Mall of Asia Arena", "Pasay, Metro Manila", "Philippines", 20000),
