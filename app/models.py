@@ -172,7 +172,52 @@ class Ticket_Purchase(db.Model):
 # ============================================
 #  Tables assigned to: @jesmaeca
 # ============================================
-    
+
+class Artist(db.Model):
+    __tablename__ = "Artist"
+
+    Artist_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Manager_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Manager.Manager_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        nullable=False)
+    Artist_Name = db.Column(db.String(100), nullable=False)
+    Nationality = db.Column(db.String(100), nullable=True)
+    # SQL SET maps to SQLAlchemy Enum
+    Activity_Status = db.Column(SET('Active', 'Inactive', 'Hiatus'), nullable=False)
+    Debut_Date = db.Column(db.Date, nullable=False)
+    Debut_Days= db.Column(db.Integer, nullable=False)
+
+    # Relationships
+    manager = db.relationship("Manager", back_populates="artist")
+
+class Member_Detail(db.Model):
+    __tablename__ = "Member_Detail"
+
+    Member_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Artist_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Artist.Artist_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        nullable=False)
+    Member_Name = db.Column(db.String(100), nullable=False)
+    Role = db.Column(db.String(100), nullable=True)
+    Nationality = db.Column(db.String(100), nullable=True)
+    # SQL SET maps to SQLAlchemy Enum
+    Activity_Status = db.Column(SET('Active', 'Inactive', 'Hiatus'), nullable=False)
+    Birth_Date = db.Column(db.Date, nullable=False)
+    Age = db.Column(db.Integer, nullable=False)
+
+    # Relationships
+    artist = db.relationship("Artist", back_populates="Member_Details")
+
+class Manager(db.Model):
+    __tablename__ = "Manager"
+
+    Manager_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Manager_Name = db.Column(db.String(100), nullable=False)
+    Contact_Num = db.Column(db.String(20), nullable=True)
+    Contact_Email = db.Column(db.String(100), nullable=True)
+    Agency_Address = db.Column(db.String(100), nullable=True)
 
 # ============================================
 #  Tables assigned to: @phlmn
