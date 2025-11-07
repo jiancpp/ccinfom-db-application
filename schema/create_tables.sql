@@ -305,7 +305,7 @@ CREATE TABLE `Purchase_List` (
     `Purchase_List_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Order_ID` INT(11) NOT NULL,
     `Merchandise_ID` INT(11) NOT NULL,
-    `Quantity` INT(5) NOT NULL DEFAULT 1,
+    `Quantity_Purchased` INT(5) NOT NULL DEFAULT 1,
 
     PRIMARY KEY (`Purchase_List_ID`),
 	CHECK (`quantity` > 0)
