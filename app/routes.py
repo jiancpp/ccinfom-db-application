@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, jsonify
+
 from app.models import *
 
 
@@ -9,7 +11,14 @@ main_routes = Blueprint('main_routes', __name__)
 # ============================================
 @main_routes.route('/')
 def index():
+    #added
     artists, events = [], []
+    tier = Ticket_Tier.query.get(10)  
+    if tier:
+        print([s.Section_Name for s in tier.sections])
+    else:
+        print("error")
+
     return render_template('index.html', artists=artists, events=events)
 
 
@@ -81,7 +90,58 @@ def test_db():
 #           Event Subpages
 # ============================================
 
-@main_routes.route('/buy_ticket/<int:event_id>')
+@main_routes.route('/events/buy_ticket/<int:event_id>', methods=["GET", "POST"])
 def buy_ticket(event_id):
     event = Event.query.get_or_404(event_id)
+
+    if request.method == "POST":
+        tier_id = request.form["ticket_tier"]
+        seat_id = request.form["seat_id"]
+        
+
+        purchase = Ticket_Purchase(
+            Fan_ID = 1,
+            Event_ID = event.Event_ID,
+            Tier_ID = tier_id,
+            Seat_ID = seat_id            
+            # purchase_date will be automatically set by server_default=func.now()
+        )
+
+        print(purchase)
+
+        # db.session.add(purchase)
+        # db.session.commit()
+
     return render_template("events_ticket_purchase.html", event=event)
+
+@main_routes.route('/events/buy_ticket/<int:event_id>/<int:section_id>/seats', methods=["GET"])
+def get_seats(event_id, section_id):
+    """
+    Paginated seats for a given section
+    ?page=1&per_page=450
+    """
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 450, type=int)
+
+    query = (
+        db.session.query(Seat.Seat_ID, Seat.Seat_Row, Seat.Seat_Number)
+        .filter(Seat.Section_ID == section_id)\
+        .order_by(Seat.Seat_ID)
+    )
+
+    total = query.count()
+
+    # skips a number of records before returning results
+    seats = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    seat_list = [
+        { "id": s.Seat_ID, "seat_row": s.Seat_Row, "seat_number": s.Seat_Number }
+        for s in seats
+    ]
+
+    return jsonify({
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "seats": seat_list
+    })

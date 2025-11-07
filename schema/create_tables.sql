@@ -3,7 +3,7 @@
 --  Add foreign keys on 'constraints.sql'
 -- ==========================================================
 
-DROP DATABASE dbApp;
+DROP DATABASE IF EXISTS dbApp;
 CREATE DATABASE dbApp;
 USE dbApp;
 
@@ -58,20 +58,20 @@ DROP TABLE IF EXISTS `Merchandise`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Merchandise` (
-    `ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Name` VARCHAR(100) NOT NULL,
+    `Merchandise_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Merchandise_Name` VARCHAR(100) NOT NULL,
     `Artist_ID` INT(11) NOT NULL,
     `Event_ID` INT(11),
     `Fanclub_ID` INT(11),
-    `Description` VARCHAR(500) DEFAULT NULL,
-    `Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    `Merchandise_Description` VARCHAR(500) DEFAULT NULL,
+    `Merchandise_Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `Initial_Stock` INT(6) NOT NULL DEFAULT 0,
     `Quantity_Stock` INT(6) NOT NULL DEFAULT 0,
 
-    PRIMARY KEY (`ID`),
-    UNIQUE (`Event_ID`, `Name`),
+    PRIMARY KEY (`Merchandise_ID`),
+    UNIQUE (`Event_ID`, `Merchandise_Name`),
 
-	CHECK (`Price` >= 0),
+	CHECK (`Merchandise_Price` >= 0),
     CHECK (`Initial_Stock` >= 0),
     CHECK (`Quantity_Stock` >= 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
@@ -159,6 +159,7 @@ CREATE TABLE `Ticket_Tier` (
     `Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `Total_Quantity` INT NOT NULL DEFAULT 0,
 	`Benefits` VARCHAR(150),
+    `Is_Reserved_Seating` TINYINT,
 	
 	PRIMARY KEY (`Tier_ID`),
     UNIQUE (`Event_ID`, `Tier_Name`)
@@ -213,13 +214,25 @@ CREATE TABLE `Seat` (
 	`Seat_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Venue_ID` INT(11) NOT NULL,
     `Section_ID` INT(11) NOT NULL,
-    `Seat_Row` VARCHAR(2) NOT NULL, 
+    `Seat_Row` VARCHAR(5) NOT NULL, 
     `Seat_Number` INT NOT NULL,
     
     PRIMARY KEY (`Seat_ID`),
 	UNIQUE (`Venue_ID`, `Section_ID`, `Seat_Row`, `Seat_Number`) -- Prevents duplicates of the seat
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `Tier_Section`
+--
+DROP TABLE IF EXISTS `Tier_Section`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE Tier_Section (
+    Tier_ID INT,
+    Section_ID INT,
+    PRIMARY KEY (Tier_ID, Section_ID)
+);
 
 DROP TABLE IF EXISTS `Manager`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -276,7 +289,7 @@ CREATE TABLE `Order` (
     `Order_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Fan_ID` INT(11) NOT NULL,
     `Order_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
+    `Order_Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
 
     PRIMARY KEY (`Order_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
