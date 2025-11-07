@@ -180,7 +180,76 @@ class Ticket_Purchase(db.Model):
 # ============================================
 #  Tables assigned to: @eepy
 # ============================================
+class Fan(db.Model):
+    __tablename__ = "Fan"
+
+    Fan_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Username = db.Column(db.String(255), nullable=False, unique=True)
+    First_Name = db.Column(db.String(255), nullable=False)
+    Last_Name = db.Column(db.String(255), nullable=False)
+    Email = db.Column(db.String(255), nullable=False, unique=True)
+    Date_Joined = db.Column(db.DateTime, nullable=False, default=func.now())
+    Days_Since = db.Column(db.Integer, nullable=False) 
+
+    # Relationships
+    memberships = db.relationship("Fanclub_Membership", back_populates="fan", cascade="all, delete-orphan")
+
+class Fanclub(db.Model):
+    __tablename__ = "Fanclub"
+
+    Fanclub_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Fanclub_Name = db.Column(db.String(255), nullable=False)
+    Artist_ID = db.Column(db.Integer, nullable=False) 
     
+    # Relationships
+    members = db.relationship("Fanclub_Membership", back_populates="fanclub", cascade="all, delete-orphan")
+    events = db.relationship("Event", secondary="Fanclub_Event", back_populates="fanclubs")
+
+    # Constraints
+    __table_args__ = (
+        db.UniqueConstraint("Fanclub_Name", "Artist_ID"),
+    )
+
+class Fanclub_Membership(db.Model):
+    __tablename__ = "Fanclub_Membership"
+
+    Membership_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    
+    # Foreign Keys
+    Fan_ID = db.Column(
+        db.Integer,
+        db.ForeignKey("Fan.Fan_ID", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False
+    )
+    Fanclub_ID = db.Column(
+        db.Integer,
+        db.ForeignKey("Fanclub.Fanclub_ID", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False
+    )
+    Date_Joined = db.Column(db.DateTime, nullable=False, default=func.now())
+
+    # Relationships
+    fan = db.relationship("Fan", back_populates="memberships")
+    fanclub = db.relationship("Fanclub", back_populates="members")
+
+    # Constraints
+    __table_args__ = (
+        db.UniqueConstraint("Fan_ID", "Fanclub_ID"),
+    )
+
+class Fanclub_Event(db.Model):
+    __tablename__ = "Fanclub_Event"
+    
+    Fanclub_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Fanclub.Fanclub_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
+    Event_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Event.Event_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
 
 # ============================================
 #  Tables assigned to: @jesmaeca
