@@ -24,7 +24,7 @@ CREATE TABLE `Fan` (
     `Last_Name` VARCHAR(255) NOT NULL,
     `Email` VARCHAR(255) NOT NULL,
     `Date_Joined` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `Days_Since` INT(11) NOT NULL,
+    `Days_Since` INT(11),
     
     PRIMARY KEY (`Fan_ID`),
     UNIQUE (`Username`),
@@ -43,7 +43,6 @@ CREATE TABLE `Artist` (
 	`Artist_ID` INT(11) NOT NULL AUTO_INCREMENT,
 	`Manager_ID` INT(11) NOT NULL,
     `Artist_Name` VARCHAR(255) NOT NULL,
-	`Nationality` VARCHAR(255),
 	`Activity_Status` ENUM('Active', 'Inactive', 'Hiatus') NOT NULL,
     `Debut_Date` DATE NOT NULL,
     `Debut_Days` INT NOT NULL,
@@ -58,20 +57,20 @@ DROP TABLE IF EXISTS `Merchandise`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Merchandise` (
-    `ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Name` VARCHAR(100) NOT NULL,
+    `Merchandise_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Merchandise_Name` VARCHAR(100) NOT NULL,
     `Artist_ID` INT(11) NOT NULL,
     `Event_ID` INT(11),
     `Fanclub_ID` INT(11),
-    `Description` VARCHAR(500) DEFAULT NULL,
-    `Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    `Merchandise_Description` VARCHAR(500) DEFAULT NULL,
+    `Merchandise_Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `Initial_Stock` INT(6) NOT NULL DEFAULT 0,
     `Quantity_Stock` INT(6) NOT NULL DEFAULT 0,
 
-    PRIMARY KEY (`ID`),
-    UNIQUE (`Event_ID`, `Name`),
+    PRIMARY KEY (`Merchandise_ID`),
+    UNIQUE (`Event_ID`, `Merchandise_Name`),
 
-	CHECK (`Price` >= 0),
+	CHECK (`Merchandise_Price` >= 0),
     CHECK (`Initial_Stock` >= 0),
     CHECK (`Quantity_Stock` >= 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
@@ -118,7 +117,7 @@ CREATE TABLE `Fanclub` (
     `Artist_ID` INT NOT NULL,
     
     PRIMARY KEY (`Fanclub_ID`),
-    UNIQUE (`Fanclub_Name`, `Artist_ID`)     -- Ensures that no two fanclubs of the same artist share a name
+    UNIQUE (`Fanclub_Name`)     -- Ensures that no two fanclubs of the same artist share a name
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -256,6 +255,7 @@ CREATE TABLE `Member_Detail` (
     `Member_Name` VARCHAR(255) NOT NULL,
     `Role` VARCHAR(255),
     `Activity_Status` ENUM('Active', 'Inactive', 'Hiatus') NOT NULL,
+    `Nationality` VARCHAR(255),
     `Birth_Date` DATE, 
     `Age` INT(2),
     PRIMARY KEY (`Member_ID`),
@@ -289,7 +289,7 @@ CREATE TABLE `Order` (
     `Order_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Fan_ID` INT(11) NOT NULL,
     `Order_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
+    `Order_Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
 
     PRIMARY KEY (`Order_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
@@ -305,10 +305,10 @@ CREATE TABLE `Purchase_List` (
     `Purchase_List_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Order_ID` INT(11) NOT NULL,
     `Merchandise_ID` INT(11) NOT NULL,
-    `Quantity` INT(5) NOT NULL DEFAULT 1,
+    `Quantity_Purchased` INT(5) NOT NULL DEFAULT 1,
 
     PRIMARY KEY (`Purchase_List_ID`),
-	CHECK (`quantity` > 0)
+	CHECK (`Quantity_Purchased` > 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
