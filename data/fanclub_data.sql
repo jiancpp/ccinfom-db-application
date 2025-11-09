@@ -1,4 +1,4 @@
-INSERT INTO Fanclubs (Fanclub_ID, Fanclub_Name, Artist_ID) 
+INSERT INTO Fanclub (Fanclub_ID, Fanclub_Name, Artist_ID) 
 VALUES  (1, 'Zero Days', 3),
         (2, 'WinRina 4ever', 5),
         (3, 'AKKADEMY', 4),
@@ -30,7 +30,7 @@ VALUES  (1, 'Zero Days', 3),
         (29, 'Dimension Lovers', 2),
         (30, 'Zerose International', 3);
 
-INSERT INTO Fanclub_Events (Fanclub_ID, Event_ID) 
+INSERT INTO Fanclub_Event (Fanclub_ID, Event_ID) 
 VALUES  (3, 4),
         (4, 6),
         (6, 7),

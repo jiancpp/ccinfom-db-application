@@ -29,10 +29,10 @@ class Event(db.Model):
     venue = db.relationship("Venue", back_populates="events")
     ticket_tiers = db.relationship("Ticket_Tier", back_populates="event", cascade="all, delete-orphan")
     ticket_purchases = db.relationship("Ticket_Purchase", back_populates="event", cascade="all, delete-orphan")
-    # artist_events
-    # fanclub_events
-    # merchandises - added from pia
-    merchandise = db.relationship("Merchandise", back_populates="event")
+    artists = db.relationship("Artist", secondary="Artist_Event", back_populates="events")
+    fanclubs = db.relationship("Fanclub", secondary="Fanclub_Event", back_populates="events")
+    merchandise = db.relationship("Merchandise", back_populates="event", cascade="all, delete-orphan")
+    setlists = db.relationship("Setlist", back_populates="event")
     
     # Constraints
     __table_args__ = (
@@ -149,7 +149,11 @@ class Ticket_Purchase(db.Model):
     __tablename__ = "Ticket_Purchase"
 
     Ticket_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    Fan_ID = db.Column(db.Integer, nullable=False)
+    Fan_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Fan.Fan_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        nullable=False
+    )
     Event_ID = db.Column(
         db.Integer,
         db.ForeignKey("Event.Event_ID", ondelete="CASCADE", onupdate="CASCADE"),
@@ -167,7 +171,7 @@ class Ticket_Purchase(db.Model):
     Purchase_Date = db.Column(db.DateTime, nullable=False, default=func.now())
 
     # Relationships
-    # fan
+    fan = db.relationship("Fan", back_populates="ticket_purchases")
     event = db.relationship("Event", back_populates="ticket_purchases")
     ticket_tier = db.relationship("Ticket_Tier", back_populates="ticket_purchases")
     seat = db.relationship("Seat", back_populates="ticket_purchases")
@@ -193,6 +197,9 @@ class Fan(db.Model):
 
     # Relationships
     memberships = db.relationship("Fanclub_Membership", back_populates="fan", cascade="all, delete-orphan")
+    orders = db.relationship("Order", back_populates="fan")
+    ticket_purchases = db.relationship("Ticket_Purchase", back_populates="fan")
+    artists_following = db.relationship("Artist", secondary="Artist_Follower", back_populates="followers")
 
 class Fanclub(db.Model):
     __tablename__ = "Fanclub"
@@ -204,6 +211,7 @@ class Fanclub(db.Model):
     # Relationships
     members = db.relationship("Fanclub_Membership", back_populates="fanclub", cascade="all, delete-orphan")
     events = db.relationship("Event", secondary="Fanclub_Event", back_populates="fanclubs")
+    merchandise = db.relationship("Merchandise", back_populates="fanclub")
 
     # Constraints
     __table_args__ = (
@@ -251,6 +259,8 @@ class Fanclub_Event(db.Model):
         primary_key=True
     )
 
+
+
 # ============================================
 #  Tables assigned to: @jesmaeca
 # ============================================
@@ -273,8 +283,10 @@ class Artist(db.Model):
     # Relationships
     manager = db.relationship("Manager", back_populates="artist")
     member_detail = db.relationship("Member_Detail", back_populates="artist")
-    artist_follower = db.relationship("Artist_Follower", back_populates="artist")
-    artist_event = db.relationship("Artist_Event", back_populates="artist")
+    followers = db.relationship("Fan", secondary="Artist_Follower", back_populates="artists_following")
+    events = db.relationship("Event", secondary="Artist_Event", back_populates="artists")
+    merchandise = db.relationship("Merchandise", back_populates="artist")
+    setlists = db.relationship("Setlist", back_populates="artist")
 
 class Member_Detail(db.Model):
     __tablename__ = "Member_Detail"
@@ -283,7 +295,8 @@ class Member_Detail(db.Model):
     Artist_ID = db.Column(
         db.Integer, 
         db.ForeignKey("Artist.Artist_ID", ondelete="CASCADE", onupdate="CASCADE"), 
-        nullable=False)
+        nullable=False
+    )
     Member_Name = db.Column(db.String(100), nullable=False)
     Role = db.Column(db.String(100), nullable=True)
     Nationality = db.Column(db.String(100), nullable=True)
@@ -309,31 +322,49 @@ class Manager(db.Model):
 class Setlist(db.Model):
     __tablename__ = "Setlist"
 
-    Artist_ID = db.Column(db.Integer, primary_key=True)
-    Event_ID = db.Column(db.Integer, primary_key=True)
+    Artist_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Artist.Artist_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
+    Event_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Event.Event_ID", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True
+    )
     Song_Name = db.Column(db.String(100), nullable=True)
     Play_Order = db.Column(db.Integer, nullable = False)
 
-    artist = db.relationship("Artist", back_populates="setlist")
-    event = db.relationship("Event", back_populates="setlist")
+    artist = db.relationship("Artist", back_populates="setlists")
+    event = db.relationship("Event", back_populates="setlists")
 
 class Artist_Follower(db.Model):
     __tablename__ = "Artist_Follower"
 
-    Artist_ID = db.Column(db.Integer, primary_key=True)
-    Fan_ID = db.Column(db.Integer, primary_key=True)
-
-    artist = db.relationship("Artist", back_populates="artist_follower")
-    fan = db.relationship("Fan", back_populates="artist_follower")
+    Artist_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Artist.Artist_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
+    Fan_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Fan.Fan_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
 
 class Artist_Event(db.Model):
     __tablename__ = "Artist_Event"
 
-    Artist_ID = db.Column(db.Integer, primary_key=True)
-    Event_ID = db.Column(db.Integer, primary_key=True)
-
-    artist = db.relationship("Artist", back_populates="artist_event")
-    event = db.relationship("Event", back_populates="artist_event")
+    Artist_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Artist.Artist_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
+    Event_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Event.Event_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
 
 # ============================================
 #  Tables assigned to: @phlmn
@@ -361,9 +392,9 @@ class Merchandise(db.Model):
     Quantity_Stock = db.Column(db.Integer, nullable=False, server_default=text("0"))
     
     # Relationships
-    #artist = db.relationship("Artist", back_populates="merchandise")
+    artist = db.relationship("Artist", back_populates="merchandise")
     event = db.relationship("Event", back_populates="merchandise")
-    #fanclub = db.relationship("Fanclub", back_populates="merchandise")
+    fanclub = db.relationship("Fanclub", back_populates="merchandise")
     purchase_list = db.relationship("Purchase_List", back_populates="merchandise", cascade="all, delete")
     
     # Constraints
@@ -385,7 +416,7 @@ class Order(db.Model):
     Order_Status = db.Column(SET('Pending', 'Paid', 'Cancelled'), nullable=False, default='Pending')
     
     # Relationships
-    #fan = db.relationship("Fan", back_populates="Orders")
+    fan = db.relationship("Fan", back_populates="orders")
     purchase_list = db.relationship("Purchase_List", back_populates="order", cascade="all, delete")
     
     # Constraints
