@@ -24,7 +24,7 @@ CREATE TABLE `Fan` (
     `Last_Name` VARCHAR(255) NOT NULL,
     `Email` VARCHAR(255) NOT NULL,
     `Date_Joined` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `Days_Since` INT(11) NOT NULL,
+    `Days_Since` INT(11),
     
     PRIMARY KEY (`Fan_ID`),
     UNIQUE (`Username`),
@@ -117,7 +117,7 @@ CREATE TABLE `Fanclub` (
     `Artist_ID` INT NOT NULL,
     
     PRIMARY KEY (`Fanclub_ID`),
-    UNIQUE (`Fanclub_Name`, `Artist_ID`)     -- Ensures that no two fanclubs of the same artist share a name
+    UNIQUE (`Fanclub_Name`)     -- Ensures that no two fanclubs of the same artist share a name
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -308,7 +308,7 @@ CREATE TABLE `Purchase_List` (
     `Quantity_Purchased` INT(5) NOT NULL DEFAULT 1,
 
     PRIMARY KEY (`Purchase_List_ID`),
-	CHECK (`quantity` > 0)
+	CHECK (`Quantity_Purchased` > 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
