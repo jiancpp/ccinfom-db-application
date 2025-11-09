@@ -8,7 +8,7 @@
 -- 3. Re-enable foreign key checks
 -- SET foreign_key_checks = 1;
 
--- hello testt
+USE dbApp;
 
 INSERT INTO Venue (Venue_Name, City, Country, Capacity) 
 VALUES  ("Philippine Arena", "Bocaue, Bulacan", "Philippines", 55000),
@@ -62,7 +62,27 @@ VALUES  (1, 1, 'VIP Pit', 15125.00, 1000, 'Early Entry, Sound Check Access', 1),
 		(16, 5, 'Showcase VIP', 13750.00, 1500, 'Sound Check, Group Photo Raffle', 1),
 		(17, 5, 'Lower Box Premium', 9900.00, 4000, 'Exclusive Lanyard and Ticket Holder', 1),
 		(18, 5, 'Upper Box', 6600.00, 5000, 'Souvenir Ticket', 0),
-		(19, 5, 'General Admission', 4950.00, 2000, 'Standard General Admission', 0);
+		(19, 5, 'General Admission', 4950.00, 2000, 'Standard General Admission', 0),
+        (20, 6, 'General Admission', 2000, 2000, NULL, 0),
+		(21, 7, 'General Admission', 2000, 2000, NULL, 0),
+		(22, 8, 'General Admission', 2000, 2000, NULL, 0),
+		(23, 9, 'General Admission', 500, 2000, NULL, 0),
+		(24, 10, 'General Admission', 2000, 2000, NULL, 0),
+		(25, 11, 'General Admission', 2000, 2000, NULL, 0),
+		(26, 12, 'General Admission', 2000, 2000, NULL, 0),
+		(27, 13, 'General Admission', 2000, 2000, NULL, 0),
+		(28, 14, 'General Admission', 2000, 2000, NULL, 0),
+		(29, 15, 'General Admission', 2000, 2000, NULL, 0),
+		(30, 16, 'General Admission', 2000, 2000, NULL, 0),
+		(31, 17, 'General Admission', 2000, 2000, NULL, 0),
+		(32, 18, 'General Admission', 500, 2000, NULL, 0),
+		(33, 19, 'General Admission', 500, 2000, NULL, 0),
+		(34, 20, 'General Admission', 500, 2000, NULL, 0),
+		(35, 21, 'General Admission', 500, 2000, NULL, 0),
+		(36, 22, 'General Admission', 0, 2000, NULL, 0),
+		(37, 23, 'General Admission', 0, 2000, NULL, 0),
+		(38, 24, 'General Admission', 0, 2000, NULL, 0),
+		(39, 25, 'General Admission', 0, 2000, NULL, 0);
 
 INSERT INTO Section(Venue_ID, Section_Name, Max_Capacity)
 VALUES	(1, 'Lower Bowl', 25000),

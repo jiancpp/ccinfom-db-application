@@ -184,5 +184,5 @@ ADD CONSTRAINT fk_purchaselist_order
     FOREIGN KEY (`Order_ID`) REFERENCES `Order`(`Order_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_purchaselist_merch
-    FOREIGN KEY (`Merchandise_ID`) REFERENCES `Merchandise`(`ID`)
+    FOREIGN KEY (`Merchandise_ID`) REFERENCES `Merchandise`(`Merchandise_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
