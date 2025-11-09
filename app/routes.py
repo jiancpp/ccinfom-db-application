@@ -96,21 +96,23 @@ def buy_ticket(event_id):
 
     if request.method == "POST":
         tier_id = request.form["ticket_tier"]
-        seat_id = request.form["seat_id"]
-        
+        seat_id = request.form.get("seat_id", None)     
+
+        if seat_id == "":
+            seat_id = None   
 
         purchase = Ticket_Purchase(
-            Fan_ID = 1,
+            Fan_ID = 1,                 # Change to session.fan_id or something later
             Event_ID = event.Event_ID,
             Tier_ID = tier_id,
             Seat_ID = seat_id            
-            # purchase_date will be automatically set by server_default=func.now()
         )
 
-        print(purchase)
 
-        # db.session.add(purchase)
-        # db.session.commit()
+        db.session.add(purchase)
+        db.session.commit()
+
+        
 
     return render_template("events_ticket_purchase.html", event=event)
 

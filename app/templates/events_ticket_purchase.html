@@ -135,8 +135,8 @@
     <!-- Load after tier is selected -->
     <p id="tier_benefits" class="tier-benefits"></p>
 
-    <label for="section">Select Section</label>
-    <select name="section" id="section" required>
+    <label class="section" for="section">Select Section</label>
+    <select class="section" name="section" id="section">
         <option value="">-- Choose Section --</option>
     </select>
 
@@ -144,7 +144,7 @@
     <div id="seatMap"></div>
     <div id="pagination"></div>
 
-    <input type="hidden" name="seat_id" id="seat_id">
+    <input type="hidden" name="seat_id" id="seat_id" required>
 
     <button class="btn payment" type="submit">Proceed to Payment</button>
 </form>
@@ -171,9 +171,11 @@
 
     console.log(tierSections);
 
+    const ticketForm = document.querySelector('form');
     const tierSelect = document.getElementById("ticket_tier");
     const benefitDescription = document.getElementById("tier_benefits");
     const sectionSelect = document.getElementById("section");
+    const sectionFields = document.getElementsByClassName("section");
 
     /** For Pagination **/
     const eventId = {{ event.Event_ID }};
@@ -212,13 +214,30 @@
 
         // Populate section dropdown
         sectionSelect.innerHTML = '<option value="">-- Choose Section --</option>';
-        if(tierData && tierData.Sections) {
+        if(tierData && tierData.IsReserved === 1 && tierData.Sections) {
+            Array.from(sectionFields).forEach(el => {
+                // Set display to block to ensure proper form layout
+                el.style.display = "block"; 
+            });
+
+            sectionSelect.setAttribute("required", "required");
+            seatIdInput.setAttribute("required", "required");
+
             tierData.Sections.forEach(section => {
                 const opt = document.createElement("option");
                 opt.value = section.id;
                 opt.textContent = section.name;
                 sectionSelect.appendChild(opt);
             });
+        } else {
+            Array.from(sectionFields).forEach(el => {
+                // Set display to block to ensure proper form layout
+                el.style.display = "none"; 
+            });
+
+            sectionSelect.removeAttribute("required");
+            seatIdInput.removeAttribute("required");
+            unloadSeatMap()
         }
     });
 
@@ -227,8 +246,7 @@
         currentPage = 1;
 
         // if tier is reserved seating
-        console.log(tierData.IsReserved)
-        if (tierData.IsReserved === 1 && sectionSelect.value !== "") {
+        if (sectionSelect.value !== "") {
             seatMapLabel.textContent = "Select Seat"
             loadSeats()
         } else {
@@ -328,6 +346,25 @@
         totalSeats = 0;
         totalPages = 0;
     }
+
+    ticketForm.addEventListener("submit", (event) => {
+        // Check if the current tier is reserved seating (tierId is the selected tier's ID)
+        const tierData = tierSections[tierId];
+
+        // Required to have a tier selected
+        if (!tierId || !tierData) {
+            alert("Please select a ticket tier.");
+            event.preventDefault(); 
+            return;
+        }
+
+        // Check if Reserved Seating (IsReserved === 1) AND seat_id is empty
+        if (tierData.IsReserved === 1 && !seatIdInput.value) {
+            alert("Please select a seat before proceeding to payment.");
+            event.preventDefault(); // Stop the form submission
+            return;
+        }
+            });
 
 </script>
 {% endblock %}
