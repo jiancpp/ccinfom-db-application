@@ -24,7 +24,8 @@ def index():
 
 @main_routes.route('/artists')
 def artists():    
-    return render_template('artists.html')
+    artists = Artist.query.all()
+    return render_template('artists.html', artists=artists)
 
 
 @main_routes.route('/events')
