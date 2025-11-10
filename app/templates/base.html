@@ -232,7 +232,7 @@
     <!-- Navigation Bar -->
     <nav>        
         {% if session.get('username') %}
-            <div class="logo">🎵 K-Pop Fan Hub</div>
+            <div class="logo">🎵 K-Sync </div>
 
             <ul>
                 <li><a href="{{ url_for('main_routes.index') }}">Home</a></li>
@@ -247,7 +247,7 @@
                 <a href="{{ url_for('main_routes.logout') }}" class="btn btn-secondary">Logout</a>
             </div>
         {% else %}
-            <a href="{{ url_for('main_routes.index') }}"><div class="logo">🎵 K-Pop Fan Hub</div></a>
+            <a href="{{ url_for('main_routes.index') }}"><div class="logo">🎵 K-Sync </div></a>
             
             <!-- Remove Later. Testing Only -->
             <ul>
