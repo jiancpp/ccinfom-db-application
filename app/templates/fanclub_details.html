@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ fanclub.Fanclub_Name }} Details{% endblock %}
+
+{% block content %}
+
+    <header style="margin-bottom: 2rem;">
+        {# Back link for easy navigation #}
+        <p><a href="{{ url_for('main_routes.fanclubs') }}" style="color: #555; text-decoration: none;">&larr; Back to Fanclubs List</a></p>
+        
+        <h1 style="color: #764ba2;">✨ {{ fanclub.Fanclub_Name }}</h1>
+        <p style="font-size: 1.2rem; font-style: italic; color: #666;">Official Fanclub for {{ fanclub.artist_name }}</p>
+    </header>
+
+    <div class="fanclub-actions" style="margin-bottom: 2rem; padding: 1rem; border-radius: 8px; background: #f8f8f8; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        
+        {# Member Count Badge #}
+        <div class="info-badge" style="background: #e0f7fa; color: #00bcd4; padding: 10px 15px; border-radius: 25px; font-weight: bold;">
+            Total Members: {{ fanclub.member_count }}
+        </div>
+        
+        {# Join/Leave Button #}
+        <div class="action-buttons" style="display: flex; gap: 10px; margin-top: 5px;">
+            {% if fanclub.is_member %}
+                <a href="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.Fanclub_ID) }}" class="btn btn-secondary">Leave Club</a>
+            {% else %}
+                <a href="{{ url_for('main_routes.join_fanclub', fanclub_id=fanclub.Fanclub_ID) }}" class="btn btn-primary">Join Now!</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; margin-top: 3rem;">
+        
+        {# --- LEFT COLUMN: Fanclub & Artist Details --- #}
+        <div class="sidebar-info">
+            <h2 style="color: #764ba2;">Artist Overview</h2>
+            <div class="card" style="padding: 1.5rem; background: #fff;">
+                
+                <p>
+                    Artist Name: {{ fanclub.artist_name }}
+                </p>
+                <p>
+                    Debut Date: [Artist Debut Date Placeholder]
+                </p>
+                <p>
+                    Agency: [Artist Agency Placeholder]
+                </p>
+                
+                <a href="/artists/{{ fanclub.Artist_ID }}" class="btn btn-outline" style="margin-top: 1rem;">View Artist Profile</a>
+            </div>
+            
+            <h2 style="margin-top: 2rem; color: #764ba2;">Latest News</h2>
+            <div class="card" style="padding: 1.5rem; background: #fff;">
+                <p>Check the artist's official social media or news feed for the latest updates!</p>
+            </div>
+        </div>
+
+        {# --- RIGHT COLUMN: Events and Merchandise --- #}
+        <div class="main-content-lists">
+            
+            {# --- RELATED MERCHANDISE SECTION --- #}
+            <h2 style="border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">🛍️ Exclusive Merchandise ({{ fanclub.merchandise | length }})</h2>
+            
+            {% if fanclub.merchandise %}
+                <div class="merch-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+                    {% for merch in fanclub.merchandise %}
+                        <div class="card" style="text-align: center; padding: 1rem;">
+                            <h4 style="margin-top: 0; margin-bottom: 0.5rem;">{{ merch.Merch_Name }}</h4>
+                            <p style="color: green; font-weight: bold;">${{ merch.Price }}</p>
+                            <a href="/merchandise/{{ merch.Merch_ID }}" class="btn btn-small">Buy Now</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state" style="margin-bottom: 3rem;">
+                    <p>No exclusive merchandise available right now. Check back soon!</p>
+                </div>
+            {% endif %}
+
+
+            {# --- RELATED EVENTS SECTION --- #}
+            <h2 style="border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">📅 Upcoming Fanclub Events ({{ fanclub.events | length }})</h2>
+            
+            {% if fanclub.events %}
+                <ul style="list-style: none; padding: 0;">
+                    {% for event in fanclub.events %}
+                        <li class="card" style="margin-bottom: 1rem; padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="flex-grow: 1;">
+                                    <h4 style="margin-top: 0; margin-bottom: 0.25rem;">{{ event.Event_Name }}</h4>
+                                    <p style="color: #555; margin: 0;">Date: **{{ event.Event_Date }}**</p>
+                                </div>
+                                <a href="/events/{{ event.Event_ID }}" class="btn btn-small">Details</a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="empty-state">
+                    <p>No upcoming fanclub-exclusive events scheduled.</p>
+                </div>
+            {% endif %}
+            
+        </div>
+        
+    </div>
+
+{% endblock %}
