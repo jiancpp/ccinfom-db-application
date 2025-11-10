@@ -211,7 +211,7 @@ class Fanclub(db.Model):
     # Relationships
     members = db.relationship("Fanclub_Membership", back_populates="fanclub", cascade="all, delete-orphan")
     events = db.relationship("Event", secondary="Fanclub_Event", back_populates="fanclubs")
-    merchandise = db.relationship("Merchandise", back_populates="fanclub")
+    merchandise = db.relationship("Merchandise", back_populates="fanclub", lazy='dynamic')
 
     # Constraints
     __table_args__ = (

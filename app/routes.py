@@ -41,21 +41,23 @@ def merchandise():
 
 @main_routes.route('/fanclubs')
 def fanclubs():
-    fanclub_data = Fanclub.query.join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
-        .outerjoin(Fanclub_Membership, Fanclub.Fanclub_ID == Fanclub_Membership.Fanclub_ID) \
-        .group_by(Fanclub.Fanclub_ID, Artist.Artist_ID) \
-        .with_entities(
+    fanclub_data = db.session.query(
             Fanclub.Fanclub_ID,
             Fanclub.Fanclub_Name,
             Artist.Artist_Name.label('artist_name'),
             func.count(Fanclub_Membership.Fan_ID).label('member_count')
-        ) \
+        ).join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
+        .outerjoin(Fanclub_Membership, Fanclub.Fanclub_ID == Fanclub_Membership.Fanclub_ID) \
+        .group_by(Fanclub.Fanclub_ID, Artist.Artist_ID) \
         .order_by(Artist.Artist_Name, Fanclub.Fanclub_Name) \
         .all()
     
     fanclubs_list = []
     for fanclub_id, fanclub_name, artist_name, member_count in fanclub_data:
-        is_member = False # Placeholder
+        is_member = False 
+        # if current_user.is_authenticated:
+        #    is_member = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=current_user.Fan_ID).first() is not None
+        
         fanclubs_list.append({
             'Fanclub_ID': fanclub_id,
             'Fanclub_Name': fanclub_name,
@@ -176,39 +178,88 @@ def get_seats(event_id, section_id):
 # ============================================
 
 @main_routes.route('/fanclubs/<int:fanclub_id>')
-def fanclub_details(fanclub_id):    
-    fanclub_data = Fanclub.query.join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
+def fanclub_details(fanclub_id):
+    fanclub_query = Fanclub.query.join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
         .filter(Fanclub.Fanclub_ID == fanclub_id) \
         .with_entities(Fanclub, Artist.Artist_Name.label('artist_name')).first_or_404()
     
-    club, artist_name = fanclub_data
+    club, artist_name = fanclub_query
+
+    member_count = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id).count()
+    event_list = club.events
     
+    merch_list = Merchandise.query.filter_by(Artist_ID=club.Artist_ID).all()
+    
+    is_member = False 
+
     context = {
         'Fanclub_ID': club.Fanclub_ID,
         'Fanclub_Name': club.Fanclub_Name,
+        'Artist_ID': club.Artist_ID,
         'artist_name': artist_name,
-        'member_count': Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id).count(),
-        'is_member': False, # Placeholder: Replace with actual session logic
-        'merchandise': [], # Placeholder
-        'events': [],      # Placeholder
+        'member_count': member_count,
+        'is_member': is_member,
+        'merchandise': [{'Merch_Name': m.Merchandise_Name, 'Price': m.Merchandise_Price, 'Merch_ID': m.Merchandise_ID} for m in merch_list],
+        'events': [{'Event_Name': e.Event_Name, 'Event_Date': e.Start_Date, 'Event_ID': e.Event_ID} for e in event_list],
     }
     
     return render_template('fanclub_details.html', fanclub=context)
 
-@main_routes.route('/fanclubs/<int:fanclub_id>/join', methods=['GET', 'POST'])
-def join_fanclub(fanclub_id):
-    # --- Actual Logic would go here ---
-    # if current_user.is_authenticated:
-    #     new_membership = Fanclub_Membership(Fanclub_ID=fanclub_id, Fan_ID=current_user.Fan_ID)
-    #     db.session.add(new_membership)
-    #     db.session.commit()
-    #     flash("Successfully joined the fanclub!", "success")
-    # return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
-    
-    flash(f"User joined Fanclub {fanclub_id}!", "success")
-    return redirect(url_for('main_routes.fanclubs'))
 
-@main_routes.route('/fanclubs/<int:fanclub_id>/leave', methods=['GET', 'POST'])
+@main_routes.route('/fanclubs/<int:fanclub_id>/members')
+# @login_required # Ensure only logged-in users can view the list
+def fanclub_members(fanclub_id):
+    club = Fanclub.query.filter_by(Fanclub_ID=fanclub_id).first_or_404()
+    
+    # is_member = Fanclub_Membership.query.filter_by(
+    #     Fanclub_ID=fanclub_id,
+    #     User_ID=current_user.User_ID 
+    # ).first()
+    
+    # if not is_member:
+    #     flash(f"You must be a member of {club.Fanclub_Name} to view the community list.", 'danger')
+    #     return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
+
+
+    members_data = db.session.query(
+        Fan.Username, 
+        Fan.Date_Joined
+    ) \
+        .join(Fanclub_Membership, Fan.Fan_ID == Fanclub_Membership.Fan_ID) \
+        .filter(Fanclub_Membership.Fanclub_ID == fanclub_id) \
+        .all()
+    
+    context = {
+        'fanclub_id': club.Fanclub_ID,
+        'fanclub_name': club.Fanclub_Name,
+        'members': [
+            {'username': name, 'join_date': date.strftime('%Y-%m-%d')} 
+            for name, date in members_data
+        ]
+    }
+    
+    return render_template('fanclub_members.html', fanclub=context)
+
+
+@main_routes.route('/fanclubs/<int:fanclub_id>/join', methods=['POST'])
+def join_fanclub(fanclub_id):
+    # if not current_user.is_authenticated:
+    #     flash("Please log in to join a fanclub.", "danger")
+    #     return redirect(url_for('auth_routes.login'))
+
+    # membership = Fanclub_Membership(Fanclub_ID=fanclub_id, Fan_ID=current_user.Fan_ID)
+    # db.session.add(membership)
+    # db.session.commit()
+    
+    flash(f"You successfully joined Fanclub ID {fanclub_id}! (Action Placeholder)", "success")
+    return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
+
+@main_routes.route('/fanclubs/<int:fanclub_id>/leave', methods=['POST'])
 def leave_fanclub(fanclub_id):
-    flash(f"User left Fanclub {fanclub_id}!", "secondary")
-    return redirect(url_for('main_routes.fanclubs'))
+    # membership = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=current_user.Fan_ID).first()
+    # if membership:
+    #     db.session.delete(membership)
+    #     db.session.commit()
+        
+    flash(f"You successfully left Fanclub ID {fanclub_id}. (Action Placeholder)", "warning")
+    return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
