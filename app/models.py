@@ -274,7 +274,6 @@ class Artist(db.Model):
         db.ForeignKey("Manager.Manager_ID", ondelete="CASCADE", onupdate="CASCADE"), 
         nullable=False)
     Artist_Name = db.Column(db.String(100), nullable=False)
-    Nationality = db.Column(db.String(100), nullable=True)
     # SQL SET maps to SQLAlchemy Enum
     Activity_Status = db.Column(SET('Active', 'Inactive', 'Hiatus'), nullable=False)
     Debut_Date = db.Column(db.Date, nullable=False)
