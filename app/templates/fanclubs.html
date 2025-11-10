@@ -1,6 +1,62 @@
 {% extends "base.html" %}
+
 {% block title %}Fanclubs{% endblock %}
+
 {% block content %}
-<h1>Fanclubs</h1>
-<p>Fanclub list goes here.</p>
+<header style="margin-bottom: 2rem;">
+    <h1>💖 Fanclubs</h1>
+    <p style="color: #666;">Explore and join official fan communities for your favorite K-Pop artists.</p>
+</header>
+
+{% if fanclubs %}
+    {# 
+        CRITICAL STEP: Group the fanclubs by the 'artist_name' property.
+        'artist_name' must be correctly provided and sorted by the Flask route.
+    #}
+    {% for artist_name, clubs in fanclubs | groupby('artist_name') %}
+        
+        <h2 style="margin-top: 3rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">
+            🎤 {{ artist_name }} Fanclubs
+        </h2>
+
+        <div class="fanclub-list-container" style="margin-bottom: 2rem;">
+            {% for club in clubs %}
+                <div class="card fanclub-item-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                        
+                        {# Left Side: Fanclub Name and Artist Name (already in the H2, but helpful here) #}
+                        <div style="flex-grow: 1; min-width: 200px;">
+                            <h3 style="margin-top: 0; margin-bottom: 0.25rem;">{{ club.Fanclub_Name }}</h3>
+                        </div>
+
+                        {# Right Side: Member Count and Action Buttons #}
+                        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem;">
+                            
+                            {# Member Count Badge #}
+                            <div class="badge" style="background: #e0f7fa; color: #00bcd4; white-space: nowrap; padding: 6px 14px;">
+                                Members: {{ club.member_count }}
+                            </div>
+                            
+                            {# Buttons #}
+                            <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=club.Fanclub_ID) }}" class="btn" style="padding: 8px 16px;">View Details</a>
+                            
+                            {# Conditional Join/Leave Button #}
+                            {% if club.is_member %}
+                                <a href="{{ url_for('main_routes.leave_fanclub', fanclub_id=club.Fanclub_ID) }}" class="btn btn-secondary" style="padding: 8px 16px;">Leave Club</a>
+                            {% else %}
+                                <a href="{{ url_for('main_routes.join_fanclub', fanclub_id=club.Fanclub_ID) }}" class="btn btn-outline" style="padding: 8px 16px;">Join Now!</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <p>😔 It looks like no fanclubs are available at the moment.</p>
+        <p>Please check back later!</p>
+    </div>
+{% endif %}
 {% endblock %}

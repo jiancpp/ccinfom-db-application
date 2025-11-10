@@ -40,8 +40,30 @@ def merchandise():
 
 @main_routes.route('/fanclubs')
 def fanclubs():
-    return render_template('fanclubs.html')
+    fanclub_data = Fanclub.query.join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
+        .outerjoin(Fanclub_Membership, Fanclub.Fanclub_ID == Fanclub_Membership.Fanclub_ID) \
+        .group_by(Fanclub.Fanclub_ID, Artist.Artist_ID) \
+        .with_entities(
+            Fanclub.Fanclub_ID,
+            Fanclub.Fanclub_Name,
+            Artist.Artist_Name.label('artist_name'),
+            func.count(Fanclub_Membership.Fan_ID).label('member_count')
+        ) \
+        .order_by(Artist.Artist_Name, Fanclub.Fanclub_Name) \
+        .all()
+    
+    fanclubs_list = []
+    for fanclub_id, fanclub_name, artist_name, member_count in fanclub_data:
+        is_member = False # Placeholder
+        fanclubs_list.append({
+            'Fanclub_ID': fanclub_id,
+            'Fanclub_Name': fanclub_name,
+            'artist_name': artist_name,
+            'member_count': member_count,
+            'is_member': is_member
+        })
 
+    return render_template('fanclubs.html', fanclubs=fanclubs_list)
 
 
 # ============================================
@@ -147,3 +169,45 @@ def get_seats(event_id, section_id):
         "total": total,
         "seats": seat_list
     })
+
+# ============================================
+#           Fanclub Subpages
+# ============================================
+
+@main_routes.route('/fanclubs/<int:fanclub_id>')
+def fanclub_details(fanclub_id):    
+    fanclub_data = Fanclub.query.join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
+        .filter(Fanclub.Fanclub_ID == fanclub_id) \
+        .with_entities(Fanclub, Artist.Artist_Name.label('artist_name')).first_or_404()
+    
+    club, artist_name = fanclub_data
+    
+    context = {
+        'Fanclub_ID': club.Fanclub_ID,
+        'Fanclub_Name': club.Fanclub_Name,
+        'artist_name': artist_name,
+        'member_count': Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id).count(),
+        'is_member': False, # Placeholder: Replace with actual session logic
+        'merchandise': [], # Placeholder
+        'events': [],      # Placeholder
+    }
+    
+    return render_template('fanclub_details.html', fanclub=context)
+
+@main_routes.route('/fanclubs/<int:fanclub_id>/join', methods=['GET', 'POST'])
+def join_fanclub(fanclub_id):
+    # --- Actual Logic would go here ---
+    # if current_user.is_authenticated:
+    #     new_membership = Fanclub_Membership(Fanclub_ID=fanclub_id, Fan_ID=current_user.Fan_ID)
+    #     db.session.add(new_membership)
+    #     db.session.commit()
+    #     flash("Successfully joined the fanclub!", "success")
+    # return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
+    
+    flash(f"User joined Fanclub {fanclub_id}!", "success")
+    return redirect(url_for('main_routes.fanclubs'))
+
+@main_routes.route('/fanclubs/<int:fanclub_id>/leave', methods=['GET', 'POST'])
+def leave_fanclub(fanclub_id):
+    flash(f"User left Fanclub {fanclub_id}!", "secondary")
+    return redirect(url_for('main_routes.fanclubs'))
