@@ -105,11 +105,21 @@
     }
 </style>
 
+{# --- BACK BUTTON BAR --- #}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('main_routes.events') }}" 
+        class="btn btn-small btn-outline" 
+        style="text-decoration: none; padding: 5px 12px; font-size: 0.85rem; color: #555;">
+        &larr; Back to Event List
+    </a>
+</div>
+
+{# EVENT DETAILS #}
 <h3>{{ event.Event_Name }}</h3>
 {% for t in event.Event_Type %}
     <span class="event-type">{{ t }}</span>
 {% endfor %}
-<!-- Show Details -->
+
 <p>
     <span class="date">{{ event.Start_Date }}</span> • 
     <span class="time">{{ event.Start_Time }}</span>
@@ -118,9 +128,8 @@
 </p>
 <p>{{ event.venue.Venue_Name }}, {{ event.venue.City }}, {{ event.venue.Country }}</p>
 
-<!-- Ticket Pricing -->
-
-<h2>Buy Tickets</h2>
+{# TICKET PURCHASE TRANSACTION #}
+<h2>Buy Ticket</h2>
 <form class="form-group" method="POST">
     <input type="hidden" name="event_id" value="{{ event.Event_ID }}">
 

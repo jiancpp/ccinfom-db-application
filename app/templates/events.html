@@ -1,84 +1,174 @@
-{% extends "base.html" %}
-{% block title %}Artists - K-Pop Fan Hub{% endblock %}
-{% block content %}
-<style>
-    .event-card {
-        display: flex;
-        flex-direction: column;
-        list-style: none;
-        justify-content: space-between; /* ensures top and bottom spacing */
-        height: 100%; /* make all cards equal height */
-    }
+    {% extends "base.html" %}
+    {% block title %}Artists - K-Pop Fan Hub{% endblock %}
+    {% block content %}
+    <style>
+        .event-card {
+            display: flex;
+            flex-direction: column;
+            list-style: none;
+            justify-content: space-between; /* ensures top and bottom spacing */
+            height: 100%; /* make all cards equal height */
+        }
 
-    .event-card h3{
-        margin-bottom: 3px;
-    }
+        .event-card h3{
+            margin-bottom: 3px;
+        }
 
-    .event-card .event-details .event-type {
-        display: inline-block;
-        font-size: 14px;
-        font-style: italic;
-        color: white;
-        margin-bottom: 8px;
-        padding: 4px 10px;
-        border-radius: 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
+        .event-card .event-details .event-type {
+            display: inline-block;
+            font-size: 14px;
+            font-style: italic;
+            color: white;
+            margin-bottom: 8px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
 
-    .event-card .event-details li{
-        list-style: none;
-    }
+        .event-card .event-details li{
+            list-style: none;
+        }
 
-    .event-card .event-details li:last-child {
-        margin-bottom: 5px;
-    }
+        .event-card .event-details li:last-child {
+            margin-bottom: 5px;
+        }
 
-    .event-card .event-details .buy-ticket {
-        margin-top: auto;   /* pushes to the bottom */
-        flex-shrink: 0;   /* prevents it from squishing */
-        align-self: flex-start;
-        align-content: center;
-    }
+        .event-card .event-details .buy-ticket {
+            margin-top: auto;   /* pushes to the bottom */
+            flex-shrink: 0;   /* prevents it from squishing */
+            align-self: flex-start;
+            align-content: center;
+        }
 
+        .filter-group input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
 
-</style>
-<h1>🎤 Events</h1>
-{% if events %}
-    <ul class="grid">
-        {% for event in events %}
-            <li class="event-card card">
-                <span>
-                    <h3>{{ event.Event_Name }}</h3>
-                    <ul class="event-details">
-                        <li>
-                            {% for t in event.Event_Type %}
-                            <span class="event-type">{{ t }}</span>
-                            {% endfor %}
-                        </li>
-                        <li>
-                            {{ event.venue.Venue_Name }}
-                        </li>
-                        <li>
-                            {% if event.Start_Date != event.End_Date %}
-                                <span class="date">{{ event.Start_Date }}</span> to 
-                                <span class="date">{{ event.End_Date }}</span>
-                            {% else %}
-                                <span class="date">{{ event.Start_Date }}</span>
-                            {% endif %}
-                        </li>
-                    </ul>
-                </span>
-                <a href="{{ url_for('main_routes.buy_ticket', event_id=event.Event_ID) }}" class="btn buy-ticket">
-                    Buy Tickets
-                </a>
-                  
-            </li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p>No events found.</p>
-{% endif %}
-{% endblock %}
+        .filter-group label {
+            display: block;
+            padding: 5px 20px;
+            margin: 0 3px;
+            border-radius: 50px;
+            max-height: 2rem;
+            border: solid 1px #a1a1a1;
+            font-size: 11px;
+            color: #1f1d1e;
+            transition: 0.3s;
+        }
 
-{% block scripts %}{% endblock %}
+        .filter-group label:hover {
+            cursor: pointer;
+            background-color: #a1a1a1;
+        }
+
+        .filter-group input[type="radio"]:checked + label {
+            border: solid 1px #a5a8e9;
+            background-color: #a5a8e9;
+            color: #1f1327;
+        }
+
+    </style>
+
+    <header style="margin-bottom: 2rem;">
+        <h1>🎤 Events</h1>
+        <p style="color: #666;">Explore upcoming events from your favorite artists and fan communities.</p>
+    </header>
+
+    {# FILTER EVENTS #}
+    <form action="/events" method="POST" style="display: flex;" id="event-filter-form">
+        <button type="submit" 
+                style=" background: none;
+                        border: none;
+                        font-size: 20px;
+                        color: #373135;
+                        cursor: pointer;
+                        padding: 5px;
+                        margin: 5px;
+        "><i class="fa fa-search"></i></button>
+
+        <input type="text" id="event-name" name="event-name" placeholder="Search Event..."
+        style=" border-radius: 50px;
+                width: 30%;
+        ">
+
+        <div class="filter-group" 
+            style="display: flex; 
+                    flex-direction: 
+                    row; padding: 0 15px; 
+                    align-items: center; 
+                    justify-content: center;">
+            {% set filter_val = current_filter|default('all-events') %}
+            {# ^ Set a variable for easy comparison, defaulting to 'all-events' #}
+
+            <input type="radio" id="all-events" name="filter" value="all-events" 
+                {% if filter_val == 'all-events' %} checked {% endif %}>
+            <label for="all-events">All Events</label>
+            
+            <input type="radio" id="artist-events" name="filter" value="artist-events"
+                {% if filter_val == 'artist-events' %} checked {% endif %}>
+            <label for="artist-events">Artist Events</label>
+
+            <input type="radio" id="fanclub-events" name="filter" value="fanclub-events"
+                {% if filter_val == 'fanclub-events' %} checked {% endif %}>
+            <label for="fanclub-events">Fanclub Events</label>
+        </div>    
+    </form>
+
+    {% if events %}
+        <ul class="grid">
+            {% for event in events %}
+                <li class="event-card card">
+                    <span>
+                        <h3>{{ event.Event_Name }}</h3>
+                        <ul class="event-details">
+                            <li>
+                                {% for t in event.Event_Type %}
+                                <span class="event-type">{{ t }}</span>
+                                {% endfor %}
+                            </li>
+                            <li>
+                                {{ event.venue.Venue_Name }}
+                            </li>
+                            <li>
+                                {% if event.Start_Date != event.End_Date %}
+                                    <span class="date">{{ event.Start_Date }}</span> to 
+                                    <span class="date">{{ event.End_Date }}</span>
+                                {% else %}
+                                    <span class="date">{{ event.Start_Date }}</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </span>
+                    <a href="{{ url_for('main_routes.buy_ticket', event_id=event.Event_ID) }}" class="btn buy-ticket">
+                        Buy Tickets
+                    </a>
+                    
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="empty-state">
+            No events found.
+        </p>
+    {% endif %}
+    {% endblock %}
+
+    {% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('event-filter-form');
+            const radioInputs = document.querySelectorAll('.filter-group input[type="radio"]');
+
+            radioInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    form.submit();
+                })
+            })
+        })
+    </script>
+    
+    {% endblock %}
 

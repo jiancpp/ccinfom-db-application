@@ -28,10 +28,36 @@ def artists():
     return render_template('artists.html', artists=artists)
 
 
-@main_routes.route('/events')
+@main_routes.route('/events', methods=["GET", "POST"])
 def events():
-    events = Event.query.all()
-    return render_template('events.html', events=events)
+    event_query = Event.query
+
+    # Filtering events
+    search_term = request.form.get("event-name", "").strip()
+    filter = request.form.get("filter", "all-events")
+
+    # ----------------------------------------------------
+    # APPLY EVENT TYPE FILTER 
+    # ----------------------------------------------------     
+    if filter == 'artist-events':
+        event_query = Event.query.filter(Event.artists.any())
+
+    if filter == 'fanclub-events':
+            event_query = Event.query.filter(Event.fanclubs.any())
+
+    # ----------------------------------------------------
+    # APPLY TEXT SEARCH FILTER 
+    # ----------------------------------------------------
+
+    if search_term:
+        search_pattern = f"%{search_term}%"
+        event_query = event_query.filter(
+            Event.Event_Name.ilike(search_pattern)    # for case insensitive search
+        )        
+
+    events = event_query.all()
+
+    return render_template('events.html', events=events, current_filter=filter)
 
 
 @main_routes.route('/merchandise')
