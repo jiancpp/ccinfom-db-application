@@ -11,7 +11,7 @@ INSERT INTO Manager (Manager_ID, Manager_Name, Contact_Num, Contact_Email, Agenc
 -- 2. ARTIST TABLE (Parent, references Manager)
 INSERT INTO Artist (Artist_ID, Manager_ID, Artist_Name, Activity_Status, Debut_Date, Debut_Days) VALUES
 (1, 1, 'BlackPink', 'Active', '2016-08-08', 3378),
-(2, 2, 'Enhyphen', 'Active', '2020-11-30', 1803),
+(2, 2, 'Enhypen', 'Active', '2020-11-30', 1803),
 (3, 3, 'Zerobaseone', 'Active', '2023-07-10', 851),
 (4, 4, 'AKMU', 'Active', '2014-04-07', 4232),
 (5, 5, 'Aespa', 'Active', '2020-11-27', 1806),
