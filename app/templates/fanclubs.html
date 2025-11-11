@@ -20,23 +20,18 @@
                 <div class="card fanclub-item-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                         
-                        {# Left Side: Fanclub Name and Artist Name (already in the H2, but helpful here) #}
                         <div style="flex-grow: 1; min-width: 200px;">
                             <h3 style="margin-top: 0; margin-bottom: 0.25rem;">{{ fanclub.fanclub_name }}</h3>
                         </div>
 
-                        {# Right Side: Member Count and Action Buttons #}
                         <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem;">
                             
-                            {# Member Count Badge #}
                             <div class="badge" style="background: #e0f7fa; color: #00bcd4; white-space: nowrap; padding: 6px 14px;">
                                 Members: {{ fanclub.member_count }}
                             </div>
                             
-                            {# Buttons #}
                             <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=fanclub.fanclub_id) }}" class="btn btn-outline" style="padding: 8px 16px;">View Fanclub</a>
                             
-                            {# Conditional Join/Leave Button #}
                             {% if fanclub.is_member %}
                                 <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.fanclub_id) }}" style="display: inline;">
                                     <button type="submit" 

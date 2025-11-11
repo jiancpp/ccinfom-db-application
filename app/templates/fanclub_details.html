@@ -4,7 +4,6 @@
 
 {% block content %}
 
-    {# BACK BUTTON BAR #}
     <div style="margin-bottom: 1.5rem;">
         <a href="{{ url_for('main_routes.fanclubs') }}" 
            class="btn btn-small btn-outline" 
@@ -13,14 +12,12 @@
         </a>
     </div>
 
-    {# HEADER AND ACTION BUTTONS #}
     <div style="margin-bottom: 4rem; 
                 display: flex; 
                 justify-content: space-between; 
                 align-items: flex-end; /* Align actions to the bottom of the title block */
                 gap: 20px;">
 
-        {# TITLE BLOCK #}
         <div class="header-titles">
             <h1 style="color: #764ba2; margin-top: 0.5rem; margin-bottom: 0.1rem; font-size: 3rem; white-space: nowrap;">
                 ✨ {{ fanclub.fanclub_name }}
@@ -30,8 +27,7 @@
                 {{ fanclub.artist_name }} Fan Community
             </p>
         </div>
-        
-        {# View Button and Join/Leave Button #}
+
         <div class="action-buttons" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
             
             {# View Members Button #}
@@ -70,11 +66,8 @@
         </div>
     </div>
     
-    
-    {# MAIN CONTENT #}
     <div class="main-content-flow" style="display: flex; flex-direction: column; gap: 4rem;">
         
-        {# RELATED MERCHANDISE SECTION #}
         <section>
             <h2 style="color: #764ba2; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; margin-bottom: 2rem;">
                 🛍️ Exclusive Merchandise ({{ fanclub.merchandise | length }})
@@ -89,14 +82,10 @@
                                     background: #fff; 
                                     border-radius: 12px; 
                                     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);">
-                            
-                            {# MERCHANDISE NAME #}
+                        
                             <h5 style="margin-top: 0; margin-bottom: 0.5rem; color: #333; font-size: 1.1rem;">{{ merch.merch_name }}</h5>
-                            
-                            {# MERCHANDISE PRICE #}
                             <p style="color: #4CAF50; font-weight: 700; font-size: 1.2rem; margin-bottom: 1rem;">${{ merch.price }}</p>
-                            
-                            {# View Button #}
+
                             <a href="/merchandise/{{ merch.merch_id }}" class="btn btn-small" 
                                style="background: #764ba2; color: white; padding: 8px 15px; border-radius: 6px; font-weight: 500;">View</a>
                         </div>
@@ -109,7 +98,6 @@
             {% endif %}
         </section>
 
-        {# RELATED EVENTS SECTION #}
         <section>
             <h2 style="color: #764ba2; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; margin-bottom: 2rem;">
                 📅 Upcoming Fanclub Events ({{ fanclub.events | length }})

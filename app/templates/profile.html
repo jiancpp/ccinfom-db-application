@@ -70,9 +70,9 @@
                     {% for purchase in purchases %}
                         <tr>
                             <td>
-                                **<a href="{{ url_for('main_routes.event_detail', event_id=purchase.Event_ID) }}" style="color: #764ba2; text-decoration: none;">
+                                <a href="{{ url_for('main_routes.event_detail', event_id=purchase.Event_ID) }}" style="color: #764ba2; text-decoration: none;">
                                     {{ purchase.event.Event_Name }}
-                                </a>**
+                                </a>
                             </td>
                             <td>
                                 <span class="badge" style="background: #e9ecef; color: #333;">
