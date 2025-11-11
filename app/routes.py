@@ -54,7 +54,7 @@ def fanclubs():
     
     fanclubs_list = []
     for fanclub_id, fanclub_name, artist_name, member_count in fanclub_data:
-        is_member = False 
+        is_member = False # Placeholder
         # if current_user.is_authenticated:
         #    is_member = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=current_user.Fan_ID).first() is not None
         
@@ -188,19 +188,19 @@ def fanclub_details(fanclub_id):
     member_count = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id).count()
     event_list = club.events
     
-    merch_list = Merchandise.query.filter_by(Artist_ID=club.Artist_ID).all()
+    merch_list = Merchandise.query.filter_by(Fanclub_ID=fanclub_id).all()
     
     is_member = False 
 
     context = {
-        'Fanclub_ID': club.Fanclub_ID,
-        'Fanclub_Name': club.Fanclub_Name,
-        'Artist_ID': club.Artist_ID,
+        'fanclub_id': club.Fanclub_ID,
+        'fanclub_name': club.Fanclub_Name,
+        'artist_id': club.Artist_ID,
         'artist_name': artist_name,
         'member_count': member_count,
         'is_member': is_member,
-        'merchandise': [{'Merch_Name': m.Merchandise_Name, 'Price': m.Merchandise_Price, 'Merch_ID': m.Merchandise_ID} for m in merch_list],
-        'events': [{'Event_Name': e.Event_Name, 'Event_Date': e.Start_Date, 'Event_ID': e.Event_ID} for e in event_list],
+        'merchandise': [{'merch_name': m.Merchandise_Name, 'price': m.Merchandise_Price, 'merch_ID': m.Merchandise_ID} for m in merch_list],
+        'events': [{'event_name': e.Event_Name, 'start_date': e.Start_Date, 'end_date': e.End_Date, 'event_id': e.Event_ID} for e in event_list],
     }
     
     return render_template('fanclub_details.html', fanclub=context)
@@ -226,7 +226,7 @@ def fanclub_members(fanclub_id):
         Fan.Date_Joined
     ) \
         .join(Fanclub_Membership, Fan.Fan_ID == Fanclub_Membership.Fan_ID) \
-        .filter(Fanclub_Membership.Fanclub_ID == fanclub_id) \
+        .filter(Fanclub_Membership.Fanclub_ID == club.Fanclub_ID) \
         .all()
     
     context = {

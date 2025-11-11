@@ -1,18 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}{{ fanclub_name }} Members{% endblock %}
+{% block title %}{{ fanclub.fanclub_name }} Members{% endblock %}
 
 {% block content %}
 
     {# Back button to Fanclub Details #}
     <div style="margin-bottom: 0.5rem;">
-        {# NOTE: We assume you pass the Fanclub_ID in the context or can derive it from the Fanclub object. #}
-        {# Since your route only passed 'fanclub_name' and 'members', we'll use a placeholder URL here. #}
-        {# FUTURE UPDATE: Modify the fanclub_members route to pass 'fanclub_id' in the context. #}
         <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=fanclub.fanclub_id) }}" 
            class="btn btn-small btn-outline" 
            style="text-decoration: none; padding: 5px 12px; font-size: 0.85rem; color: #555;">
-            &larr; Back to Fanclubs List
+            &larr; Back to Fanclub Details
         </a>
     </div>
 
@@ -21,7 +18,7 @@
             {{ fanclub.fanclub_name }} Community
         </h1>
         <p style="font-size: 1.1rem; color: #666; margin-top: 0;">
-            A list of all dedicated fans in this community.
+            A list of all dedicated fans in this fanclub.
         </p>
     </header>
 
@@ -32,7 +29,6 @@
             {% for member in fanclub.members %}
                 <div class="card member-item" style="padding: 1rem; border-left: 5px solid #00bcd4;">
                     <h4 style="margin: 0;">👤 {{ member.username }}</h4>
-                    {# FUTURE UPDATE: Display join date. #}
                 </div>
             {% endfor %}
         </div>

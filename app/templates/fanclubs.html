@@ -5,14 +5,10 @@
 {% block content %}
 <header style="margin-bottom: 2rem;">
     <h1>💖 Fanclubs</h1>
-    <p style="color: #666;">Explore and join official fan communities for your favorite K-Pop artists.</p>
+    <p style="color: #666;">Explore and join fan communities for your favorite K-Pop artists.</p>
 </header>
 
 {% if fanclubs %}
-    {# 
-        CRITICAL STEP: Group the fanclubs by the 'artist_name' property.
-        'artist_name' must be correctly provided and sorted by the Flask route.
-    #}
     {% for artist_name, clubs in fanclubs | groupby('artist_name') %}
         
         <h2 style="margin-top: 3rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">
@@ -38,13 +34,13 @@
                             </div>
                             
                             {# Buttons #}
-                            <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=club.Fanclub_ID) }}" class="btn" style="padding: 8px 16px;">View Details</a>
+                            <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=club.Fanclub_ID) }}" class="btn" style="padding: 8px 16px;">View Fanclub</a>
                             
                             {# Conditional Join/Leave Button #}
                             {% if club.is_member %}
-                                <a href="{{ url_for('main_routes.leave_fanclub', fanclub_id=club.Fanclub_ID) }}" class="btn btn-secondary" style="padding: 8px 16px;">Leave Club</a>
+                                <a href="{{ url_for('main_routes.leave_fanclub', fanclub_id=club.Fanclub_ID) }}" class="btn btn-secondary" style="padding: 8px 16px;">Leave Fanclub</a>
                             {% else %}
-                                <a href="{{ url_for('main_routes.join_fanclub', fanclub_id=club.Fanclub_ID) }}" class="btn btn-outline" style="padding: 8px 16px;">Join Now!</a>
+                                <a href="{{ url_for('main_routes.join_fanclub', fanclub_id=club.Fanclub_ID) }}" class="btn btn-outline" style="padding: 8px 16px;">Join Fanclub</a>
                             {% endif %}
                         </div>
                     </div>
