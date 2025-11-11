@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Create Fanclub Event - {{ fanclub.Fanclub_Name }}{% endblock %}
+
+{% block content %}
+    <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
+        <h1 style="color: #667eea; font-size: 2.5rem; margin-bottom: 5px;">
+            🎉 New Event for {{ fanclub.Fanclub_Name }}
+        </h1>
+        <p style="color: #555;">
+            All fields marked with * are required.
+        </p>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div style="margin-bottom: 20px;">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('main_routes.create_fanclub_event', fanclub_id=fanclub.Fanclub_ID) }}">
+        
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+            
+            <div class="card" style="border-left: 5px solid #764ba2;">
+                <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                    Event Details
+                </h3>
+
+                <div class="form-group">
+                    <label for="event_name">Event Name *</label>
+                    <input type="text" id="event_name" name="event_name" required placeholder="e.g., KSync Comeback Party">
+                </div>
+
+                <div class="form-group">
+                    <label for="event_type">Type *</label>
+                    <select id="event_type" name="event_type" required>
+                        <option value="">-- Select Event Type --</option>
+                        <option value="Concert">Concert</option>
+                        <option value="Fanmeet">Fanmeet</option>
+                        <option value="Hi Touch">Hi Touch</option>
+                        <option value="Cupsleeve">Cupsleeve</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Supported Artist</label>
+                    <p style="padding: 10px; background: #f0f5f0; border-radius: 6px; font-weight: 600; color: #764ba2;">
+                        🎤 {{ artist.Artist_Name }} 
+                    </p>
+                    <input type="hidden" name="artist_id" value="{{ artist.Artist_ID }}">
+                </div>
+            </div>
+
+            <div class="card" style="border-left: 5px solid #667eea;">
+                <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                    Location & Time
+                </h3>
+
+                <div class="form-group">
+                    <label for="venue_id">Venue *</label>
+                    <select id="venue_id" name="venue_id" required>
+                        <option value="">-- Select Venue --</option>
+                        {% for venue in venues %}
+                            <option value="{{ venue.Venue_ID }}">{{ venue.Venue_Name }} ({{ venue.Venue_City }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label for="start_date">Start Date *</label>
+                        <input type="date" id="start_date" name="start_date" required>
+                    </div>
+                    <div>
+                        <label for="start_time">Start Time *</label>
+                        <input type="time" id="start_time" name="start_time" required>
+                    </div>
+                </div>
+
+                <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label for="end_date">End Date (Optional)</label>
+                        <input type="date" id="end_date" name="end_date">
+                    </div>
+                    <div>
+                        <label for="end_time">End Time (Optional)</label>
+                        <input type="time" id="end_time" name="end_time">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 30px; text-align: center;">
+            <button type="submit" class="btn" style="background-color: #764ba2; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
+                <i class="fa fa-calendar-check-o"></i> Submit Event
+            </button>
+        </div>
+
+    </form>
+{% endblock %}

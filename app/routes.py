@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, session, redirect, url_for, flash,
 from flask import render_template, request, redirect, url_for, jsonify
 
 from app.models import *
+from sqlalchemy.exc import IntegrityError
+import datetime
 
 
 main_routes = Blueprint('main_routes', __name__)
@@ -337,3 +339,83 @@ def leave_fanclub(fanclub_id):
         
     flash(f"You successfully left this fanclub.", "success")
     return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
+
+@main_routes.route('/fanclub/<int:fanclub_id>/create-event', methods=['GET', 'POST'])
+def create_fanclub_event(fanclub_id):
+    fanclub = Fanclub.query.get_or_404(fanclub_id)
+    
+    if request.method == 'GET':
+        artist = Artist.query.get(fanclub.Artist_ID) if fanclub.Artist_ID else None
+        all_venues = Venue.query.order_by(Venue.Venue_Name).all()
+        
+        return render_template(
+            'create_fanclub_event.html', 
+            fanclub=fanclub, 
+            artist=artist, 
+            venues=all_venues
+        )
+
+    if request.method == 'POST':
+        try:
+            event_name = request.form.get('event_name')
+            event_type = request.form.get('event_type')
+            venue_id = request.form.get('venue_id')
+            start_date_str = request.form.get('start_date')
+            end_date_str = request.form.get('end_date')
+            start_time_str = request.form.get('start_time')
+            end_time_str = request.form.get('end_time')
+            
+            if not all([event_name, event_type, venue_id, start_date, start_time]):
+                flash("Missing required event information.", 'error')
+                return redirect(request.url)
+            
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            start_time = datetime.datetime.strptime(start_time_str, '%H:%M').time()
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
+            end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time() if end_time_str else None
+
+            new_event = Event(
+                Event_Name=event_name,
+                Event_Type=event_type,
+                Venue_ID=venue_id,
+                Artist_ID=fanclub.Artist_ID,
+                Start_Date=start_date,
+                End_Date=end_date,
+                Start_Time=start_time,
+                End_Time=end_time
+            )
+
+            db.session.add(new_event)
+            db.session.flush()
+
+            new_fanclub_event = Fanclub_Event(
+                Fanclub_ID=fanclub.Fanclub_ID,
+                Event_ID=new_event.Event_ID
+            )
+
+            db.session.add(new_fanclub_event)
+            db.session.commit()
+            
+            flash(f"Event '{event_name}' successfully created!", 'success')
+            return redirect(url_for('main_routes.event_detail', event_id=new_event.Event_ID))
+
+        except IntegrityError as e:
+            db.session.rollback()
+            flash(f"Database Error (Integrity constraint failed). Please check inputs.", 'error')
+            print(f"SQLAlchemy Integrity Error: {e}")
+        except ValueError:
+            db.session.rollback()
+            flash("Date/Time format is incorrect. Please use YYYY-MM-DD and HH:MM.", 'error')
+        except Exception as e:
+            db.session.rollback()
+            flash(f"An unexpected error occurred. {e}", 'error')
+            
+        artist = Artist.query.get(fanclub.Artist_ID) if fanclub.Artist_ID else None
+        all_venues = Venue.query.order_by(Venue.Venue_Name).all()
+
+        return render_template(
+            'create_fanclub_event.html', 
+            fanclub=fanclub, 
+            artist=artist, 
+            venues=all_venues
+        )
