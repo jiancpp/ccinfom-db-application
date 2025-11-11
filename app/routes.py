@@ -150,18 +150,19 @@ def register():
 
         try:
             new_fan = Fan(
-                first_name=first_name, 
-                last_name=last_name, 
-                username=username, 
-                email=email,
+                First_Name=first_name,
+                Last_Name=last_name,
+                Username=username,
+                Email=email,
             )
+
             db.session.add(new_fan)
             db.session.commit()
 
             flash(f'Welcome, {username}! You can now log in.', 'success')
             return redirect(url_for('main_routes.login'))
         
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('A server error occurred during registration. Please try again.', 'error')
 
