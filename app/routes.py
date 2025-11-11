@@ -343,11 +343,10 @@ def leave_fanclub(fanclub_id):
 @main_routes.route('/fanclub/<int:fanclub_id>/create-event', methods=['GET', 'POST'])
 def create_fanclub_event(fanclub_id):
     fanclub = Fanclub.query.get_or_404(fanclub_id)
+    artist = Artist.query.get(fanclub.Artist_ID) if fanclub.Artist_ID else None
+    all_venues = Venue.query.order_by(Venue.Venue_Name).all()
     
-    if request.method == 'GET':
-        artist = Artist.query.get(fanclub.Artist_ID) if fanclub.Artist_ID else None
-        all_venues = Venue.query.order_by(Venue.Venue_Name).all()
-        
+    if request.method == 'GET':        
         return render_template(
             'create_fanclub_event.html', 
             fanclub=fanclub, 
@@ -365,20 +364,19 @@ def create_fanclub_event(fanclub_id):
             start_time_str = request.form.get('start_time')
             end_time_str = request.form.get('end_time')
             
-            if not all([event_name, event_type, venue_id, start_date, start_time]):
+            if not all([event_name, event_type, venue_id, start_date_str, start_time_str, end_time_str]):
                 flash("Missing required event information.", 'error')
                 return redirect(request.url)
             
             start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
             start_time = datetime.datetime.strptime(start_time_str, '%H:%M').time()
-            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
-            end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time() if end_time_str else None
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else start_date
+            end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time()
 
             new_event = Event(
                 Event_Name=event_name,
                 Event_Type=event_type,
                 Venue_ID=venue_id,
-                Artist_ID=fanclub.Artist_ID,
                 Start_Date=start_date,
                 End_Date=end_date,
                 Start_Time=start_time,
@@ -397,24 +395,20 @@ def create_fanclub_event(fanclub_id):
             db.session.commit()
             
             flash(f"Event '{event_name}' successfully created!", 'success')
-            return redirect(url_for('main_routes.event_detail', event_id=new_event.Event_ID))
+            return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
 
         except IntegrityError as e:
             db.session.rollback()
             flash(f"Database Error (Integrity constraint failed). Please check inputs.", 'error')
             print(f"SQLAlchemy Integrity Error: {e}")
-        except ValueError:
-            db.session.rollback()
-            flash("Date/Time format is incorrect. Please use YYYY-MM-DD and HH:MM.", 'error')
         except Exception as e:
             db.session.rollback()
             flash(f"An unexpected error occurred. {e}", 'error')
-            
+
         artist = Artist.query.get(fanclub.Artist_ID) if fanclub.Artist_ID else None
         all_venues = Venue.query.order_by(Venue.Venue_Name).all()
 
-        return render_template(
-            'create_fanclub_event.html', 
+        return render_template('create_fanclub_event.html', 
             fanclub=fanclub, 
             artist=artist, 
             venues=all_venues
