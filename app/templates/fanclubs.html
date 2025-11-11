@@ -9,14 +9,14 @@
 </header>
 
 {% if fanclubs %}
-    {% for artist_name, fanclub in fanclubs | groupby('artist_name') %}
+    {% for artist_name, clubs in fanclubs | groupby('artist_name') %}
         
         <h2 style="margin-top: 3rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">
             🎤 {{ artist_name }} Fanclubs
         </h2>
 
         <div class="fanclub-list-container" style="margin-bottom: 2rem;">
-            {% for fanclub in fanclubs %}
+            {% for fanclub in clubs %}
                 <div class="card fanclub-item-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                         
