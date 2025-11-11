@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, flash
+from flask import Blueprint, render_template, session, redirect, url_for, flash, g
 from flask import render_template, request, redirect, url_for, jsonify
 
 from app.models import *
@@ -80,13 +80,11 @@ def fanclubs():
     
     fanclubs_list = []
     for fanclub_id, fanclub_name, artist_name, member_count in fanclub_data:
-        is_member = False # Placeholder
-        # if current_user.is_authenticated:
-        #    is_member = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=current_user.Fan_ID).first() is not None
+        is_member = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID).first() is not None
         
         fanclubs_list.append({
-            'Fanclub_ID': fanclub_id,
-            'Fanclub_Name': fanclub_name,
+            'fanclub_id': fanclub_id,
+            'fanclub_name': fanclub_name,
             'artist_name': artist_name,
             'member_count': member_count,
             'is_member': is_member
@@ -98,28 +96,86 @@ def fanclubs():
 # ============================================
 #           USER MANAGEMENT (PLACEHOLDERS)
 # ============================================
-@main_routes.route('/login')
+@main_routes.route('/login', methods=['GET', 'POST'])
 def login():
-    # Setup login later
-    session["username"] = "Person"
+    if request.method == 'POST':
+        username_or_email = request.form.get('username')
+        
+        fan = Fan.query.filter(
+            (Fan.Username == username_or_email) | (Fan.Email == username_or_email)
+        ).first()
+
+        if fan:
+            session['logged_in'] = True
+            session['username'] = fan.Username
+            session['fan_id'] = fan.Fan_ID
+            
+            flash(f'Login successful! Welcome back, {fan.First_Name}.', 'success')
+            return redirect(url_for('main_routes.index')) 
+        else:
+            flash('Login failed: Account with that username or email not found.', 'error')
+            
     return render_template('login.html')
 
+@main_routes.route('/logout')
+def logout():
+    session.pop('fan_id', None)
+    session.pop('username', None)
+    session.pop('logged_in', None)
+    flash('You have been logged out successfully.', 'success')
+    return redirect(url_for('main_routes.index'))
 
-@main_routes.route('/register')
+
+@main_routes.route('/register', methods=['GET', 'POST'])
 def register():
+    if request.method == 'POST':
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        username = request.form.get('username')
+        email = request.form.get('email')
+        
+        if not all([first_name, last_name, username, email]):
+            flash('All fields are required. Did you forget something?', 'error')
+            return redirect(url_for('main_routes.register'))
+
+        if Fan.query.filter_by(Username=username).first():
+            flash('An account with that username already exists. Try logging in!', 'error')
+            return redirect(url_for('main_routes.register'))
+
+        if Fan.query.filter_by(Email=email).first():
+            flash('An account with that email already exists. Try logging in!', 'error')
+            return redirect(url_for('main_routes.register'))
+
+        try:
+            new_fan = Fan(
+                first_name=first_name, 
+                last_name=last_name, 
+                username=username, 
+                email=email,
+            )
+            db.session.add(new_fan)
+            db.session.commit()
+
+            flash(f'Welcome, {username}! You can now log in.', 'success')
+            return redirect(url_for('main_routes.login'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash('A server error occurred during registration. Please try again.', 'error')
+
     return render_template('register.html')
 
 
 @main_routes.route('/profile')
 def profile():
-    return render_template('profile.html')
+    current_fan_id = session.get('fan_id')
+    fan = Fan.query.get(current_fan_id)
 
+    memberships = fan.memberships
+    purchases = db.session.query(Ticket_Purchase).filter(Ticket_Purchase.Fan_ID == current_fan_id).order_by(Ticket_Purchase.Purchase_Date.desc()).all()
+    
+    return render_template('profile.html', fan=fan, memberships=memberships, purchases=purchases)
 
-@main_routes.route('/logout')
-def logout():
-    session.pop('username', None)
-    flash('You have been logged out.', 'success')
-    return redirect(url_for('index'))
 
 @main_routes.route('/test_db')
 def test_db():
@@ -216,7 +272,7 @@ def fanclub_details(fanclub_id):
     
     merch_list = Merchandise.query.filter_by(Fanclub_ID=fanclub_id).all()
     
-    is_member = False 
+    is_member = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID).first() is not None
 
     context = {
         'fanclub_id': club.Fanclub_ID,
@@ -237,14 +293,11 @@ def fanclub_details(fanclub_id):
 def fanclub_members(fanclub_id):
     club = Fanclub.query.filter_by(Fanclub_ID=fanclub_id).first_or_404()
     
-    # is_member = Fanclub_Membership.query.filter_by(
-    #     Fanclub_ID=fanclub_id,
-    #     User_ID=current_user.User_ID 
-    # ).first()
+    is_member = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID).first() is not None
     
-    # if not is_member:
-    #     flash(f"You must be a member of {club.Fanclub_Name} to view the community list.", 'danger')
-    #     return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
+    if not is_member:
+        flash(f"You must be a member of {club.Fanclub_Name} to view this.", 'error')
+        return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
 
 
     members_data = db.session.query(
@@ -269,23 +322,18 @@ def fanclub_members(fanclub_id):
 
 @main_routes.route('/fanclubs/<int:fanclub_id>/join', methods=['POST'])
 def join_fanclub(fanclub_id):
-    # if not current_user.is_authenticated:
-    #     flash("Please log in to join a fanclub.", "danger")
-    #     return redirect(url_for('auth_routes.login'))
-
-    # membership = Fanclub_Membership(Fanclub_ID=fanclub_id, Fan_ID=current_user.Fan_ID)
-    # db.session.add(membership)
-    # db.session.commit()
+    membership = Fanclub_Membership(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID)
+    db.session.add(membership)
+    db.session.commit()
     
-    flash(f"You successfully joined Fanclub ID {fanclub_id}! (Action Placeholder)", "success")
+    flash(f"You successfully joined this fanclub!", "success")
     return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
 
 @main_routes.route('/fanclubs/<int:fanclub_id>/leave', methods=['POST'])
 def leave_fanclub(fanclub_id):
-    # membership = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=current_user.Fan_ID).first()
-    # if membership:
-    #     db.session.delete(membership)
-    #     db.session.commit()
+    membership = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID).first()
+    db.session.delete(membership)
+    db.session.commit()
         
-    flash(f"You successfully left Fanclub ID {fanclub_id}. (Action Placeholder)", "warning")
+    flash(f"You successfully left this fanclub.", "success")
     return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))

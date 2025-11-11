@@ -1,8 +1,8 @@
 INSERT INTO Fan (Username, First_Name, Last_Name, Email, Date_Joined, Days_Since) 
-VALUES	('elolunario', 'Shielo', 'Lunario', 'shielo@gmail.com', '2021-01-01', NULL),
-		('jesmaeee', 'Jessica', 'Dela Cruz', '0125jess.mae@gmail.com', '2025-01-25', NULL),
-		('jiancpp', 'Jianna', 'Moraga', 'jia11@gmail.com', '2014-12-13', NULL),
-		('piaya', 'Philomena', 'Punzalan', 'piamarie@gmail.com', '2008-06-07', NULL),
+VALUES	('eloelo', 'Shielo', 'Lunario', 'shielo@gmail.com', '2021-01-01', NULL),
+		('jesmaeca', 'Jessica', 'Dela Cruz', 'jess@gmail.com', '2025-01-25', NULL),
+		('jiancpp', 'Jianna', 'Moraga', 'jia@gmail.com', '2014-12-13', NULL),
+		('piaya', 'Philomena', 'Punzalan', 'pia@gmail.com', '2008-06-07', NULL),
 		('pikachu123', 'Pika', 'Chu', 'pika123chu@gmail.com', '2020-10-09', NULL),
 		('marvelFan88', 'Marco', 'Santos', 'marco.santos@gmail.com', '2019-03-15', NULL),
 		('luna_star', 'Luna', 'Reyes', 'lunareyes@gmail.com', '2022-07-22', NULL),

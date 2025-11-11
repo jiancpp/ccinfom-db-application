@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Fanclubs{% endblock %}
+{% block title %}Fanclubs - KSync{% endblock %}
 
 {% block content %}
 <header style="margin-bottom: 2rem;">
@@ -9,20 +9,20 @@
 </header>
 
 {% if fanclubs %}
-    {% for artist_name, clubs in fanclubs | groupby('artist_name') %}
+    {% for artist_name, fanclub in fanclubs | groupby('artist_name') %}
         
         <h2 style="margin-top: 3rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">
             🎤 {{ artist_name }} Fanclubs
         </h2>
 
         <div class="fanclub-list-container" style="margin-bottom: 2rem;">
-            {% for club in clubs %}
+            {% for fanclub in fanclubs %}
                 <div class="card fanclub-item-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                         
                         {# Left Side: Fanclub Name and Artist Name (already in the H2, but helpful here) #}
                         <div style="flex-grow: 1; min-width: 200px;">
-                            <h3 style="margin-top: 0; margin-bottom: 0.25rem;">{{ club.Fanclub_Name }}</h3>
+                            <h3 style="margin-top: 0; margin-bottom: 0.25rem;">{{ fanclub.fanclub_name }}</h3>
                         </div>
 
                         {# Right Side: Member Count and Action Buttons #}
@@ -30,17 +30,29 @@
                             
                             {# Member Count Badge #}
                             <div class="badge" style="background: #e0f7fa; color: #00bcd4; white-space: nowrap; padding: 6px 14px;">
-                                Members: {{ club.member_count }}
+                                Members: {{ fanclub.member_count }}
                             </div>
                             
                             {# Buttons #}
-                            <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=club.Fanclub_ID) }}" class="btn" style="padding: 8px 16px;">View Fanclub</a>
+                            <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=fanclub.fanclub_id) }}" class="btn btn-outline" style="padding: 8px 16px;">View Fanclub</a>
                             
                             {# Conditional Join/Leave Button #}
-                            {% if club.is_member %}
-                                <a href="{{ url_for('main_routes.leave_fanclub', fanclub_id=club.Fanclub_ID) }}" class="btn btn-secondary" style="padding: 8px 16px;">Leave Fanclub</a>
+                            {% if fanclub.is_member %}
+                                <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.fanclub_id) }}" style="display: inline;">
+                                    <button type="submit" 
+                                            class="btn" 
+                                            style="background-color: #d53f3f; padding: 10px 16px;">
+                                        Leave Fanclub
+                                    </button>
+                                </form>
                             {% else %}
-                                <a href="{{ url_for('main_routes.join_fanclub', fanclub_id=club.Fanclub_ID) }}" class="btn btn-outline" style="padding: 8px 16px;">Join Fanclub</a>
+                                <form method="POST" action="{{ url_for('main_routes.join_fanclub', fanclub_id=fanclub.fanclub_id) }}" style="display: inline;">
+                                    <button type="submit" 
+                                            class="btn"
+                                            style="padding: 10px 16px;">
+                                        Join Fanclub
+                                    </button>
+                                </form>
                             {% endif %}
                         </div>
                     </div>

@@ -1,9 +1,9 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, g, session
+from flask_sqlalchemy import SQLAlchemy 
 
 from app.config import DB_USER, DB_PASS, DB_NAME
 from app.models import db
-
+from app.user_loader import load_logged_in_user, inject_user
 
 def create_app():
     app = Flask(__name__)
@@ -13,7 +13,9 @@ def create_app():
 
     db.init_app(app)
 
-    # Import and register routes
+    app.before_request(load_logged_in_user)
+    app.context_processor(inject_user)
+
     from .routes import main_routes
     app.register_blueprint(main_routes)
 
