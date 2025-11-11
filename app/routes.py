@@ -172,8 +172,8 @@ def profile():
     fan = Fan.query.get(current_fan_id)
 
     memberships = fan.memberships
-    purchases = db.session.query(Ticket_Purchase).filter(Ticket_Purchase.Fan_ID == current_fan_id).order_by(Ticket_Purchase.Purchase_Date.desc()).all()
-    
+    purchases = fan.ticket_purchases
+
     return render_template('profile.html', fan=fan, memberships=memberships, purchases=purchases)
 
 
@@ -209,7 +209,7 @@ def buy_ticket(event_id):
             seat_id = None   
 
         purchase = Ticket_Purchase(
-            Fan_ID = 1,                 # Change to session.fan_id or something later
+            Fan_ID = session.get('fan_id'),                 # Change to session.fan_id or something later
             Event_ID = event.Event_ID,
             Tier_ID = tier_id,
             Seat_ID = seat_id            
