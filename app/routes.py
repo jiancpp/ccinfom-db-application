@@ -26,80 +26,55 @@ def index():
 
 @main_routes.route('/artists', methods=['GET'])
 def artists():
-    """
-    Handles the Artist list view, supporting searching and filtering 
-    (All, Followed, Not-Followed) by querying the ArtistFollower table.
-    """
     
     current_filter = request.args.get('filter', 'all') 
     current_search = request.args.get('artist-name', '').strip()
 
     artists_query = Artist.query.options(
         joinedload(Artist.manager), 
-        # Load followers, though we'll use a subquery for filtering efficiency
         joinedload(Artist.followers) 
     )
     
     # 1. Apply search filter
     if current_search:
-        artists_query = artists_query.filter(
-            Artist.Artist_Name.ilike(f'%{current_search}%')
-        )
+        artists_query = artists_query.filter(Artist.Artist_Name.ilike(f'%{current_search}%'))
 
-    # 2. Apply radio button filter using the ArtistFollower table
+    artists_list = []
+    followed_artist_ids = set() # Use a set for fast lookup
+
+    # 2. Check if a user is logged in
     if g.get('current_user'):
-        # Get the ID of the current fan (user)
         current_fan_id = g.current_user.Fan_ID
         
-        # Build a subquery to find all Artist IDs followed by the current user
-        followed_subquery = db.session.query(Artist_Follower.Artist_ID).filter(
+        # Optimize: Fetch ALL followed Artist IDs for the user in ONE query
+        followed_artist_ids_tuples = db.session.query(Artist_Follower.Artist_ID).filter(
             Artist_Follower.Fan_ID == current_fan_id
-        )
+        ).all()
         
+        followed_artist_ids = {artist_id for (artist_id,) in followed_artist_ids_tuples}
+        
+        # 3. Apply Follow/Not-Follow filter BEFORE executing the query
         if current_filter == 'followed':
-            # Filter for artists whose ID is in the subquery result
-            artists_query = artists_query.filter(Artist.Artist_ID.in_(followed_subquery))
+            artists_query = artists_query.filter(Artist.Artist_ID.in_(followed_artist_ids))
         
         elif current_filter == 'not-followed':
-            # Filter for artists whose ID is NOT in the subquery result
-            artists_query = artists_query.filter(Artist.Artist_ID.notin_(followed_subquery))
+            artists_query = artists_query.filter(Artist.Artist_ID.notin_(followed_artist_ids))
     
-    # 3. Execute the final query
+    # Execute the final, filtered query
     artists_list = artists_query.order_by(Artist.Artist_Name).all()
     
+    # 4. Attach the 'is_followed' flag to the returned objects
+    # This step is essential for the Jinja template's conditional logic.
+    if g.get('current_user'):
+        for artist in artists_list:
+            # Dynamically attach the 'is_followed' attribute
+            artist.is_followed = artist.Artist_ID in followed_artist_ids
+
     return render_template(
         'artists.html', 
         artists=artists_list,
         current_filter=current_filter,
         current_search=current_search
-    )
-
-# ---
-
-@main_routes.route('/artists/<int:artist_id>')
-def artist_details(artist_id):
-    """
-    Handles the individual Artist Profile view.
-    """
-    # Load the artist and all related details in an optimized way
-    artist = Artist.query.options(
-        joinedload(Artist.manager),             
-        joinedload(Artist.member_detail),       
-        joinedload(Artist.events).joinedload(Event.venue) 
-    ).get_or_404(artist_id)
-    
-    # Check if the current user is following this artist by querying the join table
-    is_following = False
-    if g.get('current_user'):
-        is_following = db.session.query(ArtistFollower).filter(
-            ArtistFollower.Fan_ID == g.current_user.Fan_ID,
-            ArtistFollower.Artist_ID == artist_id
-        ).one_or_none() is not None
-        
-    return render_template(
-        'artist_details.html', 
-        artist=artist,
-        is_following=is_following
     )
 
 @main_routes.route('/events', methods=["GET", "POST"])
@@ -486,3 +461,66 @@ def create_fanclub_event(fanclub_id):
             artist=artist, 
             venues=all_venues
         )
+    
+# ============================================
+#           Artist Subpages
+# ============================================
+@main_routes.route('/artists/<int:artist_id>')
+def artist_details(artist_id):
+    artist = Artist.query.options(
+        joinedload(Artist.manager),          
+        joinedload(Artist.member_detail),      
+        joinedload(Artist.events).joinedload(Event.venue) 
+    ).get_or_404(artist_id)
+    
+    artist.is_followed = False
+    
+    if g.get('current_user'):
+        is_following_query = db.session.query(Artist_Follower).filter(
+            Artist_Follower.Fan_ID == g.current_user.Fan_ID,
+            Artist_Follower.Artist_ID == artist_id
+        ).one_or_none()
+        
+        # Assign the boolean result to the new attribute
+        artist.is_followed = is_following_query is not None
+        
+    return render_template(
+        'artist_details.html', 
+        artist=artist,
+        # You no longer need to pass 'is_following' separately as it's on the artist object
+    )
+
+@main_routes.route('/artists/toggle_follow/<int:artist_id>', methods=['POST'])
+def toggle_follow(artist_id):
+    if not g.get('current_user'):
+        flash("You must be logged in to follow an artist.", 'error')
+        # Redirect to login, but store 'next' URL (not shown, but good practice)
+        return redirect(url_for('main_routes.login'))
+
+    artist = Artist.query.get_or_404(artist_id)
+    current_fan_id = g.current_user.Fan_ID
+    
+    # Get the action from the hidden input field in the POST request
+    action = request.form.get('action') 
+
+    # Check for existing follow relationship
+    follow_entry = db.session.query(Artist_Follower).filter(
+        Artist_Follower.Fan_ID == current_fan_id,
+        Artist_Follower.Artist_ID == artist_id
+    ).one_or_none()
+    
+    if action == 'follow' and not follow_entry:
+        # User requested to follow and isn't following yet
+        new_follow = Artist_Follower(Fan_ID=current_fan_id, Artist_ID=artist_id)
+        db.session.add(new_follow)
+        db.session.commit()
+        flash(f"🎉 You are now following {artist.Artist_Name}! ", 'success')
+        
+    elif action == 'unfollow' and follow_entry:
+        # User requested to unfollow and is currently following
+        db.session.delete(follow_entry)
+        db.session.commit()
+        flash(f"💔 You have unfollowed {artist.Artist_Name}.", 'info')
+        
+    # Redirect back to the page the user came from (artists list or details page)
+    return redirect(request.referrer or url_for('main_routes.artists'))

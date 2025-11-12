@@ -47,10 +47,69 @@
         margin-top: auto;
         flex-shrink: 0;
         align-self: center;
-        width: 100%; /* Make button full width for better clickability */
+        width: 100%; 
     }
 
-    /* --- FILTER STYLES (Copied from base to ensure it works here) --- */
+/* --- NEW STYLES FOR BUTTONS --- */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px; 
+        min-height: 40px; 
+        line-height: 1.2;
+        text-decoration: none; 
+        border-radius: 6px; 
+        cursor: pointer;
+        font-size: 14px; 
+        font-weight: 600;
+        text-align: center;
+        box-sizing: border-box; 
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .btn-group-form button {
+        width: 100%;
+        padding: 8px 12px;
+        min-height: 40px; 
+    }
+
+    .button-group {
+        display: flex;
+        gap: 5px;
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .button-group .btn i.fa {
+        font-size: 12px;
+        margin-right: 5px;
+    }
+    
+    .button-group .btn-link {
+        flex-grow: 1; 
+    }
+    
+    .btn-group-form {
+        flex-grow: 1; 
+    }
+    .btn-group-form button {
+        width: 100%;
+    }
+
+    .btn-follow {
+        background-color: #667eea; 
+        color: white;
+        border: 1px solid #667eea;
+    }
+
+    .btn-unfollow {
+        background-color: white;
+        color: #dc3545; 
+        border: 1px solid #dc3545;
+    }
+
+    /* --- FILTER STYLES --- */
     .filter-group input[type="radio"] {
         position: absolute;
         opacity: 0;
@@ -115,7 +174,7 @@
     }
 
     .search-input-group input:focus {
-        border-color: transparent; /* Override base style for input:focus */
+        border-color: transparent; 
     }
     
 </style>
@@ -175,18 +234,44 @@
                             </p>
                         {% endif %}
                         <p>
-                            <i class="fa fa-users"></i> Followers: **{{ artist.followers|length }}**
-                        </p>
-                        <p>
-                            <i class="fa fa-id-card-o"></i> Manager: **{{ artist.manager.Manager_Name }}**
+                            <i class="fa fa-users"></i> {{ artist.followers|length }} Followers
                         </p>
                     </div>
                 </div>
                 
-                {# Link to the artist's detail page #}
-                <a href="{{ url_for('main_routes.artist_details', artist_id=artist.Artist_ID) }}" class="btn btn-outline btn-link">
-                    View Profile
-                </a>
+                {# --- DYNAMIC BUTTON GROUP --- #}
+                <div class="button-group">
+                    
+                    {# 1. Follow/Unfollow Button Form #}
+                    {% if g.current_user %}
+                        <form method="POST" action="{{ url_for('main_routes.toggle_follow', artist_id=artist.Artist_ID) }}" class="btn-group-form">
+                            
+                            {% if artist.is_followed %}
+                                <input type="hidden" name="action" value="unfollow">
+                                <button type="submit" class="btn btn-unfollow"> 
+                                    <i class="fa fa-times"></i> Unfollow Artist
+                                </button>
+                            {% else %}
+                                <input type="hidden" name="action" value="follow">
+                                <button type="submit" class="btn btn-follow">
+                                    <i class="fa fa-heart"></i> Follow Artist
+                                </button>
+                            {% endif %}
+                        </form>
+                    {% else %}
+                        {# Login link must have the classes that allow it to flex-grow and look like a button #}
+                        <a href="{{ url_for('main_routes.login') }}" class="btn btn-follow btn-link">
+                            <i class="fa fa-sign-in"></i> Login to Follow
+                        </a>
+                    {% endif %}
+
+                    {# 2. View Profile Button: We must ensure this link uses the necessary classes for equal size #}
+                    <a href="{{ url_for('main_routes.artist_details', artist_id=artist.Artist_ID) }}" 
+                    class="btn btn-outline btn-link">
+                        View Profile
+                    </a>
+                </div>
+                {# --- END DYNAMIC BUTTON GROUP --- #}
             </li>
         {% endfor %}
     </ul>
