@@ -4,6 +4,7 @@ from flask import render_template, request, redirect, url_for, jsonify
 from app.models import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func, desc
 import datetime
 
 
@@ -15,14 +16,35 @@ main_routes = Blueprint('main_routes', __name__)
 @main_routes.route('/')
 def index():
     #added
-    artists, events = [], []
+    events, artists = [], []
+    title = ""
     tier = Ticket_Tier.query.get(10)  
     if tier:
         print([s.Section_Name for s in tier.sections])
     else:
         print("error")
 
-    return render_template('index.html', artists=artists, events=events)
+    follower_count = db.session.query(
+        Artist_Follower.Artist_ID,
+        func.count(Artist_Follower.Fan_ID).label('num_followers')
+    ).group_by(Artist_Follower.Artist_ID).subquery()
+    
+    if g.get('current_user'):
+        title = "Followed Artists"
+        artists = Artist.query.join(Artist.followers).filter(
+            Artist_Follower.Fan_ID == g.current_user.Fan_ID
+        ).all()
+    else:
+        title = "Active Artists"
+        artists = Artist.query.filter(
+            Artist.Activity_Status == 'Active'
+        ).outerjoin(
+            follower_count, Artist.Artist_ID == follower_count.c.Artist_ID
+        ).order_by(
+            desc(follower_count.c.num_followers)
+        ).limit(5).all()
+
+    return render_template('index.html', artists=artists, events=events, title=title)
 
 @main_routes.route('/artists', methods=['GET'])
 def artists():
