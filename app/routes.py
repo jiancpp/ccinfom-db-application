@@ -3,6 +3,7 @@ from flask import render_template, request, redirect, url_for, jsonify
 
 from app.models import *
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 import datetime
 
 
@@ -23,12 +24,83 @@ def index():
 
     return render_template('index.html', artists=artists, events=events)
 
+@main_routes.route('/artists', methods=['GET'])
+def artists():
+    """
+    Handles the Artist list view, supporting searching and filtering 
+    (All, Followed, Not-Followed) by querying the ArtistFollower table.
+    """
+    
+    current_filter = request.args.get('filter', 'all') 
+    current_search = request.args.get('artist-name', '').strip()
 
-@main_routes.route('/artists')
-def artists():    
-    artists = Artist.query.all()
-    return render_template('artists.html', artists=artists)
+    artists_query = Artist.query.options(
+        joinedload(Artist.manager), 
+        # Load followers, though we'll use a subquery for filtering efficiency
+        joinedload(Artist.followers) 
+    )
+    
+    # 1. Apply search filter
+    if current_search:
+        artists_query = artists_query.filter(
+            Artist.Artist_Name.ilike(f'%{current_search}%')
+        )
 
+    # 2. Apply radio button filter using the ArtistFollower table
+    if g.get('current_user'):
+        # Get the ID of the current fan (user)
+        current_fan_id = g.current_user.Fan_ID
+        
+        # Build a subquery to find all Artist IDs followed by the current user
+        followed_subquery = db.session.query(Artist_Follower.Artist_ID).filter(
+            Artist_Follower.Fan_ID == current_fan_id
+        )
+        
+        if current_filter == 'followed':
+            # Filter for artists whose ID is in the subquery result
+            artists_query = artists_query.filter(Artist.Artist_ID.in_(followed_subquery))
+        
+        elif current_filter == 'not-followed':
+            # Filter for artists whose ID is NOT in the subquery result
+            artists_query = artists_query.filter(Artist.Artist_ID.notin_(followed_subquery))
+    
+    # 3. Execute the final query
+    artists_list = artists_query.order_by(Artist.Artist_Name).all()
+    
+    return render_template(
+        'artists.html', 
+        artists=artists_list,
+        current_filter=current_filter,
+        current_search=current_search
+    )
+
+# ---
+
+@main_routes.route('/artists/<int:artist_id>')
+def artist_details(artist_id):
+    """
+    Handles the individual Artist Profile view.
+    """
+    # Load the artist and all related details in an optimized way
+    artist = Artist.query.options(
+        joinedload(Artist.manager),             
+        joinedload(Artist.member_detail),       
+        joinedload(Artist.events).joinedload(Event.venue) 
+    ).get_or_404(artist_id)
+    
+    # Check if the current user is following this artist by querying the join table
+    is_following = False
+    if g.get('current_user'):
+        is_following = db.session.query(ArtistFollower).filter(
+            ArtistFollower.Fan_ID == g.current_user.Fan_ID,
+            ArtistFollower.Artist_ID == artist_id
+        ).one_or_none() is not None
+        
+    return render_template(
+        'artist_details.html', 
+        artist=artist,
+        is_following=is_following
+    )
 
 @main_routes.route('/events', methods=["GET", "POST"])
 def events():

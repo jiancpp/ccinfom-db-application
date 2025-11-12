@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}{{ artist.Artist_Name }} Profile - K-Pop Fan Hub{% endblock %}
+{% block content %}
+<style>
+    /* Profile Header Styling */
+    .profile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 20px;
+    }
+
+    .profile-header h1 {
+        margin: 0;
+        color: #667eea;
+        font-size: 2.5rem;
+    }
+
+    .profile-meta {
+        text-align: right;
+    }
+    
+    .artist-status {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        color: white;
+    }
+
+    .status-Active { background: #28a745; }
+    .status-Inactive { background: #dc3545; }
+    .status-Hiatus { 
+        background: #ffc107; 
+        color: #333; 
+    }
+
+    /* Section Styles */
+    .section-title {
+        margin-top: 3rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 5px;
+        color: #333;
+    }
+
+    /* Member Card Styling (similar to general card) */
+    .member-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin: 1.5rem 0;
+    }
+
+    .member-card {
+        text-align: center;
+    }
+
+    .member-card h4 {
+        margin-top: 0.5rem;
+        margin-bottom: 0.25rem;
+        color: #333;
+    }
+
+    .member-role {
+        font-style: italic;
+        color: #6c757d;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .member-status {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 10px;
+        display: inline-block;
+    }
+
+    /* Event Table adjustments for clarity */
+    .artist-events table th:nth-child(2) {
+        width: 40%;
+    }
+    .artist-events table th:nth-child(3) {
+        width: 25%;
+    }
+
+</style>
+
+<div class="profile-header">
+    <div>
+        <h1>{{ artist.Artist_Name }}</h1>
+        <p style="color: #666;">
+            Debut: <span class="date">{{ artist.Debut_Date }}</span> ({{ artist.Debut_Days }} days)
+        </p>
+        <p>
+            Manager: **{{ artist.manager.Manager_Name }}**
+        </p>
+    </div>
+    <div class="profile-meta">
+        <span class="artist-status status-{{ artist.Activity_Status }}">
+            {{ artist.Activity_Status }}
+        </span>
+        <p style="margin-top: 10px;">
+            <i class="fa fa-heart"></i> {{ artist.followers|length }} Followers
+        </p>
+    </div>
+</div>
+
+<div style="text-align: right; margin-bottom: 20px;">
+    {# NOTE: Assuming g.current_user is available and has Fan_ID #}
+    {% if g.current_user %}
+        {# Placeholder logic: you'd need a route and database check to determine if following #}
+        <button class="btn btn-outline">
+            <i class="fa fa-plus"></i> Follow Artist
+        </button>
+    {% else %}
+        <a href="{{ url_for('main_routes.login') }}" class="btn btn-outline">Login to Follow</a>
+    {% endif %}
+</div>
+
+
+<h2 class="section-title">Members ({{ artist.member_detail|length }})</h2>
+{% if artist.member_detail %}
+    <ul class="member-grid">
+        {% for member in artist.member_detail %}
+            <li class="member-card card">
+                <h4>{{ member.Member_Name }}</h4>
+                <span class="member-role">{{ member.Role or 'No Role' }}</span>
+                <span class="member-status status-{{ member.Activity_Status }}">
+                    {{ member.Activity_Status }}
+                </span>
+                <p>Age: **{{ member.Age }}**</p>
+                <p>Nationality: {{ member.Nationality or 'N/A' }}</p>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="empty-state">This artist has no public member details.</p>
+{% endif %}
+
+<h2 class="section-title">Upcoming Events ({{ artist.events|length }})</h2>
+<div class="artist-events">
+    {% if artist.events %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Event Type</th>
+                    <th>Name</th>
+                    <th>Date</th>
+                    <th>Venue</th>
+                    <th>Tickets</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in artist.events %}
+                    <tr>
+                        <td>
+                            {% for t in event.Event_Type %}<span class="badge">{{ t }}</span>{% endfor %}
+                        </td>
+                        <td>{{ event.Event_Name }}</td>
+                        <td>
+                            <span class="date">{{ event.Start_Date }}</span>
+                        </td>
+                        <td>{{ event.venue.Venue_Name }}</td>
+                        <td>
+                            <a href="{{ url_for('main_routes.buy_ticket', event_id=event.Event_ID) }}" class="btn btn-sm">Buy</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No upcoming events scheduled for this artist.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
