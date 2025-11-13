@@ -27,10 +27,21 @@
 
         .event-card .event-details li{
             list-style: none;
+            margin: 0.25rem 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .event-card .event-details .indent {
+            padding-left: 9px;
         }
 
         .event-card .event-details li:last-child {
-            margin-bottom: 5px;
+            margin-bottom: 1.5rem;
+        }
+
+        .event-card .event-details li .detail-container{
+            margin-left: 7px;
         }
 
         .event-card .event-details .buy-ticket {
@@ -38,6 +49,35 @@
             flex-shrink: 0;   /* prevents it from squishing */
             align-self: flex-start;
             align-content: center;
+        }
+
+        .search-input-group {
+            display: flex;
+            align-items: center;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            padding: 0 10px;
+            flex-grow: 1;
+            max-width: 400px;
+        }
+        
+        .search-input-group button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #667eea;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .search-input-group input {
+            border: none;
+            width: 100%;
+            padding: 8px 10px;
+        }
+
+        .search-input-group input:focus {
+            border-color: transparent; 
         }
 
         .filter-group input[type="radio"] {
@@ -79,20 +119,12 @@
 
     {# FILTER EVENTS #}
     <form action="/events" method="POST" style="display: flex;" id="event-filter-form">
-        <button type="submit" 
-                style=" background: none;
-                        border: none;
-                        font-size: 20px;
-                        color: #373135;
-                        cursor: pointer;
-                        padding: 5px;
-                        margin: 5px;
-        "><i class="fa fa-search"></i></button>
+        <div class="search-input-group">
+            <button type="submit">
+            <i class="fa fa-search"></i></button>
+            <input type="text" id="event-name" name="event-name" placeholder="Search Event...">
+        </div>
 
-        <input type="text" id="event-name" name="event-name" placeholder="Search Event..."
-        style=" border-radius: 50px;
-                width: 30%;
-        ">
 
         <div class="filter-group" 
             style="display: flex; 
@@ -129,21 +161,28 @@
                                 <span class="event-type">{{ t }}</span>
                                 {% endfor %}
                             </li>
-                            <li>
-                                {{ event.venue.Venue_Name }}
+                            <li class="indent">
+                                <i class="fa fa-map-marker"></i>
+                                <span class="detail-container">{{ event.venue.Venue_Name }}</span>
                             </li>
-                            <li>
+                            <li class="indent">
+                                <i class="fa fa-calendar"></i>
                                 {% if event.Start_Date != event.End_Date %}
-                                    <span class="date">{{ event.Start_Date }}</span> to 
-                                    <span class="date">{{ event.End_Date }}</span>
+                                    <span class="detail-container">
+                                        <span class="date">{{ event.Start_Date }}</span> to 
+                                        <span class="date">{{ event.End_Date }}</span>
+                                    </span>
                                 {% else %}
-                                    <span class="date">{{ event.Start_Date }}</span>
+                                    <span class="detail-container">
+                                        <span class="date">{{ event.Start_Date }}</span>
+                                    </span>
                                 {% endif %}
                             </li>
                         </ul>
                     </span>
                     <a href="{{ url_for('main_routes.buy_ticket', event_id=event.Event_ID) }}" class="btn buy-ticket">
-                        Buy Tickets
+                        View event details
+
                     </a>
                     
                 </li>

@@ -293,7 +293,7 @@ def buy_ticket(event_id):
 
         
 
-    return render_template("events_ticket_purchase.html", event=event)
+    return render_template("event_details.html", event=event)
 
 @main_routes.route('/events/buy_ticket/<int:event_id>/<int:section_id>/seats', methods=["GET"])
 def get_seats(event_id, section_id):
