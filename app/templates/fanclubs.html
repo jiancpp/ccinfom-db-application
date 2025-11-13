@@ -120,6 +120,17 @@
         background-color: #a5a8e9;
         color: #1f1327;
     }
+
+    .filter-group select {
+        display: block;
+        padding: 5px 20px;
+        margin: 0 3px;
+        border-radius: 50px;
+        max-height: 3rem;
+        font-size: 11px;
+        color: #1f1d1e;
+        transition: 0.3s;
+    }
     /* --- END FILTER STYLES --- */
     
     .search-filter-container {
@@ -164,6 +175,43 @@
     <p style="color: #666;">Explore and join fan communities for your favorite K-Pop artists.</p>
 </header>
 
+<form action="{{ url_for('main_routes.fanclubs') }}" method="GET" id="fanclub-filter-form" class="search-filter-container">
+    <div class="search-input-group">
+        <button type="submit">
+            <i class="fa fa-search"></i>
+        </button>
+        <input type="text" id="fanclub-name" name="fanclub-name" 
+               placeholder="Search Fanclub Name..."
+               value="{{ current_search | default('') }}">
+    </div>
+
+    <div class="filter-group" 
+        style="display: flex; flex-direction: row; align-items: center;">
+        <span style="margin-right: 5px">
+            <select name="artist" id="artist-select" onchange="this.form.submit()">
+                <option value="all" {% if current_artist == 'all' %}selected{% endif %}>All</option>
+                {% for artist in artist_names %}
+                    <option value="{{ artist }}" {% if current_artist == artist %}selected{% endif %}>{{ artist }}</option>
+                {% endfor %}
+            </select>
+        </span>
+        
+        {% set filter_val = current_filter | default('all') %}
+        
+        <input type="radio" id="all-fanclubs" name="filter" value="all" 
+            {% if filter_val == 'all' %} checked {% endif %}>
+        <label for="all-fanclubs">All Fanclubs</label>
+        
+        <input type="radio" id="joined-fanclubs" name="filter" value="joined"
+            {% if filter_val == 'joined' %} checked {% endif %}>
+        <label for="joined-fanclubs">Joined</label>
+
+        <input type="radio" id="other-fanclubs" name="filter" value="not-joined"
+            {% if filter_val == 'not-joined' %} checked {% endif %}>
+        <label for="other-fanclubs">Other</label>
+    </div>
+</form>
+
 {% if fanclubs %}
     <ul class="grid">
         {% for fanclub in fanclubs %}
@@ -179,7 +227,7 @@
 
                 <div class="button-group">
                     
-                    {% if fanclub.is_joined %}
+                    {% if fanclub.is_member %}
                         <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.fanclub_id) }}" class="btn-group-form">
                             <button type="submit" 
                                     class="btn btn-leave">
@@ -206,4 +254,21 @@
         <p>Please check back later!</p>
     </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('fanclub-filter-form');
+        const radioInputs = document.querySelectorAll('.filter-group input[type="radio"]');
+
+        radioInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                form.submit();
+            });
+        });
+        
+        form.addEventListener('submit', function(event) { });
+    });
+</script>
 {% endblock %}

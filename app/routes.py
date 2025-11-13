@@ -136,7 +136,7 @@ def merchandise():
     return render_template('merchandise.html')
 
 
-@main_routes.route('/fanclubs')
+@main_routes.route('/fanclubs', methods=['GET'])
 def fanclubs():
     current_filter = request.args.get('filter', 'all') 
     current_search = request.args.get('fanclub-name', '').strip()
@@ -169,6 +169,7 @@ def fanclubs():
         joined_fanclub_ids_tuples = db.session.query(Fanclub_Membership.Fanclub_ID).filter(
             Fanclub_Membership.Fan_ID == current_fan_id
         ).all()
+
         joined_fanclub_ids = {fanclub_id for (fanclub_id,) in joined_fanclub_ids_tuples}
 
         if current_filter == 'joined':
