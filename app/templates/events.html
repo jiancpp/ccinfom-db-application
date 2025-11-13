@@ -50,7 +50,13 @@
             align-self: flex-start;
             align-content: center;
         }
+        
+        .event-card .event-details .icon {
+            display: inline-block;
+            width: 15px;
+        }
 
+        /* FILTER SHOWN EVENTS */
         .search-input-group {
             display: flex;
             align-items: center;
@@ -162,11 +168,11 @@
                                 {% endfor %}
                             </li>
                             <li class="indent">
-                                <i class="fa fa-map-marker"></i>
-                                <span class="detail-container">{{ event.venue.Venue_Name }}</span>
+                                <span class="icon"><i class="fa fa-map-marker"></i></span>
+                                <span class="detail-container">{{ event.Venue_Name }}</span>
                             </li>
                             <li class="indent">
-                                <i class="fa fa-calendar"></i>
+                                <span class="icon"><i class="fa fa-calendar"></i></span>
                                 {% if event.Start_Date != event.End_Date %}
                                     <span class="detail-container">
                                         <span class="date">{{ event.Start_Date }}</span> to 

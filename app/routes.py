@@ -29,7 +29,7 @@ def get_conn():
         print(f"Connection failed: {e}")
         raise
 
-def execute_query(sql, params):
+def execute_query(sql, params=()):
     # Pass dictionary=True to the cursor method
     try:
         conn = get_conn()
@@ -50,17 +50,9 @@ def execute_query(sql, params):
 # ============================================
 @main_routes.route('/')
 def index():
-    sql = '''
-        SELECT * FROM Ticket_Tier 
-        WHERE Tier_ID < %s
-        LIMIT 10 
-        '''
-    tier = execute_query(sql, (5,))
-    
+   
     events, artists = [], []
     title = ""
-    for t in tier:
-        print(t['Tier_ID'])
 
     follower_count = db.session.query(
         Artist_Follower.Artist_ID,
@@ -81,6 +73,13 @@ def index():
         ).order_by(
             desc(follower_count.c.num_followers)
         ).limit(5).all()
+
+    event_query = '''
+    SELECT * FROM Event as e
+    WHERE e.Start_Date >= CURDATE()
+    ORDER BY e.Start_Date ASC
+    '''
+    events = execute_query(event_query)
 
     return render_template('index.html', artists=artists, events=events, title=title)
 
@@ -139,8 +138,11 @@ def artists():
 
 @main_routes.route('/events', methods=["GET", "POST"])
 def events():
-    event_query = Event.query
 
+    filter_condition = ""
+    search_condition = ""
+    query_parameters = []
+    
     # Filtering events
     search_term = request.form.get("event-name", "").strip()
     filter = request.form.get("filter", "all-events")
@@ -149,22 +151,39 @@ def events():
     # APPLY EVENT TYPE FILTER 
     # ----------------------------------------------------     
     if filter == 'artist-events':
-        event_query = Event.query.filter(Event.artists.any())
+        filter_condition = '''
+        AND Event_ID IN (
+            SELECT DISTINCT Event_ID 
+            FROM Artist_Event
+        )
+        '''
 
     if filter == 'fanclub-events':
-            event_query = Event.query.filter(Event.fanclubs.any())
-
+        filter_condition = '''
+            AND Event_ID IN (
+            SELECT DISTINCT Event_ID 
+            FROM Fanclub_Event
+        )
+        '''
     # ----------------------------------------------------
     # APPLY TEXT SEARCH FILTER 
     # ----------------------------------------------------
 
     if search_term:
+        search_condition = "AND Event_Name LIKE %s"
         search_pattern = f"%{search_term}%"
-        event_query = event_query.filter(
-            Event.Event_Name.ilike(search_pattern)    # for case insensitive search
-        )        
-
-    events = event_query.all()
+        query_parameters.append(search_pattern)
+        
+    
+    event_query = f'''
+    SELECT e.*, v.Venue_Name 
+    FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+    WHERE e.Start_Date >= CURDATE()
+        {filter_condition}
+        {search_condition}
+    ORDER BY e.Start_Date ASC
+    '''
+    events = execute_query(event_query, tuple(query_parameters))
 
     return render_template('events.html', events=events, current_filter=filter)
 
