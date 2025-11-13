@@ -232,7 +232,7 @@
                             </p>
                         {% endif %}
                         <p>
-                            <i class="fa fa-users"></i> {{ artist.followers|length }} Followers
+                            <i class="fa fa-users"></i> {{ artist.followers|length }} {% if artist.followers|length > 1 %} Followers {% else %} Follower {% endif %}
                         </p>
                     </div>
                 </div>
