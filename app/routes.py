@@ -371,7 +371,6 @@ def fanclub_members(fanclub_id):
         flash(f"You must be a member of {club.Fanclub_Name} to view this.", 'error')
         return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
 
-
     members_data = db.session.query(
         Fan.Username, 
         Fan.Date_Joined
@@ -492,7 +491,9 @@ def artist_details(artist_id):
     artist = Artist.query.options(
         joinedload(Artist.manager),          
         joinedload(Artist.member_detail),      
-        joinedload(Artist.events).joinedload(Event.venue) 
+        joinedload(Artist.events).joinedload(Event.venue),
+        joinedload(Artist.fanclubs).joinedload(Fanclub.fanclub_memberships),
+        joinedload(Artist.merchandise)
     ).get_or_404(artist_id)
     
     artist.is_followed = False
@@ -509,7 +510,6 @@ def artist_details(artist_id):
     return render_template(
         'artist_details.html', 
         artist=artist,
-        # You no longer need to pass 'is_following' separately as it's on the artist object
     )
 
 @main_routes.route('/artists/toggle_follow/<int:artist_id>', methods=['POST'])
