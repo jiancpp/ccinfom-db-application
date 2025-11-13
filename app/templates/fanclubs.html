@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}Fanclubs - KSync{% endblock %}
-
 {% block content %}
 <style>
     .fanclub-card {
@@ -34,7 +32,7 @@
     }
 
 /* --- NEW STYLES FOR BUTTONS --- */
-    .btn {
+    .fanclub-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -63,7 +61,7 @@
         width: 100%;
     }
 
-    .button-group .btn i.fa {
+    .button-group .fanclub-btn i.fa {
         font-size: 12px;
         margin-right: 5px;
     }
@@ -81,12 +79,13 @@
 
     .btn-join {
         background-color: #667eea; 
+        border: none;
         color: white;
-        border: 1px solid #667eea;
     }
 
     .btn-leave {
-        background-color: rgb(216, 79, 79);
+        background-color: rgb(201, 88, 88);
+        border: none;
         color: #ffffff; 
     }
 
@@ -230,20 +229,20 @@
                     {% if fanclub.is_member %}
                         <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.fanclub_id) }}" class="btn-group-form">
                             <button type="submit" 
-                                    class="btn btn-leave">
+                                    class="fanclub-btn btn-leave">
                                 Leave Fanclub
                             </button>
                         </form>
                     {% else %}
                         <form method="POST" action="{{ url_for('main_routes.join_fanclub', fanclub_id=fanclub.fanclub_id) }}" class="btn-group-form">
                             <button type="submit" 
-                                    class="btn btn-join">
+                                    class="fanclub-btn btn-join">
                                 Join Fanclub
                             </button>
                         </form>
                     {% endif %}
 
-                    <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=fanclub.fanclub_id) }}" class="btn btn-outline btn-link">View Fanclub</a>
+                    <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=fanclub.fanclub_id) }}" class="fanclub-btn btn-outline btn-link">View Fanclub</a>
                 </div>
             </li>
         {% endfor %}
