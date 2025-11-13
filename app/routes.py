@@ -5,24 +5,62 @@ from app.models import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func, desc
+
 import datetime
+import mysql.connector
+from app.config import DB_HOST, DB_USER, DB_PASS, DB_NAME
 
 
 main_routes = Blueprint('main_routes', __name__)
+
+# ============================================
+#           DATABASE CONNECTION
+# ============================================
+def get_conn():
+    try:
+        # The connect function now takes the essential credentials
+        return mysql.connector.connect(
+            host=DB_HOST,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASS
+        )
+    except Exception as e:
+        print(f"Connection failed: {e}")
+        raise
+
+def execute_query(sql, params):
+    # Pass dictionary=True to the cursor method
+    try:
+        conn = get_conn()
+        cursor = conn.cursor(dictionary=True) 
+        cursor.execute(sql, params)
+        
+        # Results will be a list of dictionaries
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+        
+    except Exception as e:
+        print(f"Error fetching user: {e}")
+        return None
 
 # ============================================
 #           CORE PAGES
 # ============================================
 @main_routes.route('/')
 def index():
-    #added
+    sql = '''
+        SELECT * FROM Ticket_Tier 
+        WHERE Tier_ID < %s
+        LIMIT 10 
+        '''
+    tier = execute_query(sql, (5,))
+    
     events, artists = [], []
     title = ""
-    tier = Ticket_Tier.query.get(10)  
-    if tier:
-        print([s.Section_Name for s in tier.sections])
-    else:
-        print("error")
+    for t in tier:
+        print(t['Tier_ID'])
 
     follower_count = db.session.query(
         Artist_Follower.Artist_ID,
@@ -453,7 +491,14 @@ def create_fanclub_event(fanclub_id):
                 End_Time=end_time
             )
 
+
             db.session.add(new_event)
+            db.session.flush()
+
+            default_tier = Ticket_Tier(
+                Event_ID=new_event.Event_ID
+            )
+            db.session.add(default_tier)
             db.session.flush()
 
             new_fanclub_event = Fanclub_Event(

@@ -154,11 +154,11 @@ DROP TABLE IF EXISTS `Ticket_Tier`;
 CREATE TABLE `Ticket_Tier` (
     `Tier_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Event_ID` INT(11) NOT NULL,
-    `Tier_Name` VARCHAR(100) NOT NULL DEFAULT 'General Admissions',
-    `Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    `Total_Quantity` INT NOT NULL DEFAULT 0,
+    `Tier_Name` VARCHAR(100) DEFAULT 'General Admissions',
+    `Price` DECIMAL(10,2) DEFAULT 0.00,
+    `Total_Quantity` INT DEFAULT 0,
 	`Benefits` VARCHAR(150),
-    `Is_Reserved_Seating` TINYINT,
+    `Is_Reserved_Seating` TINYINT DEFAULT 0,
 	
 	PRIMARY KEY (`Tier_ID`),
     UNIQUE (`Event_ID`, `Tier_Name`)
