@@ -136,32 +136,70 @@ def merchandise():
     return render_template('merchandise.html')
 
 
-@main_routes.route('/fanclubs')
+@main_routes.route('/fanclubs', methods=['GET'])
 def fanclubs():
-    fanclub_data = db.session.query(
-            Fanclub.Fanclub_ID,
-            Fanclub.Fanclub_Name,
-            Artist.Artist_Name.label('artist_name'),
-            func.count(Fanclub_Membership.Fan_ID).label('member_count')
-        ).join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
-        .outerjoin(Fanclub_Membership, Fanclub.Fanclub_ID == Fanclub_Membership.Fanclub_ID) \
-        .group_by(Fanclub.Fanclub_ID, Artist.Artist_ID) \
-        .order_by(Artist.Artist_Name, Fanclub.Fanclub_Name) \
-        .all()
+    current_filter = request.args.get('filter', 'all') 
+    current_search = request.args.get('fanclub-name', '').strip()
+    current_artist = request.args.get('artist', 'all').strip()
     
+    artist_names = [artist.Artist_Name for artist in db.session.query(Artist.Artist_Name).distinct().order_by(Artist.Artist_Name).all()]
+    
+    base_query = db.session.query(
+        Fanclub.Fanclub_ID,
+        Fanclub.Fanclub_Name,
+        Artist.Artist_Name.label('artist_name'),
+        func.count(Fanclub_Membership.Fan_ID).label('member_count')
+    ).join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
+    .outerjoin(Fanclub_Membership, Fanclub.Fanclub_ID == Fanclub_Membership.Fanclub_ID) \
+    .group_by(Fanclub.Fanclub_ID, Artist.Artist_ID) \
+    .order_by(Artist.Artist_Name, Fanclub.Fanclub_Name)
+
+    if current_search:
+        base_query = base_query.filter(Fanclub.Fanclub_Name.ilike(f'%{current_search}%'))
+
+    if current_artist and current_artist != 'all':
+        base_query = base_query.filter(Artist.Artist_Name == current_artist)
+    
+    joined_fanclub_ids = set()
+    current_fan_id = None
+    
+    if g.get('current_user'):
+        current_fan_id = g.current_user.Fan_ID
+
+        joined_fanclub_ids_tuples = db.session.query(Fanclub_Membership.Fanclub_ID).filter(
+            Fanclub_Membership.Fan_ID == current_fan_id
+        ).all()
+
+        joined_fanclub_ids = {fanclub_id for (fanclub_id,) in joined_fanclub_ids_tuples}
+
+        if current_filter == 'joined':
+            base_query = base_query.filter(Fanclub.Fanclub_ID.in_(joined_fanclub_ids))
+        
+        elif current_filter == 'not-joined':
+            base_query = base_query.filter(Fanclub.Fanclub_ID.notin_(joined_fanclub_ids))
+
+    fanclub_data_results = base_query.all()
     fanclubs_list = []
-    for fanclub_id, fanclub_name, artist_name, member_count in fanclub_data:
-        is_member = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID).first() is not None
+    
+    for fanclub in fanclub_data_results:
+        is_member = fanclub.Fanclub_ID in joined_fanclub_ids
         
         fanclubs_list.append({
-            'fanclub_id': fanclub_id,
-            'fanclub_name': fanclub_name,
-            'artist_name': artist_name,
-            'member_count': member_count,
+            'fanclub_id': fanclub.Fanclub_ID,
+            'fanclub_name': fanclub.Fanclub_Name,
+            'artist_name': fanclub.artist_name,
+            'member_count': fanclub.member_count,
             'is_member': is_member
         })
 
-    return render_template('fanclubs.html', fanclubs=fanclubs_list)
+    return render_template(
+        'fanclubs.html', 
+        fanclubs=fanclubs_list,
+        current_filter=current_filter,
+        current_search=current_search,
+        current_artist=current_artist, 
+        artist_names=artist_names     
+    )
 
 
 # ============================================
