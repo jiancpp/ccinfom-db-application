@@ -131,7 +131,7 @@ VALUES	(1, 3),   (2, 1),	(3, 1),
 		(38, 13), (38, 14), (38, 15), 
 		(39, 13), (39, 14), (39, 15);
 
--- select * from tier_section;
+ select * from ticket_purchase;
 -- select * FROM ticket_tier
 -- order by tier_id;
 
