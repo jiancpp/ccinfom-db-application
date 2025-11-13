@@ -44,6 +44,28 @@ def execute_query(sql, params=()):
     except Exception as e:
         print(f"Error fetching user: {e}")
         return None
+    
+def insert_query(sql, params=()):
+    # Pass dictionary=True to the cursor method
+    is_successful = False
+
+    try:
+        conn = get_conn()
+        cursor = conn.cursor(dictionary=True) 
+        cursor.execute(sql, params)
+        conn.commit()
+        is_successful = True
+        
+    except Exception as e:
+        print(f"Error fetching user: {e}")
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+        return is_successful
 
 # ============================================
 #           CORE PAGES
@@ -185,7 +207,12 @@ def events():
     '''
     events = execute_query(event_query, tuple(query_parameters))
 
-    return render_template('events.html', events=events, current_filter=filter)
+    return render_template(
+        'events.html', 
+        events=events, 
+        current_filter=filter,
+        current_search=search_term
+    )
 
 
 @main_routes.route('/merchandise')
@@ -366,8 +393,52 @@ def test_db():
 
 @main_routes.route('/events/buy_ticket/<int:event_id>', methods=["GET", "POST"])
 def buy_ticket(event_id):
-    event = Event.query.get_or_404(event_id)
+    event = None
+    ticket_tiers = None
+    tier_sections = {}
 
+    # Fetch record from database
+    event_query = '''
+    SELECT * 
+    FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+    WHERE e.Event_ID = %s
+    '''
+
+    # Error handling
+    event_results = execute_query(event_query, (event_id,))
+    if event_results:
+        event = event_results[0]
+    if not event:
+        return redirect(url_for('main_routes.events'))
+
+    tier_query = '''
+    SELECT * 
+    FROM Ticket_Tier
+    WHERE Event_ID = %s
+    '''
+    ticket_tiers = execute_query(tier_query, (event_id,))  
+    if not ticket_tiers:
+        # Event not found, return or redirect otherwise
+        return redirect(url_for('main_routes.events'))
+
+    for tier in ticket_tiers:
+        section_query = '''
+        SELECT * 
+        FROM Section
+        WHERE Section_ID IN (
+            SELECT Section_ID 
+            FROM Tier_Section
+            WHERE Tier_ID = %s
+        )
+        '''
+        sections = execute_query(section_query, (tier['Tier_ID'],))
+
+        if sections:
+            tier_sections[tier['Tier_ID']] = sections
+        else:
+            tier_sections[tier['Tier_ID']] = []
+
+    # Get purchase details
     if request.method == "POST":
         tier_id = request.form["ticket_tier"]
         seat_id = request.form.get("seat_id", None)     
@@ -375,20 +446,26 @@ def buy_ticket(event_id):
         if seat_id == "":
             seat_id = None   
 
-        purchase = Ticket_Purchase(
-            Fan_ID = session.get('fan_id'),                 # Change to session.fan_id or something later
-            Event_ID = event.Event_ID,
-            Tier_ID = tier_id,
-            Seat_ID = seat_id            
-        )
+        Fan_ID = session.get('fan_id')                 
+        Event_ID = event_id
+        Tier_ID = tier_id
+        Seat_ID = seat_id            
 
+        insert_ticket_purchase = '''
+        INSERT INTO Ticket_Purchase (Fan_ID, Event_ID, Tier_ID, Seat_ID)
+        VALUES (%s, %s, %s, %s)
+        '''
 
-        db.session.add(purchase)
-        db.session.commit()
+        if insert_query(insert_ticket_purchase, (Fan_ID, Event_ID, Tier_ID, Seat_ID)):
+            flash(f"Success! View your purchased ticket on your profile.", "success")
+        else:
+            flash(f"Error purchasing.", "error")
 
-        
-
-    return render_template("event_details.html", event=event)
+    return render_template(
+        "event_details.html", 
+        event=event, 
+        ticket_tiers=ticket_tiers, 
+        tier_sections=tier_sections)
 
 @main_routes.route('/events/buy_ticket/<int:event_id>/<int:section_id>/seats', methods=["GET"])
 def get_seats(event_id, section_id):

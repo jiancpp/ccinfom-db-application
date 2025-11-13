@@ -14,15 +14,19 @@
     }
 
     .tier-benefits {
-      opacity: 0;
-      transition: opacity 0.3s ease-in-out;
-      color: #444;
-      margin: 5px 0 8px 0;
-      font-style: italic;
-  }
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        color: #444;
+        margin: 5px 0 8px 0;
+        font-style: italic;
+    }
 
     .tier-benefits.show {
         opacity: 1;
+    }
+
+    .section {
+        display: none;
     }
 
     #seatLabel {
@@ -126,7 +130,7 @@
      - 
     <span class="time">{{ event.End_Time }}</span>
 </p>
-<p>{{ event.venue.Venue_Name }}, {{ event.venue.City }}, {{ event.venue.Country }}</p>
+<p>{{ event.Venue_Name }}, {{ event.City }}, {{ event.Country }}</p>
 
 {# TICKET PURCHASE TRANSACTION #}
 <h2>Buy Ticket</h2>
@@ -136,7 +140,7 @@
     <label for="ticket_tier">Select Ticket Tier</label>
     <select name="ticket_tier" id="ticket_tier" required>
         <option value="">-- Choose Tier --</option>
-        {% for tier in event.ticket_tiers %}
+        {% for tier in ticket_tiers %}
         <option value="{{ tier.Tier_ID }}">{{ tier.Tier_Name }} - ₱{{ tier.Price }}</option>
     {% endfor %}
     </select>
@@ -164,12 +168,12 @@
 
     // Build tier -> sections & benefits mapping
     const tierSections = {
-        {% for tier in event.ticket_tiers %}
+        {% for tier in ticket_tiers %}
         "{{ tier.Tier_ID }}": {
             "IsReserved": {{ tier.Is_Reserved_Seating }},
             "Benefits": "{{ tier.Benefits|escape }}",
             "Sections": [
-                {% for section in tier.sections %}
+                {% for section in tier_sections[tier.Tier_ID] %}
                     {id: "{{ section.Section_ID }}", name: "{{ section.Section_Name }}"}
                 {% if not loop.last %},{% endif %}
                 {% endfor %}
