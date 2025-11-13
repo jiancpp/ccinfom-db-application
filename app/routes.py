@@ -2,6 +2,10 @@ from flask import Blueprint, render_template, session, redirect, url_for, flash,
 from flask import render_template, request, redirect, url_for, jsonify
 
 from app.models import *
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
+from sqlalchemy import func, desc
+import datetime
 
 
 main_routes = Blueprint('main_routes', __name__)
@@ -12,21 +16,88 @@ main_routes = Blueprint('main_routes', __name__)
 @main_routes.route('/')
 def index():
     #added
-    artists, events = [], []
+    events, artists = [], []
+    title = ""
     tier = Ticket_Tier.query.get(10)  
     if tier:
         print([s.Section_Name for s in tier.sections])
     else:
         print("error")
 
-    return render_template('index.html', artists=artists, events=events)
+    follower_count = db.session.query(
+        Artist_Follower.Artist_ID,
+        func.count(Artist_Follower.Fan_ID).label('num_followers')
+    ).group_by(Artist_Follower.Artist_ID).subquery()
+    
+    if g.get('current_user'):
+        title = "Followed Artists"
+        artists = Artist.query.join(Artist.followers).filter(
+            Artist_Follower.Fan_ID == g.current_user.Fan_ID
+        ).all()
+    else:
+        title = "Active Artists"
+        artists = Artist.query.filter(
+            Artist.Activity_Status == 'Active'
+        ).outerjoin(
+            follower_count, Artist.Artist_ID == follower_count.c.Artist_ID
+        ).order_by(
+            desc(follower_count.c.num_followers)
+        ).limit(5).all()
 
+    return render_template('index.html', artists=artists, events=events, title=title)
 
-@main_routes.route('/artists')
-def artists():    
-    artists = Artist.query.all()
-    return render_template('artists.html', artists=artists)
+@main_routes.route('/artists', methods=['GET'])
+def artists():
+    
+    current_filter = request.args.get('filter', 'all') 
+    current_search = request.args.get('artist-name', '').strip()
 
+    artists_query = Artist.query.options(
+        joinedload(Artist.manager), 
+        joinedload(Artist.followers) 
+    )
+    
+    # 1. Apply search filter
+    if current_search:
+        artists_query = artists_query.filter(Artist.Artist_Name.ilike(f'%{current_search}%'))
+
+    artists_list = []
+    followed_artist_ids = set() # Use a set for fast lookup
+
+    # 2. Check if a user is logged in
+    if g.get('current_user'):
+        current_fan_id = g.current_user.Fan_ID
+        
+        # Optimize: Fetch ALL followed Artist IDs for the user in ONE query
+        followed_artist_ids_tuples = db.session.query(Artist_Follower.Artist_ID).filter(
+            Artist_Follower.Fan_ID == current_fan_id
+        ).all()
+        
+        followed_artist_ids = {artist_id for (artist_id,) in followed_artist_ids_tuples}
+        
+        # 3. Apply Follow/Not-Follow filter BEFORE executing the query
+        if current_filter == 'followed':
+            artists_query = artists_query.filter(Artist.Artist_ID.in_(followed_artist_ids))
+        
+        elif current_filter == 'not-followed':
+            artists_query = artists_query.filter(Artist.Artist_ID.notin_(followed_artist_ids))
+    
+    # Execute the final, filtered query
+    artists_list = artists_query.order_by(Artist.Artist_Name).all()
+    
+    # 4. Attach the 'is_followed' flag to the returned objects
+    # This step is essential for the Jinja template's conditional logic.
+    if g.get('current_user'):
+        for artist in artists_list:
+            # Dynamically attach the 'is_followed' attribute
+            artist.is_followed = artist.Artist_ID in followed_artist_ids
+
+    return render_template(
+        'artists.html', 
+        artists=artists_list,
+        current_filter=current_filter,
+        current_search=current_search
+    )
 
 @main_routes.route('/events', methods=["GET", "POST"])
 def events():
@@ -148,18 +219,19 @@ def register():
 
         try:
             new_fan = Fan(
-                first_name=first_name, 
-                last_name=last_name, 
-                username=username, 
-                email=email,
+                First_Name=first_name,
+                Last_Name=last_name,
+                Username=username,
+                Email=email,
             )
+
             db.session.add(new_fan)
             db.session.commit()
 
             flash(f'Welcome, {username}! You can now log in.', 'success')
             return redirect(url_for('main_routes.login'))
         
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('A server error occurred during registration. Please try again.', 'error')
 
@@ -337,3 +409,140 @@ def leave_fanclub(fanclub_id):
         
     flash(f"You successfully left this fanclub.", "success")
     return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
+
+@main_routes.route('/fanclub/<int:fanclub_id>/create-event', methods=['GET', 'POST'])
+def create_fanclub_event(fanclub_id):
+    fanclub = Fanclub.query.get_or_404(fanclub_id)
+    artist = Artist.query.get(fanclub.Artist_ID) if fanclub.Artist_ID else None
+    all_venues = Venue.query.order_by(Venue.Venue_Name).all()
+    
+    if request.method == 'GET':        
+        return render_template(
+            'create_fanclub_event.html', 
+            fanclub=fanclub, 
+            artist=artist, 
+            venues=all_venues
+        )
+
+    if request.method == 'POST':
+        try:
+            event_name = request.form.get('event_name')
+            event_type = request.form.get('event_type')
+            venue_id = request.form.get('venue_id')
+            start_date_str = request.form.get('start_date')
+            end_date_str = request.form.get('end_date')
+            start_time_str = request.form.get('start_time')
+            end_time_str = request.form.get('end_time')
+            
+            if not all([event_name, event_type, venue_id, start_date_str, start_time_str, end_time_str]):
+                flash("Missing required event information.", 'error')
+                return redirect(request.url)
+            
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            start_time = datetime.datetime.strptime(start_time_str, '%H:%M').time()
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else start_date
+            end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time()
+
+            new_event = Event(
+                Event_Name=event_name,
+                Event_Type=event_type,
+                Venue_ID=venue_id,
+                Start_Date=start_date,
+                End_Date=end_date,
+                Start_Time=start_time,
+                End_Time=end_time
+            )
+
+            db.session.add(new_event)
+            db.session.flush()
+
+            new_fanclub_event = Fanclub_Event(
+                Fanclub_ID=fanclub.Fanclub_ID,
+                Event_ID=new_event.Event_ID
+            )
+
+            db.session.add(new_fanclub_event)
+            db.session.commit()
+            
+            flash(f"Event '{event_name}' successfully created!", 'success')
+            return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
+
+        except IntegrityError as e:
+            db.session.rollback()
+            flash(f"Database Error (Integrity constraint failed). Please check inputs.", 'error')
+            print(f"SQLAlchemy Integrity Error: {e}")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"An unexpected error occurred. {e}", 'error')
+
+        artist = Artist.query.get(fanclub.Artist_ID) if fanclub.Artist_ID else None
+        all_venues = Venue.query.order_by(Venue.Venue_Name).all()
+
+        return render_template('create_fanclub_event.html', 
+            fanclub=fanclub, 
+            artist=artist, 
+            venues=all_venues
+        )
+    
+# ============================================
+#           Artist Subpages
+# ============================================
+@main_routes.route('/artists/<int:artist_id>')
+def artist_details(artist_id):
+    artist = Artist.query.options(
+        joinedload(Artist.manager),          
+        joinedload(Artist.member_detail),      
+        joinedload(Artist.events).joinedload(Event.venue) 
+    ).get_or_404(artist_id)
+    
+    artist.is_followed = False
+    
+    if g.get('current_user'):
+        is_following_query = db.session.query(Artist_Follower).filter(
+            Artist_Follower.Fan_ID == g.current_user.Fan_ID,
+            Artist_Follower.Artist_ID == artist_id
+        ).one_or_none()
+        
+        # Assign the boolean result to the new attribute
+        artist.is_followed = is_following_query is not None
+        
+    return render_template(
+        'artist_details.html', 
+        artist=artist,
+        # You no longer need to pass 'is_following' separately as it's on the artist object
+    )
+
+@main_routes.route('/artists/toggle_follow/<int:artist_id>', methods=['POST'])
+def toggle_follow(artist_id):
+    if not g.get('current_user'):
+        flash("You must be logged in to follow an artist.", 'error')
+        # Redirect to login, but store 'next' URL (not shown, but good practice)
+        return redirect(url_for('main_routes.login'))
+
+    artist = Artist.query.get_or_404(artist_id)
+    current_fan_id = g.current_user.Fan_ID
+    
+    # Get the action from the hidden input field in the POST request
+    action = request.form.get('action') 
+
+    # Check for existing follow relationship
+    follow_entry = db.session.query(Artist_Follower).filter(
+        Artist_Follower.Fan_ID == current_fan_id,
+        Artist_Follower.Artist_ID == artist_id
+    ).one_or_none()
+    
+    if action == 'follow' and not follow_entry:
+        # User requested to follow and isn't following yet
+        new_follow = Artist_Follower(Fan_ID=current_fan_id, Artist_ID=artist_id)
+        db.session.add(new_follow)
+        db.session.commit()
+        flash(f"🎉 You are now following {artist.Artist_Name}! ", 'success')
+        
+    elif action == 'unfollow' and follow_entry:
+        # User requested to unfollow and is currently following
+        db.session.delete(follow_entry)
+        db.session.commit()
+        flash(f"💔 You have unfollowed {artist.Artist_Name}.", 'info')
+        
+    # Redirect back to the page the user came from (artists list or details page)
+    return redirect(request.referrer or url_for('main_routes.artists'))

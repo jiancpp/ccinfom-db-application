@@ -1,6 +1,303 @@
 {% extends "base.html" %}
 {% block title %}Artists - K-Pop Fan Hub{% endblock %}
 {% block content %}
-<h1>🎤 Artists</h1>
-<p>Artist management page placeholder.</p>
+<style>
+    /* --- ARTIST CARD STYLES --- */
+    .artist-card {
+        display: flex;
+        flex-direction: column;
+        list-style: none;
+        justify-content: space-between;
+        height: 100%;
+        text-align: center;
+        padding: 1.5rem 1rem; /* Adjust padding for visual appeal */
+    }
+
+    .artist-card h3 {
+        margin-bottom: 5px;
+        color: #667eea;
+        font-size: 1.3rem;
+    }
+
+    .artist-card .artist-status {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 5px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        color: white;
+    }
+
+    .status-Active { background: #28a745; }
+    .status-Inactive { background: #dc3545; }
+    .status-Hiatus { 
+        background: #ffc107; 
+        color: #333; 
+    }
+
+    .artist-details p {
+        margin: 0.25rem 0;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .artist-details .btn-link {
+        margin-top: auto;
+        flex-shrink: 0;
+        align-self: center;
+        width: 100%; 
+    }
+
+/* --- NEW STYLES FOR BUTTONS --- */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px; 
+        min-height: 40px; 
+        line-height: 1.2;
+        text-decoration: none; 
+        border-radius: 6px; 
+        cursor: pointer;
+        font-size: 14px; 
+        font-weight: 600;
+        text-align: center;
+        box-sizing: border-box; 
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .btn-group-form button {
+        width: 100%;
+        padding: 8px 12px;
+        min-height: 40px; 
+    }
+
+    .button-group {
+        display: flex;
+        gap: 5px;
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .button-group .btn i.fa {
+        font-size: 12px;
+        margin-right: 5px;
+    }
+    
+    .button-group .btn-link {
+        flex-grow: 1; 
+    }
+    
+    .btn-group-form {
+        flex-grow: 1; 
+    }
+    .btn-group-form button {
+        width: 100%;
+    }
+
+    .btn-follow {
+        background-color: #667eea; 
+        color: white;
+        border: 1px solid #667eea;
+    }
+
+    .btn-unfollow {
+        background-color: white;
+        color: #dc3545; 
+        border: 1px solid #dc3545;
+    }
+
+    /* --- FILTER STYLES --- */
+    .filter-group input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .filter-group label {
+        display: block;
+        padding: 5px 20px;
+        margin: 0 3px;
+        border-radius: 50px;
+        max-height: 2rem;
+        border: solid 1px #a1a1a1;
+        font-size: 11px;
+        color: #1f1d1e;
+        transition: 0.3s;
+    }
+
+    .filter-group label:hover {
+        cursor: pointer;
+        background-color: #a1a1a1;
+    }
+
+    .filter-group input[type="radio"]:checked + label {
+        border: solid 1px #a5a8e9;
+        background-color: #a5a8e9;
+        color: #1f1327;
+    }
+    /* --- END FILTER STYLES --- */
+    
+    .search-filter-container {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .search-input-group {
+        display: flex;
+        align-items: center;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        padding: 0 10px;
+        flex-grow: 1;
+        max-width: 400px;
+    }
+    
+    .search-input-group button {
+        background: none;
+        border: none;
+        font-size: 18px;
+        color: #667eea;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .search-input-group input {
+        border: none;
+        width: 100%;
+        padding: 8px 10px;
+    }
+
+    .search-input-group input:focus {
+        border-color: transparent; 
+    }
+    
+</style>
+
+<header style="margin-bottom: 2rem;">
+    <h1>✨ K-Pop Artists & Groups</h1>
+    <p style="color: #666;">Filter and discover your favorite acts from all generations.</p>
+</header>
+
+{# --- ARTIST FILTER AND SEARCH --- #}
+<form action="{{ url_for('main_routes.artists') }}" method="GET" id="artist-filter-form" class="search-filter-container">
+    
+    {# Search Input #}
+    <div class="search-input-group">
+        <button type="submit">
+            <i class="fa fa-search"></i>
+        </button>
+        <input type="text" id="artist-name" name="artist-name" 
+               placeholder="Search Artist Name..."
+               value="{{ current_search|default('') }}">
+    </div>
+
+    {# Filter Radio Buttons #}
+    <div class="filter-group" 
+        style="display: flex; flex-direction: row; align-items: center;">
+        
+        {% set filter_val = current_filter|default('all') %}
+        
+        <input type="radio" id="all-artists" name="filter" value="all" 
+            {% if filter_val == 'all' %} checked {% endif %}>
+        <label for="all-artists">All Artists</label>
+        
+        <input type="radio" id="followed-artists" name="filter" value="followed"
+            {% if filter_val == 'followed' %} checked {% endif %}>
+        <label for="followed-artists"><i class="fa fa-heart"></i> Followed</label>
+
+        <input type="radio" id="other-artists" name="filter" value="not-followed"
+            {% if filter_val == 'not-followed' %} checked {% endif %}>
+        <label for="other-artists">Other</label>
+    </div>
+</form>
+
+{# --- ARTIST GRID DISPLAY --- #}
+{% if artists %}
+    <ul class="grid">
+        {% for artist in artists %}
+            <li class="artist-card card">
+                <div>
+                    <h3>{{ artist.Artist_Name }}</h3>
+                    <span class="artist-status status-{{ (artist.Activity_Status | first)}}">
+                        {{ artist.Activity_Status | first }}
+                    </span>
+                    <div class="artist-details">
+                        {% if artist.Debut_Date %}
+                            <p data-label="Debut">
+                                <i class="fa fa-calendar"></i> <span class="date">{{ artist.Debut_Date }}</span>
+                            </p>
+                        {% endif %}
+                        <p>
+                            <i class="fa fa-users"></i> {{ artist.followers|length }} Followers
+                        </p>
+                    </div>
+                </div>
+                
+                {# --- DYNAMIC BUTTON GROUP --- #}
+                <div class="button-group">
+                    
+                    {# 1. Follow/Unfollow Button Form #}
+                    {% if g.current_user %}
+                        <form method="POST" action="{{ url_for('main_routes.toggle_follow', artist_id=artist.Artist_ID) }}" class="btn-group-form">
+                            
+                            {% if artist.is_followed %}
+                                <input type="hidden" name="action" value="unfollow">
+                                <button type="submit" class="btn btn-unfollow"> 
+                                    <i class="fa fa-times"></i> Unfollow Artist
+                                </button>
+                            {% else %}
+                                <input type="hidden" name="action" value="follow">
+                                <button type="submit" class="btn btn-follow">
+                                    <i class="fa fa-heart"></i> Follow Artist
+                                </button>
+                            {% endif %}
+                        </form>
+                    {% else %}
+                        {# Login link must have the classes that allow it to flex-grow and look like a button #}
+                        <a href="{{ url_for('main_routes.login') }}" class="btn btn-follow btn-link">
+                            <i class="fa fa-sign-in"></i> Login to Follow
+                        </a>
+                    {% endif %}
+
+                    {# 2. View Profile Button: We must ensure this link uses the necessary classes for equal size #}
+                    <a href="{{ url_for('main_routes.artist_details', artist_id=artist.Artist_ID) }}" 
+                    class="btn btn-outline btn-link">
+                        View Profile
+                    </a>
+                </div>
+                {# --- END DYNAMIC BUTTON GROUP --- #}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="empty-state">
+        No artists matched your search or filter criteria.
+    </p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('artist-filter-form');
+        const radioInputs = document.querySelectorAll('.filter-group input[type="radio"]');
+
+        // Automatically submit the form when a radio button is changed
+        radioInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                form.submit();
+            });
+        });
+        
+        // Ensure that submitting the form via the search button also works
+        form.addEventListener('submit', function(event) {
+            // No need to prevent default, let the form submit normally (GET request)
+        });
+    });
+</script>
 {% endblock %}
