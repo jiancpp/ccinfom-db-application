@@ -206,12 +206,16 @@ class Fanclub(db.Model):
 
     Fanclub_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     Fanclub_Name = db.Column(db.String(255), nullable=False)
-    Artist_ID = db.Column(db.Integer, nullable=False) 
+    Artist_ID = db.Column(
+        db.Integer,
+        db.ForeignKey("Artist.Artist_ID", ondelete="CASCADE", onupdate="CASCADE"),nullable=False
+    ) 
     
     # Relationships
     members = db.relationship("Fanclub_Membership", back_populates="fanclub", cascade="all, delete-orphan")
     events = db.relationship("Event", secondary="Fanclub_Event", back_populates="fanclubs")
     merchandise = db.relationship("Merchandise", back_populates="fanclub", lazy='dynamic')
+    artist = db.relationship("Artist", back_populates="fanclubs")
 
     # Constraints
     __table_args__ = (
@@ -286,6 +290,7 @@ class Artist(db.Model):
     events = db.relationship("Event", secondary="Artist_Event", back_populates="artists")
     merchandise = db.relationship("Merchandise", back_populates="artist")
     setlists = db.relationship("Setlist", back_populates="artist")
+    fanclubs = db.relationship("Fanclub", back_populates="artist")
 
 class Member_Detail(db.Model):
     __tablename__ = "Member_Detail"

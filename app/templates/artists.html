@@ -29,10 +29,10 @@
         color: white;
     }
 
-    .status-Active { background: #28a745; }
-    .status-Inactive { background: #dc3545; }
+    .status-Active { background: #25903e; }
+    .status-Inactive { background: rgb(201, 88, 88); }
     .status-Hiatus { 
-        background: #ffc107; 
+        background: #ecb50d; 
         color: #333; 
     }
 
@@ -50,7 +50,7 @@
     }
 
 /* --- NEW STYLES FOR BUTTONS --- */
-    .btn {
+    .artist-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -79,7 +79,7 @@
         width: 100%;
     }
 
-    .button-group .btn i.fa {
+    .button-group .artist-btn i.fa {
         font-size: 12px;
         margin-right: 5px;
     }
@@ -98,13 +98,13 @@
     .btn-follow {
         background-color: #667eea; 
         color: white;
-        border: 1px solid #667eea;
+        border: none;
     }
 
     .btn-unfollow {
-        background-color: white;
-        color: #dc3545; 
-        border: 1px solid #dc3545;
+        background-color: rgb(201, 88, 88);
+        color: white; 
+        border: none;
     }
 
     /* --- FILTER STYLES --- */
@@ -246,26 +246,26 @@
                             
                             {% if artist.is_followed %}
                                 <input type="hidden" name="action" value="unfollow">
-                                <button type="submit" class="btn btn-unfollow"> 
-                                    <i class="fa fa-times"></i> Unfollow Artist
+                                <button type="submit" class="artist-btn btn-unfollow"> 
+                                    <i class="fa fa-times"></i>  Unfollow Artist
                                 </button>
                             {% else %}
                                 <input type="hidden" name="action" value="follow">
-                                <button type="submit" class="btn btn-follow">
-                                    <i class="fa fa-heart"></i> Follow Artist
+                                <button type="submit" class="artist-btn btn-follow">
+                                    <i class="fa fa-heart"></i>  Follow Artist
                                 </button>
                             {% endif %}
                         </form>
                     {% else %}
                         {# Login link must have the classes that allow it to flex-grow and look like a button #}
-                        <a href="{{ url_for('main_routes.login') }}" class="btn btn-follow btn-link">
+                        <a href="{{ url_for('main_routes.login') }}" class="artist-btn btn-follow btn-link">
                             <i class="fa fa-sign-in"></i> Login to Follow
                         </a>
                     {% endif %}
 
                     {# 2. View Profile Button: We must ensure this link uses the necessary classes for equal size #}
                     <a href="{{ url_for('main_routes.artist_details', artist_id=artist.Artist_ID) }}" 
-                    class="btn btn-outline btn-link">
+                    class="artist-btn btn-outline btn-link">
                         View Profile
                     </a>
                 </div>
