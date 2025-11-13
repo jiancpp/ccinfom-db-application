@@ -134,6 +134,14 @@
         padding: 3px 10px;
         border-radius: 10px;
         display: inline-block;
+        color: white;
+    }
+
+    .status-Active { background: #28a745; }
+    .status-Inactive { background: #dc3545; }
+    .status-Hiatus { 
+        background: #ffc107; 
+        color: #333; 
     }
 
     /* Event Table adjustments for clarity */
@@ -144,6 +152,81 @@
         width: 25%;
     }
 
+    .profile-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr; /* Layout: 1/3 for metadata, 2/3 for content */
+        gap: 40px;
+        margin-top: 20px;
+    }
+    
+    .profile-sidebar {
+        /* Sidebar container for Fan Clubs, Merch, and Manager details */
+        padding-top: 10px;
+    }
+
+    .profile-details-card {
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 20px;
+        background-color: #f7f9fc; /* Light background for the card */
+    }
+
+    .details-list p {
+        margin: 0.5rem 0;
+        line-height: 1.4;
+    }
+    .details-list strong {
+        color: #333;
+    }
+
+    /* Fanclub & Merch Specific Styling */
+    .fanclub-card h4, .merch-card h4 {
+        color: #667eea;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #e0eeef;
+        padding-bottom: 5px;
+    }
+
+    .merch-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+        list-style-type: none; 
+        padding-left: 0;
+    }
+
+    .merch-item {
+        text-align: center;
+        border: 1px solid #eee;
+        padding: 10px;
+        border-radius: 6px;
+    }
+
+    /* --- END UNIQUE LAYOUT STYLES --- */
+
+    /* Profile Header Styling (Modified for new placement) */
+     .profile-header {
+    /* Keep basic header styles, but remove flex/border for the main header */
+        display: block;
+        padding-bottom: 0;
+        border-bottom: none;
+        margin-bottom: 10px;
+    }
+
+    /* The rest of your existing styles are here... */
+
+    /* Profile Header Styling */
+    .profile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 20px;
+    }
+
 </style>
 
 <div class="profile-header">
@@ -152,25 +235,11 @@
         <p style="color: #666;">
             Debut: <span class="date">{{ artist.Debut_Date }}</span> ({{ artist.Debut_Days }} days)
         </p>
-        <p>Manager: 
-            <button id="toggle-manager-btn" class="btn btn-sm btn-outline" type="button" 
-                    style="margin-left: 5px; padding: 4px 8px; font-size: 12px;">
-                View Details <i class="fa fa-caret-down"></i>
-            </button>
-        </p>
-        <div id="manager-details" style="display: none; border: 1px dashed #e0e0e0; padding: 10px; margin-top: 10px; border-radius: 5px;">
-            {% if artist.manager %}
-                <p>Name: **{{ artist.manager.Manager_Name }}**</p>
-                <p>Email: {{ artist.manager.Manager_Email or 'N/A' }}</p>
-                <p>Phone: {{ artist.manager.Manager_Phone or 'N/A' }}</p>
-            {% else %}
-                <p>No dedicated manager details available.</p>
-            {% endif %}
-        </div>
     </div>
     <div class="profile-meta">
-        <span class="artist-status status-{{ artist.Activity_Status }}">
-            {{ artist.Activity_Status }}
+        {# Applying robust filter: |string | trim to ensure color works #}
+        <span class="artist-status status-{{ (artist.Activity_Status | first) | string | trim }}">
+            {{ artist.Activity_Status | first}}
         </span>
         <p style="margin-top: 10px;">
             <i class="fa fa-heart"></i> {{ artist.followers|length }} Followers
@@ -179,13 +248,13 @@
 </div>
 
 <div style="text-align: right; margin-bottom: 20px;">
-    {# NOTE: Assuming g.current_user is available, artist is defined, and has Artist_ID #}
+    {# Follow/Unfollow Button remains here for prominence #}
     {% if g.current_user %}
         <form method="POST" action="{{ url_for('main_routes.toggle_follow', artist_id=artist.Artist_ID) }}" style="display: inline-block;">
             {% if artist.is_followed %}
                 <input type="hidden" name="action" value="unfollow">
                 <button type="submit" class="btn btn-unfollow"> 
-                    <i class="fa fa-times" style="margin-right: 5px;"></i> Unfollow Artist
+                <i class="fa fa-times" style="margin-right: 5px;"></i> Unfollow Artist
                 </button>
             {% else %}
                 <input type="hidden" name="action" value="follow">
@@ -194,67 +263,138 @@
                 </button>
             {% endif %}
         </form>
-    {% else %}
+        {% else %}
         <a href="{{ url_for('main_routes.login') }}" class="btn btn-outline">
             <i class="fa fa-sign-in" style="margin-right: 5px;"></i> Login to Follow
         </a>
     {% endif %}
 </div>
 
+<div class="profile-container">
+    
+    {# --- LEFT COLUMN (SIDEBAR) --- #}
+    <div class="profile-sidebar">
+        
+        {# FAN CLUB CARD #}
+        <div class="profile-details-card fanclub-card">
+            <h4><i class="fa fa-users"></i> Fan Club Info</h4>
+            {% if artist.fanclub_details %}
+                <div class="details-list">
+                    <p><strong>Name:</strong> {{ artist.fanclub_details.Club_Name or 'N/A' }}</p>
+                    <p><strong>Official Color:</strong> {{ artist.fanclub_details.Official_Color or 'N/A' }}</p>
+                    <p><strong>Established:</strong> {{ artist.fanclub_details.Established_Date or 'N/A' }}</p>
+                    {% if artist.fanclub_details.Link %}
+                        <p style="margin-top: 10px;">
+                            <a href="{{ artist.fanclub_details.Link }}" target="_blank" class="btn btn-sm btn-follow">
+                                Visit Official Site <i class="fa fa-external-link"></i>
+                            </a>
+                        </p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p>Fan club details not available.</p>
+            {% endif %}
+        </div>
+        
+        {# MERCHANDISE CARD #}
+        <div class="profile-details-card merch-card">
+            <h4><i class="fa fa-shopping-bag"></i> Official Merchandise</h4>
+            {% if artist.merch %}
+                <ul class="merch-grid">
+                    {% for item in artist.merch %}
+                        <li class="merch-item">
+                            <i class="fa fa-tags" style="color: #667eea;"></i>
+                            <p style="margin-top: 5px; font-size: 14px; font-weight: 600;">{{ item.Item_Name }}</p>
+                            <p style="font-size: 12px; color: #dc3545;">${{ item.Price }}</p>
+                            <a href="{{ url_for('main_routes.buy_merch', merch_id=item.Item_ID) }}" class="btn btn-sm btn-outline" style="margin-top: 5px;">Buy Now</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No official merchandise listed at this time.</p>
+            {% endif %}
+        </div>
 
-<h2 class="section-title">Members ({{ artist.member_detail|length }})</h2>
-{% if artist.member_detail %}
-    <ul class="member-grid">
-        {% for member in artist.member_detail %}
-            <li class="member-card card">
-                <h4>{{ member.Member_Name }}</h4>
-                <span class="member-role">{{ member.Role or 'Not Revealed' }}</span>
-                <span class="member-status status-{{ member.Activity_Status }}">
-                    {{ member.Activity_Status | first }}
-                </span>
-                <p>{{ member.Age }} Years Old</p>
-                <p>{{ member.Nationality or 'N/A' }}</p>
-            </li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p class="empty-state">This artist has no public member details.</p>
-{% endif %}
+        {# MANAGER DETAILS (Moved to sidebar) #}
+        <div class="profile-details-card">
+            <h4><i class="fa fa-user-tie"></i> Management Contact</h4>
+            <p>
+                <button id="toggle-manager-btn" class="btn btn-sm btn-outline" type="button">
+                    View Details <i class="fa fa-caret-down"></i>
+                </button>
+            </p>
+            <div id="manager-details" style="display: none; padding-top: 10px;">
+                {% if artist.manager %}
+                    <p><strong>Name:</strong> **{{ artist.manager.Manager_Name }}**</p>
+                    <p><strong>Email:</strong> {{ artist.manager.Manager_Email or 'N/A' }}</p>
+                    <p><strong>Phone:</strong> {{ artist.manager.Manager_Phone or 'N/A' }}</p>
+                {% else %}
+                    <p>No dedicated manager details available.</p>
+                {% endif %}
+            </div>
+        </div>
 
-<h2 class="section-title">Upcoming Events ({{ artist.events|length }})</h2>
-<div class="artist-events">
-    {% if artist.events %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Event Type</th>
-                    <th>Name</th>
-                    <th>Date</th>
-                    <th>Venue</th>
-                    <th>Tickets</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for event in artist.events %}
-                    <tr>
-                        <td>
-                            {% for t in event.Event_Type %}<span class="badge">{{ t }}</span>{% endfor %}
-                        </td>
-                        <td>{{ event.Event_Name }}</td>
-                        <td>
-                            <span class="date">{{ event.Start_Date }}</span>
-                        </td>
-                        <td>{{ event.venue.Venue_Name }}</td>
-                        <td>
-                            <a href="{{ url_for('main_routes.buy_ticket', event_id=event.Event_ID) }}" class="btn btn-sm">Buy</a>
-                        </td>
-                    </tr>
+    </div>
+    
+    {# --- RIGHT COLUMN (MAIN CONTENT) --- #}
+    <div class="profile-main-content">
+
+        <h2 class="section-title">Members ({{ artist.member_detail|length }})</h2>
+        {% if artist.member_detail %}
+            <ul class="member-grid">
+                {% for member in artist.member_detail %}
+                    <li class="member-card card">
+                        <h4>{{ member.Member_Name }}</h4>
+                        <span class="member-role">{{ member.Role or 'Not Revealed' }}</span>
+                        {# Applying robust filter: |string | trim to ensure color works #}
+                        <span class="member-status status-{{ (member.Activity_Status | first) | string | trim }}">
+                            {{ member.Activity_Status | first }}
+                        </span>
+                        <p>{{ member.Age }} Years Old</p>
+                        <p>{{ member.Nationality or 'N/A' }}</p>
+                    </li>
                 {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p class="empty-state">No upcoming events scheduled for this artist.</p>
-    {% endif %}
+            </ul>
+        {% else %}
+            <p class="empty-state">This artist has no public member details.</p>
+        {% endif %}
+
+        <h2 class="section-title">Upcoming Events ({{ artist.events|length }})</h2>
+        <div class="artist-events">
+            {% if artist.events %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Event Type</th>
+                            <th>Name</th>
+                            <th>Date</th>
+                            <th>Venue</th>
+                            <th>Tickets</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in artist.events %}
+                            <tr>
+                                <td>
+                                    {% for t in event.Event_Type %}<span class="badge">{{ t }}</span>{% endfor %}
+                                </td>
+                                <td>{{ event.Event_Name }}</td>
+                                <td>
+                                    <span class="date">{{ event.Start_Date }}</span>
+                                </td>
+                                <td>{{ event.venue.Venue_Name }}</td>
+                                <td>
+                                    <a href="{{ url_for('main_routes.buy_ticket', event_id=event.Event_ID) }}" class="btn btn-sm">Buy</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty-state">No upcoming events scheduled for this artist.</p>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 
@@ -262,12 +402,12 @@
     document.addEventListener('DOMContentLoaded', function() {
         const toggleButton = document.getElementById('toggle-manager-btn');
         const detailsContainer = document.getElementById('manager-details');
-        const icon = toggleButton.querySelector('i');
-
+        
+        // Manager Toggle Logic
         if (toggleButton && detailsContainer) {
-            // Function to handle the toggle
             toggleButton.addEventListener('click', function() {
-                if (detailsContainer.style.display === 'none') {
+                const isHidden = detailsContainer.style.display === 'none' || detailsContainer.style.display === '';
+                if (isHidden) {
                     detailsContainer.style.display = 'block';
                     toggleButton.innerHTML = 'Hide Details <i class="fa fa-caret-up"></i>';
                 } else {

@@ -29,7 +29,6 @@
         color: white;
     }
 
-    /* Status Badges */
     .status-Active { background: #28a745; }
     .status-Inactive { background: #dc3545; }
     .status-Hiatus { 
@@ -42,7 +41,7 @@
         color: #666;
         font-size: 14px;
     }
-    
+
     .artist-details .btn-link {
         margin-top: auto;
         flex-shrink: 0;
@@ -224,8 +223,8 @@
             <li class="artist-card card">
                 <div>
                     <h3>{{ artist.Artist_Name }}</h3>
-                    <span class="artist-status status-{{ artist.Activity_Status }}">
-                        {{ artist.Activity_Status }}
+                    <span class="artist-status status-{{ (artist.Activity_Status | first)}}">
+                        {{ artist.Activity_Status | first }}
                     </span>
                     <div class="artist-details">
                         {% if artist.Debut_Date %}
