@@ -3,59 +3,203 @@
 {% block title %}Fanclubs - KSync{% endblock %}
 
 {% block content %}
+<style>
+    .fanclub-card {
+        display: flex;
+        flex-direction: column;
+        list-style: none;
+        justify-content: space-between;
+        height: 100%;
+        text-align: center;
+        padding: 1.5rem 1rem; /* Adjust padding for visual appeal */
+    }
+
+    .fanclub-card h3 {
+        margin-bottom: 5px;
+        color: #667eea;
+        font-size: 1.3rem;
+    }
+
+    .fanclub-details p {
+        margin: 0.25rem 0;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .fanclub-details .btn-link {
+        margin-top: auto;
+        flex-shrink: 0;
+        align-self: center;
+        width: 100%; 
+    }
+
+/* --- NEW STYLES FOR BUTTONS --- */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px; 
+        min-height: 40px; 
+        line-height: 1.2;
+        text-decoration: none; 
+        border-radius: 6px; 
+        cursor: pointer;
+        font-size: 14px; 
+        text-align: center;
+        box-sizing: border-box; 
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .btn-group-form button {
+        width: 100%;
+        padding: 8px 12px;
+        min-height: 40px; 
+    }
+
+    .button-group {
+        display: flex;
+        gap: 5px;
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .button-group .btn i.fa {
+        font-size: 12px;
+        margin-right: 5px;
+    }
+    
+    .button-group .btn-link {
+        flex-grow: 1; 
+    }
+    
+    .btn-group-form {
+        flex-grow: 1; 
+    }
+    .btn-group-form button {
+        width: 100%;
+    }
+
+    .btn-join {
+        background-color: #667eea; 
+        color: white;
+        border: 1px solid #667eea;
+    }
+
+    .btn-leave {
+        background-color: rgb(216, 79, 79);
+        color: #ffffff; 
+    }
+
+    /* --- FILTER STYLES --- */
+    .filter-group input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .filter-group label {
+        display: block;
+        padding: 5px 20px;
+        margin: 0 3px;
+        border-radius: 50px;
+        max-height: 2rem;
+        border: solid 1px #a1a1a1;
+        font-size: 11px;
+        color: #1f1d1e;
+        transition: 0.3s;
+    }
+
+    .filter-group label:hover {
+        cursor: pointer;
+        background-color: #a1a1a1;
+    }
+
+    .filter-group input[type="radio"]:checked + label {
+        border: solid 1px #a5a8e9;
+        background-color: #a5a8e9;
+        color: #1f1327;
+    }
+    /* --- END FILTER STYLES --- */
+    
+    .search-filter-container {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .search-input-group {
+        display: flex;
+        align-items: center;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        padding: 0 10px;
+        flex-grow: 1;
+        max-width: 400px;
+    }
+    
+    .search-input-group button {
+        background: none;
+        border: none;
+        font-size: 18px;
+        color: #667eea;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .search-input-group input {
+        border: none;
+        width: 100%;
+        padding: 8px 10px;
+    }
+
+    .search-input-group input:focus {
+        border-color: transparent; 
+    }
+</style>
+
 <header style="margin-bottom: 2rem;">
     <h1>💖 Fanclubs</h1>
     <p style="color: #666;">Explore and join fan communities for your favorite K-Pop artists.</p>
 </header>
 
 {% if fanclubs %}
-    {% for artist_name, clubs in fanclubs | groupby('artist_name') %}
-        
-        <h2 style="margin-top: 3rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">
-            🎤 {{ artist_name }} Fanclubs
-        </h2>
-
-        <div class="fanclub-list-container" style="margin-bottom: 2rem;">
-            {% for fanclub in clubs %}
-                <div class="card fanclub-item-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                        
-                        <div style="flex-grow: 1; min-width: 200px;">
-                            <h3 style="margin-top: 0; margin-bottom: 0.25rem;">{{ fanclub.fanclub_name }}</h3>
-                        </div>
-
-                        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem;">
-                            
-                            <div class="badge" style="background: #e0f7fa; color: #00bcd4; white-space: nowrap; padding: 6px 14px;">
-                                Members: {{ fanclub.member_count }}
-                            </div>
-                            
-                            <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=fanclub.fanclub_id) }}" class="btn btn-outline" style="padding: 8px 16px;">View Fanclub</a>
-                            
-                            {% if fanclub.is_member %}
-                                <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.fanclub_id) }}" style="display: inline;">
-                                    <button type="submit" 
-                                            class="btn" 
-                                            style="background-color: #d53f3f; padding: 10px 16px;">
-                                        Leave Fanclub
-                                    </button>
-                                </form>
-                            {% else %}
-                                <form method="POST" action="{{ url_for('main_routes.join_fanclub', fanclub_id=fanclub.fanclub_id) }}" style="display: inline;">
-                                    <button type="submit" 
-                                            class="btn"
-                                            style="padding: 10px 16px;">
-                                        Join Fanclub
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </div>
+    <ul class="grid">
+        {% for fanclub in fanclubs %}
+            <li class="fanclub-card card">
+                <div>
+                    <h3>{{ fanclub.fanclub_name }}</h3>
+                    <div class="fanclub-details">
+                        <p>
+                            <i class="fa fa-users"></i> Members: {{ fanclub.member_count }}
+                        </p>
                     </div>
                 </div>
-            {% endfor %}
-        </div>
-        
-    {% endfor %}
+
+                <div class="button-group">
+                    
+                    {% if fanclub.is_joined %}
+                        <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.fanclub_id) }}" class="btn-group-form">
+                            <button type="submit" 
+                                    class="btn btn-leave">
+                                Leave Fanclub
+                            </button>
+                        </form>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('main_routes.join_fanclub', fanclub_id=fanclub.fanclub_id) }}" class="btn-group-form">
+                            <button type="submit" 
+                                    class="btn btn-join">
+                                Join Fanclub
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=fanclub.fanclub_id) }}" class="btn btn-outline btn-link">View Fanclub</a>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
 {% else %}
     <div class="empty-state">
         <p>😔 It looks like no fanclubs are available at the moment.</p>
