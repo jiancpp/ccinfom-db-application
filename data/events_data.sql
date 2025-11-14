@@ -18,7 +18,7 @@ VALUES  ("Philippine Arena", "Bocaue, Bulacan", "Philippines", 55000),
 
 INSERT INTO Event (Event_Name, Event_Type, Venue_ID, Start_Date, End_Date, Start_Time, End_Time)
 VALUES  ('BLACKPINK Comeback Tour', 'Concert', 1, '2026-08-10', '2026-08-11', '20:00:00', '00:00:00'),
-        ('ENHYPEN Dunkin Donut Collab x Fanmeet', 'Fanmeet', 4, '2026-09-05', '2026-09-05', '14:00:00', '16:30:00'),
+        ('ENHYPEN Dunkin Donut Collab x Fanmeet', 'Fanmeet', 4, '2026-09-05', '2026-09-06', '14:00:00', '01:30:00'),
         ('ZB1 Hi-Five Session', 'Hi Touch', 3, '2026-10-18', '2026-10-18', '11:00:00', '13:00:00'),
         ('AKMU Birthday Cupsleeve Cafe', 'Cupsleeve', 4, '2026-11-25', '2026-11-25', '10:00:00', '17:00:00'),
         ('AESPA Artist Showcase', 'Concert,Fanmeet,Hi Touch', 2, '2026-12-07', '2026-12-07', '18:30:00', '22:30:00'),
@@ -42,7 +42,7 @@ VALUES  ('BLACKPINK Comeback Tour', 'Concert', 1, '2026-08-10', '2026-08-11', '2
 		("ZB1 United Jiwoong Birthday Cupsleeve", "Cupsleeve", 4, "2026-12-14", "2026-12-14", "10:00:00", "19:00:00"),
 		("Aespa Synk Ningning Cupsleeve", "Cupsleeve", 4, "2026-10-23", "2026-10-23", "9:30:00", "18:30:00"),
 		("Suhyun & Chanhyuk Fans Anniversary Cupsleeve", "Cupsleeve", 4, "2026-04-19", "2026-04-19", "10:00:00", "17:00:00");
-	
+        
 INSERT INTO Ticket_Tier(Tier_ID, Event_ID, Tier_Name, Price, Total_Quantity, Benefits, Is_Reserved_Seating)      
 VALUES  (1, 1, 'VIP Pit', 15125.00, 1000, 'Early Entry, Sound Check Access', 1),
 		(2, 1, 'Lower Bowl Premium', 11550.00, 4000, 'Priority Entry, Exclusive Photocard', 1),
@@ -131,7 +131,7 @@ VALUES	(1, 3),   (2, 1),	(3, 1),
 		(38, 13), (38, 14), (38, 15), 
 		(39, 13), (39, 14), (39, 15);
 
- select * from ticket_purchase;
+ select * from seat;
 -- select * FROM ticket_tier
 -- order by tier_id;
 
