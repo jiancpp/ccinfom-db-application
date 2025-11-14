@@ -298,6 +298,11 @@
                 rowLabel.style.fontWeight = "bold";
                 rowLabel.style.marginRight = "4px";
 
+                if (seat.IsUnavailable) {
+                    rowLabel.style.marginRight = "4px";
+                    // unavailables seats
+                }
+
                 rowDiv = document.createElement("div");
                 rowDiv.className = "seat-row";
                 frag.appendChild(rowDiv);

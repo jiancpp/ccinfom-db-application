@@ -29,7 +29,7 @@ def get_conn():
         print(f"Connection failed: {e}")
         raise
 
-def execute_query(sql, params=()):
+def execute_select_query(sql, params=()):
     # Pass dictionary=True to the cursor method
     try:
         conn = get_conn()
@@ -45,7 +45,7 @@ def execute_query(sql, params=()):
         print(f"Error fetching user: {e}")
         return None
     
-def insert_query(sql, params=()):
+def execute_insert_query(sql, params=()):
     # Pass dictionary=True to the cursor method
     is_successful = False
 
@@ -101,7 +101,7 @@ def index():
     WHERE e.Start_Date >= CURDATE()
     ORDER BY e.Start_Date ASC
     '''
-    events = execute_query(event_query)
+    events = execute_select_query(event_query)
 
     return render_template('index.html', artists=artists, events=events, title=title)
 
@@ -205,7 +205,7 @@ def events():
         {search_condition}
     ORDER BY e.Start_Date ASC
     '''
-    events = execute_query(event_query, tuple(query_parameters))
+    events = execute_select_query(event_query, tuple(query_parameters))
 
     return render_template(
         'events.html', 
@@ -405,7 +405,7 @@ def buy_ticket(event_id):
     '''
 
     # Error handling
-    event_results = execute_query(event_query, (event_id,))
+    event_results = execute_select_query(event_query, (event_id,))
     if event_results:
         event = event_results[0]
     if not event:
@@ -416,7 +416,7 @@ def buy_ticket(event_id):
     FROM Ticket_Tier
     WHERE Event_ID = %s
     '''
-    ticket_tiers = execute_query(tier_query, (event_id,))  
+    ticket_tiers = execute_select_query(tier_query, (event_id,))  
     if not ticket_tiers:
         # Event not found, return or redirect otherwise
         return redirect(url_for('main_routes.events'))
@@ -431,7 +431,7 @@ def buy_ticket(event_id):
             WHERE Tier_ID = %s
         )
         '''
-        sections = execute_query(section_query, (tier['Tier_ID'],))
+        sections = execute_select_query(section_query, (tier['Tier_ID'],))
 
         if sections:
             tier_sections[tier['Tier_ID']] = sections
@@ -456,7 +456,7 @@ def buy_ticket(event_id):
         VALUES (%s, %s, %s, %s)
         '''
 
-        if insert_query(insert_ticket_purchase, (Fan_ID, Event_ID, Tier_ID, Seat_ID)):
+        if execute_insert_query(insert_ticket_purchase, (Fan_ID, Event_ID, Tier_ID, Seat_ID)):
             flash(f"Success! View your purchased ticket on your profile.", "success")
         else:
             flash(f"Error purchasing.", "error")
@@ -476,19 +476,58 @@ def get_seats(event_id, section_id):
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 450, type=int)
 
-    query = (
-        db.session.query(Seat.Seat_ID, Seat.Seat_Row, Seat.Seat_Number)
-        .filter(Seat.Section_ID == section_id)\
-        .order_by(Seat.Seat_ID)
-    )
+    seats_query = '''
+    SELECT 
+        s.Seat_ID, 
+        s.Seat_Row, 
+        s.Seat_Number, 
+        
+        CASE
+            WHEN EXISTS (
+                SELECT 1 FROM Ticket_Purchase AS tp
+                WHERE tp.Seat_ID = s.Seat_ID AND tp.Event_ID = %s
+            ) THEN TRUE
+            ELSE FALSE
+        END AS IsUnavailable
 
-    total = query.count()
+    FROM Seat s
+    WHERE s.Section_ID = %s
+    ORDER BY s.Seat_ID
+    LIMIT %s OFFSET %s
+    '''
 
     # skips a number of records before returning results
-    seats = query.offset((page - 1) * per_page).limit(per_page).all()
+    seats = []
+    seats_results = execute_select_query(
+        seats_query, (
+            # For Derived Attribute - IsUnavailable
+            event_id, 
+            # For Pagination
+            section_id, per_page, (page - 1) * per_page
+        )
+    )
+
+    if seats_results:
+        seats = seats_results
+
+    total_seats_query = '''
+    SELECT COUNT(Seat_ID) AS Total
+    FROM Seat
+    WHERE Section_ID = %s
+    '''
+    
+    total_results = execute_select_query(total_seats_query, (section_id,))
+
+    total_seats = 0
+    if total_results:
+        total_seats = total_results[0]['Total']
+
+    # Use total_seats for your pagination calculations
+    # 'total' for the pagination logic not len(seats)
+    total = total_seats
 
     seat_list = [
-        { "id": s.Seat_ID, "seat_row": s.Seat_Row, "seat_number": s.Seat_Number }
+        { "id": s['Seat_ID'], "seat_row": s['Seat_Row'], "seat_number": s['Seat_Number'] }
         for s in seats
     ]
 
