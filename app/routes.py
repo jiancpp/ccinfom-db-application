@@ -65,7 +65,7 @@ def execute_insert_query(sql, params=()):
         if conn:
             conn.close()
 
-        return is_successful
+    return is_successful
 
 # ============================================
 #           CORE PAGES
@@ -306,67 +306,80 @@ def merchandise():
 
 @main_routes.route('/fanclubs', methods=['GET'])
 def fanclubs():
-    current_filter = request.args.get('filter', 'all') 
+    # ----------------------------------------------------
+    # SETUP & INPUTS
+    # ---------------------------------------------------- 
+    conditions = []
+    query_parameters = []
+
+    current_fan_id = g.current_user.Fan_ID
     current_search = request.args.get('fanclub-name', '').strip()
+    current_filter = request.args.get('filter', 'all') 
     current_artist = request.args.get('artist', 'all').strip()
-    
-    artist_names = [artist.Artist_Name for artist in db.session.query(Artist.Artist_Name).distinct().order_by(Artist.Artist_Name).all()]
-    
-    base_query = db.session.query(
-        Fanclub.Fanclub_ID,
-        Fanclub.Fanclub_Name,
-        Artist.Artist_Name.label('artist_name'),
-        func.count(Fanclub_Membership.Fan_ID).label('member_count')
-    ).join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
-    .outerjoin(Fanclub_Membership, Fanclub.Fanclub_ID == Fanclub_Membership.Fanclub_ID) \
-    .group_by(Fanclub.Fanclub_ID, Artist.Artist_ID) \
-    .order_by(Artist.Artist_Name, Fanclub.Fanclub_Name)
 
+    # ----------------------------------------------------
+    # APPLY SEARCH FILTER 
+    # ----------------------------------------------------     
     if current_search:
-        base_query = base_query.filter(Fanclub.Fanclub_Name.ilike(f'%{current_search}%'))
+        search_condition = "f.Fanclub_Name LIKE %s"
+        search_pattern = f"%{current_search}%"
+        query_parameters.append(search_pattern)
 
-    if current_artist and current_artist != 'all':
-        base_query = base_query.filter(Artist.Artist_Name == current_artist)
+    # ----------------------------------------------------
+    # APPLY JOINED FANCLUBS FILTER 
+    # ----------------------------------------------------     
+    if current_filter == 'joined':
+        conditions.append("fm.Fan_ID IS NOT NULL")
+
+    if current_filter == 'not-joined':
+        conditions.append("fm.Fan_ID IS NULL")
+
+    # ----------------------------------------------------
+    # APPLY ARTIST FANCLUBS FILTER 
+    # ----------------------------------------------------     
+    if current_artist != "all":
+        artist_condition = "AND a.Artist_Name LIKE %s"
+        artist_pattern = f"%{current_artist}%"
+        query_parameters.append(artist_pattern)
+
+
+    # ----------------------------------------------------
+    # BUILD QUERY 
+    # ----------------------------------------------------
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+    artist_query = f'''
+    SELECT Artist_Name 
+    FROM Artist
+    ORDER BY Artist_Name
+    '''
+
+    artists = execute_select_query(artist_query)
+
+    fanclub_query = f'''
+    SELECT fm.Fan_Id AS is_member_fan_id, f.Fanclub_ID, f.Fanclub_Name, a.Artist_Name, 
+           COUNT(fm.Fan_Id) AS Member_Count
+    FROM Fanclub AS f
+        LEFT JOIN Artist AS a ON f.Artist_ID = a.Artist_ID
+        LEFT JOIN Fanclub_Membership AS m ON f.Fanclub_ID = m.Fanclub_ID
+        LEFT JOIN Fanclub_Membership AS fm ON f.Fanclub_ID = fm.Fanclub_ID AND fm.Fan_ID = %s
     
-    joined_fanclub_ids = set()
-    current_fan_id = None
-    
-    if g.get('current_user'):
-        current_fan_id = g.current_user.Fan_ID
+    {where_clause}
+    GROUP BY f.Fanclub_ID, f.Fanclub_Name, a.Artist_Name, fm.Fan_ID
+    ORDER BY a.Artist_Name, f.Fanclub_Name
+    '''
 
-        joined_fanclub_ids_tuples = db.session.query(Fanclub_Membership.Fanclub_ID).filter(
-            Fanclub_Membership.Fan_ID == current_fan_id
-        ).all()
-
-        joined_fanclub_ids = {fanclub_id for (fanclub_id,) in joined_fanclub_ids_tuples}
-
-        if current_filter == 'joined':
-            base_query = base_query.filter(Fanclub.Fanclub_ID.in_(joined_fanclub_ids))
-        
-        elif current_filter == 'not-joined':
-            base_query = base_query.filter(Fanclub.Fanclub_ID.notin_(joined_fanclub_ids))
-
-    fanclub_data_results = base_query.all()
-    fanclubs_list = []
-    
-    for fanclub in fanclub_data_results:
-        is_member = fanclub.Fanclub_ID in joined_fanclub_ids
-        
-        fanclubs_list.append({
-            'fanclub_id': fanclub.Fanclub_ID,
-            'fanclub_name': fanclub.Fanclub_Name,
-            'artist_name': fanclub.artist_name,
-            'member_count': fanclub.member_count,
-            'is_member': is_member
-        })
+    query_parameters.insert(0, current_fan_id)
+    fanclubs = execute_select_query(fanclub_query, tuple(query_parameters))
 
     return render_template(
         'fanclubs.html', 
-        fanclubs=fanclubs_list,
+        fanclubs=fanclubs,
         current_filter=current_filter,
         current_search=current_search,
         current_artist=current_artist, 
-        artist_names=artist_names     
+        artists=artists     
     )
 
 
