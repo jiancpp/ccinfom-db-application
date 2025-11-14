@@ -215,9 +215,93 @@ def events():
     )
 
 
+# =========================================================================
+# MERCH MAIN
+# =========================================================================
 @main_routes.route('/merchandise')
 def merchandise():
-    return render_template('merchandise.html')
+    artist_filter_id = request.args.get('artist_id', type=int)
+    fanclub_filter_id = request.args.get('fanclub_id', type=int)
+
+    merch_query = Merchandise.query.order_by(Merchandise.Merchandise_Name)
+    
+    # Artist Filter
+    if artist_filter_id:
+        merch_query = merch_query.filter(Merchandise.Artist_ID == artist_filter_id)
+
+    # Fanclub Filter 
+    if fanclub_filter_id:
+        merch_query = merch_query.filter(Merchandise.Fanclub_ID == fanclub_filter_id)
+
+    # Execute Query and Group by Artist    
+    if artist_filter_id:
+        artists = Artist.query.filter(Artist.Artist_ID == artist_filter_id).order_by(Artist.Artist_Name).all()
+    else:
+        artists = Artist.query.order_by(Artist.Artist_Name).all()
+    
+    
+    artists_merch_data = []
+    
+    filtered_merchandise = merch_query.all()
+    
+    
+    for artist in artists:
+        merch_for_artist = [item for item in filtered_merchandise if item.artist == artist]
+        if merch_for_artist or not (artist_filter_id or fanclub_filter_id):
+            
+            merch_list_data = []
+            for merch_item in merch_for_artist:
+                merch_list_data.append({
+                    'id': merch_item.Merchandise_ID,
+                    'name': merch_item.Merchandise_Name,
+                    'type': merch_item.Merchandise_Description, 
+                    'price': float(merch_item.Merchandise_Price),
+                    'sku': f"SKU-{merch_item.Merchandise_ID}",
+                    'stock': merch_item.Quantity_Stock
+                })
+                
+            if merch_list_data:
+                artists_merch_data.append({
+                    'name': artist.Artist_Name,
+                    'merchandise': merch_list_data
+                })
+                
+    if fanclub_filter_id:
+        fanclubs = Fanclub.query.filter(Fanclub.Fanclub_ID == fanclub_filter_id).order_by(Fanclub.Fanclub_Name).all()
+    else:
+        fanclubs = Fanclub.query.order_by(Fanclub.Fanclub_Name).all()
+        
+    for fanclub in fanclubs:
+        merch_for_fanclub = [item for item in filtered_merchandise if item.fanclub == fanclub]
+
+        if merch_for_fanclub or not (artist_filter_id or fanclub_filter_id):            
+            merch_list_data = []
+            for merch_item in merch_for_fanclub:
+                merch_list_data.append({
+                    'id': merch_item.Merchandise_ID,
+                    'name': merch_item.Merchandise_Name,
+                    'type': merch_item.Merchandise_Description, 
+                    'price': float(merch_item.Merchandise_Price),
+                    'sku': f"SKU-{merch_item.Merchandise_ID}",
+                    'stock': merch_item.Quantity_Stock
+                })
+                
+            if merch_list_data:
+                artists_merch_data.append({
+                    'name': fanclub.Fanclub_Name,
+                    'merchandise': merch_list_data
+                })
+    
+    all_artists_data = [{'id': a.Artist_ID, 'name': a.Artist_Name} for a in Artist.query.order_by(Artist.Artist_Name).all()]
+    all_fanclubs_data = [{'id': f.Fanclub_ID, 'name': f.Fanclub_Name} for f in Fanclub.query.order_by(Fanclub.Fanclub_Name).all()]
+
+    return render_template(
+        'merchandise.html', 
+        artists_merch=artists_merch_data,
+        all_artists=all_artists_data,
+        all_fanclubs=all_fanclubs_data,
+        cart_item_count=0 
+    )
 
 
 @main_routes.route('/fanclubs', methods=['GET'])
@@ -764,3 +848,184 @@ def toggle_follow(artist_id):
         
     # Redirect back to the page the user came from (artists list or details page)
     return redirect(request.referrer or url_for('main_routes.artists'))
+
+# =========================================================================
+# MERCH SUBPAGES
+# =========================================================================
+@main_routes.route('/cart')
+def cart():
+    
+    current_fan_id = session.get('fan_id')    
+
+    active_cart_order = Order.query.filter_by(
+            Fan_ID=current_fan_id, 
+            Order_Status='Pending'
+        ).first()
+
+    cart_display_data = []
+    cart_total = 0.0
+
+    if active_cart_order:
+        purchase_list = Purchase_List.query.filter_by(Order_ID=active_cart_order.Order_ID).all()
+            
+        for item in purchase_list:
+            merch = item.merchandise 
+            if merch:
+                item_subtotal = float(merch.Merchandise_Price) * item.Quantity_Purchased
+                cart_total += item_subtotal
+                artist_name = merch.artist.Artist_Name if merch.artist else merch.fanclub.Fanclub_Name
+
+                cart_display_data.append({
+                    'id': merch.Merchandise_ID,
+                    'name': merch.Merchandise_Name,
+                    'artist' : artist_name,
+                    'price': float(merch.Merchandise_Price),
+                    'subtotal': item_subtotal,
+                })
+
+    context = {
+        'cart_items': cart_display_data, 
+        'cart_total': cart_total, 
+        'item_count': len(cart_display_data) 
+    }
+        
+    return render_template('cart.html', **context)
+
+
+@main_routes.route('/cart/remove/<int:item_id>')
+def remove_from_cart(item_id):
+    
+    current_fan_id = session.get('fan_id')
+    
+    active_cart_order = Order.query.filter_by(
+        Fan_ID=current_fan_id, 
+        Order_Status='Pending'
+    ).first()
+    
+    if not active_cart_order:
+        flash("Your cart is already empty.", 'info')
+        return redirect(url_for('main_routes.cart'))
+
+    item_to_remove = Purchase_List.query.filter_by(
+        Order_ID=active_cart_order.Order_ID, 
+        Merchandise_ID=item_id
+    ).first()
+    
+    if item_to_remove:
+        db.session.delete(item_to_remove)
+        db.session.commit()
+        flash("Item successfully removed from cart.", 'success')
+    else:
+        flash("That item wasn't in your cart.", 'warning')
+
+    return redirect(url_for('main_routes.cart'))
+
+
+@main_routes.route('/cart/clear')
+def clear_cart():
+    
+    current_fan_id = session.get('fan_id')
+    active_cart_order = Order.query.filter_by(
+        Fan_ID=current_fan_id, 
+        Order_Status='Pending'
+    ).first()
+
+    if active_cart_order:
+        db.session.delete(active_cart_order)
+        db.session.commit()
+        flash("Your shopping cart has been completely emptied.", 'success')
+    
+    return redirect(url_for('main_routes.merchandise'))
+    
+
+@main_routes.route('/cart/add/<int:item_id>')
+def add_to_cart(item_id):
+    
+    current_fan_id = session.get('fan_id')
+
+    merchandise = Merchandise.query.filter_by(Merchandise_ID=item_id).first()
+    if not merchandise or merchandise.Quantity_Stock <= 0:
+        flash("🚫 Item is out of stock or not found!", 'danger')
+        return redirect(url_for('main_routes.merchandise'))
+    
+
+    active_cart_order = Order.query.filter_by(
+        Fan_ID=current_fan_id, 
+        Order_Status='Pending'
+    ).first()
+    
+    if not active_cart_order:
+        active_cart_order = Order(Fan_ID=current_fan_id, Order_Status='Pending')
+        db.session.add(active_cart_order)
+        db.session.flush() 
+
+    purchase_list_item = Purchase_List.query.filter_by(
+        Order_ID=active_cart_order.Order_ID, 
+        Merchandise_ID=item_id
+    ).first()
+
+    
+    if purchase_list_item:
+        purchase_list_item.Quantity_Purchased += 1
+    else:
+        purchase_list_item = Purchase_List(
+            Order_ID=active_cart_order.Order_ID, 
+            Merchandise_ID=item_id, 
+            Quantity_Purchased=1
+        )
+        db.session.add(purchase_list_item)
+        
+    db.session.commit()
+    
+    flash(f"✅ '{merchandise.Merchandise_Name}' added to your cart!", 'success')
+    return redirect(url_for('main_routes.cart'))
+
+@main_routes.route('/checkout/place_order', methods=['POST']) 
+def place_order():
+    """
+    Finalizes the order: Deducts stock, changes status to 'Paid'.
+    This version uses the relationship attribute 'purchase_list'.
+    """
+    current_fan_id = session.get('fan_id')
+
+    if not current_fan_id:
+        flash("🚫 You must be logged in to place an order.", 'warning')
+        return redirect(url_for('main_routes.login')) 
+
+
+    active_cart_order = Order.query.filter_by(
+        Fan_ID=current_fan_id, 
+        Order_Status='Pending'
+    ).first()
+
+
+    if not active_cart_order or not active_cart_order.purchase_list:
+        flash("🚫 Cart is empty or invalid.", 'danger')
+        return redirect(url_for('main_routes.cart')) 
+
+    try:
+        for item in active_cart_order.purchase_list:
+            merch = item.merchandise 
+            
+            if merch.Quantity_Stock >= item.Quantity_Purchased:
+                merch.Quantity_Stock -= item.Quantity_Purchased
+                db.session.add(merch)
+            else:
+                db.session.rollback() 
+                flash(f"⚠️ Stock Error: '{merch.Merchandise_Name}' is sold out. Please update your cart.", 'danger')
+                return redirect(url_for('main_routes.cart'))
+
+
+        active_cart_order.Order_Status = 'Paid'
+        active_cart_order.Order_Date = db.func.now() 
+        db.session.add(active_cart_order)
+        db.session.commit()
+        
+        flash(f"🎉 Order #{active_cart_order.Order_ID} placed successfully! Thank you!", 'success')
+        
+        return redirect(url_for('main_routes.merchandise'))
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ An internal error occurred. Order failed: {e}", 'danger')
+        return redirect(url_for('main_routes.cart'))
