@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Merchandise Shop | K-Sync{% endblock %}
+
+{% block content %}
+    <header>
+        <h1>🛒 K-Pop Merchandise Shop</h1>
+        <p style="color: #666;">Official albums, light sticks, and exclusive photocards. Select a group or fanclub to filter!</p>
+        <a href="{{ url_for('main_routes.cart') }}" class="btn btn-outline" style="margin-top: 1rem;">
+            View Cart 
+        </a>
+    </header>
+
+    {# Filtering #}
+    <section>
+    <div style="background-color: #f7f9fc; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        
+        <form method="GET" action="{{ url_for('main_routes.merchandise') }}" id="filter_form">
+            
+            <a href="{{ url_for('main_routes.merchandise') }}" class="btn btn-secondary" style="margin-right: 1rem;">
+                <span style="font-size: 1.2em;">&times;</span> Clear Filters
+            </a>
+
+            <input type="hidden" name="fanclub_id" value="{{ request.args.get('fanclub_id', '') }}">
+
+            <h4 style="display: inline-block; margin-right: 0.5rem; color: var(--primary-color);">Artist:</h4>
+            
+            {% set current_artist_id = request.args.get('artist_id', '') %}
+
+            {% for artist in all_artists %}
+                <button type="submit" name="artist_id" value="{{ artist.id }}" 
+                    class="btn {% if artist.id|string == current_artist_id %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                    style="margin-right: 0.5rem; margin-bottom: 1.2rem;">
+                    {{ artist.name }}
+                </button>
+            {% endfor %}
+        </section>
+
+    {# Merch Cards #}
+    <section class="container">
+        {% if artists_merch %}
+            {% for artist in artists_merch %}
+                
+                <h2>✨ {{ artist.name }}'s Official Merch</h2>
+                
+                {% if artist.merchandise %}
+                    <div class="grid">
+                        {% for item in artist.merchandise %}
+                            <div class="card">
+                                <h3 style="display: flex; justify-content: space-between; align-items: center;">
+                                    {{ item.name }}
+                                    <span class="badge" style="background: #e0f7fa; color: #00bcd4;">
+                                        {{ item.type }}
+                                    </span>
+                                </h3>
+                                <p style="margin-bottom: 0.5rem;"><strong>Price:</strong> P{{ "%.2f"|format(item.price) }}</p>
+                                <p style="color: #999; font-size: 0.9em; margin-bottom: 1rem;">
+                                    SKU: {{ item.sku }} | Stock: {{ item.stock }}
+                                </p>
+                                
+                                {% if item.stock > 0 %}
+                                    <a href="{{ url_for('main_routes.add_to_cart', item_id=item.id) }}" class="btn" style="width: 100%;">
+                                        Add to Cart
+                                    </a>
+                                {% else %}
+                                    <button class="btn btn-secondary" disabled style="width: 100%;">
+                                        Sold Out
+                                    </button>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        No merchandise found for {{ artist.name }} matching the current filters.
+                    </div>
+                {% endif %}
+                
+
+
+                <hr style="margin: 3rem 0; border: 0; border-top: 1px dashed #e0e0e0;">
+
+            {% endfor %}
+
+        {% else %}
+            <div class="empty-state">
+                <p>😭 We searched everywhere, but found no merchandise matching your filters. Try clearing them!</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section>
+    {% if fanclub_merch %}
+    {% for fanclub in fanclub_merch %}
+        <h2>✨ {{ fanclub.name }}'s Official Merch</h2>
+        
+        {% if fanclub.merchandise %}
+            <div class="grid">
+                {% for item in fanclub.merchandise %}
+                    <div class="card">
+                        <h3 style="display: flex; justify-content: space-between; align-items: center;">
+                            {{ item.name }}
+                            <span class="badge" style="background: #e0f7fa; color: #00bcd4;">
+                                {{ item.type }}
+                            </span>
+                        </h3>
+                        <p style="margin-bottom: 0.5rem;"><strong>Price:</strong> P{{ "%.2f"|format(item.price) }}</p>
+                        <p style="color: #999; font-size: 0.9em; margin-bottom: 1rem;">
+                            SKU: {{ item.sku }} | Stock: {{ item.stock }}
+                        </p>
+                        
+                        {% if item.stock > 0 %}
+                            <a href="{{ url_for('main_routes.add_to_cart', item_id=item.id) }}" class="btn" style="width: 100%;">
+                                Add to Cart
+                            </a>
+                        {% else %}
+                            <button class="btn btn-secondary" disabled style="width: 100%;">
+                                Sold Out
+                            </button>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No merchandise found for {{ fanclub.name }} matching the current filters.
+            </div>
+        {% endif %}
+
+        <hr style="margin: 3rem 0; border: 0; border-top: 1px dashed #e0e0e0;">
+
+    {% endfor %}
+{% endif %}
+        </section>
+
+{% endblock %}
