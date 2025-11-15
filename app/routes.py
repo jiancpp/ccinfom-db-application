@@ -391,16 +391,20 @@ def login():
     if request.method == 'POST':
         username_or_email = request.form.get('username')
         
-        fan = Fan.query.filter(
-            (Fan.Username == username_or_email) | (Fan.Email == username_or_email)
-        ).first()
+        fan_query = '''
+        SELECT Fan_ID, First_Name, Username, Email
+        FROM Fan
+        WHERE Username = %s OR Email = %s
+        '''
+
+        fan = execute_select_query(fan_query, (username_or_email, username_or_email))
 
         if fan:
             session['logged_in'] = True
-            session['username'] = fan.Username
-            session['fan_id'] = fan.Fan_ID
+            session['username'] = fan[0]['Username']
+            session['fan_id'] = fan[0]['Fan_ID']
             
-            flash(f'Login successful! Welcome back, {fan.First_Name}.', 'success')
+            flash(f'Login successful! Welcome back, {fan[0]['First_Name']}.', 'success')
             return redirect(url_for('main_routes.index')) 
         else:
             flash('Login failed: Account with that username or email not found.', 'error')
@@ -423,35 +427,48 @@ def register():
         last_name = request.form.get('last_name')
         username = request.form.get('username')
         email = request.form.get('email')
+
+        fan_username_query = '''
+        SELECT Fan_ID
+        FROM Fan
+        WHERE Username = %s
+        '''
+
+        fan_email_query = '''
+        SELECT Fan_ID
+        FROM Fan
+        WHERE Email = %s
+        '''
+
+        fan_username = execute_select_query(fan_username_query, (username,))
+        fan_email = execute_select_query(fan_email_query, (email,))
         
         if not all([first_name, last_name, username, email]):
             flash('All fields are required. Did you forget something?', 'error')
             return redirect(url_for('main_routes.register'))
 
-        if Fan.query.filter_by(Username=username).first():
+        if fan_username:
             flash('An account with that username already exists. Try logging in!', 'error')
             return redirect(url_for('main_routes.register'))
 
-        if Fan.query.filter_by(Email=email).first():
+        if fan_email:
             flash('An account with that email already exists. Try logging in!', 'error')
             return redirect(url_for('main_routes.register'))
 
-        try:
-            new_fan = Fan(
-                First_Name=first_name,
-                Last_Name=last_name,
-                Username=username,
-                Email=email,
-            )
+        First_Name=first_name
+        Last_Name=last_name
+        Username=username
+        Email=email
+            
+        insert_fan_record = f'''
+        INSERT INTO Fan (First_Name, Last_Name, Username, Email)
+        VALUES (%s, %s, %s, %s)
+        '''
 
-            db.session.add(new_fan)
-            db.session.commit()
-
-            flash(f'Welcome, {username}! You can now log in.', 'success')
+        if execute_insert_query(insert_fan_record, (First_Name, Last_Name, Username, Email)):
+            flash(f'Welcome, {Username}! You can now log in.', 'success')
             return redirect(url_for('main_routes.login'))
-        
-        except Exception:
-            db.session.rollback()
+        else:
             flash('A server error occurred during registration. Please try again.', 'error')
 
     return render_template('register.html')
@@ -459,11 +476,27 @@ def register():
 
 @main_routes.route('/profile')
 def profile():
-    current_fan_id = session.get('fan_id')
+    current_fan_id = g.current_user.Fan_ID
     fan = Fan.query.get(current_fan_id)
 
-    memberships = fan.memberships
-    purchases = fan.ticket_purchases
+    memberships_query = '''
+    SELECT f.Fanclub_Name, fm.Date_Joined
+    FROM Fanclub AS f
+        JOIN Fanclub_Membership AS fm
+            ON f.Fanclub_Id = fm.Fanclub_Id
+            AND fm.Fan_Id = %s
+    '''
+
+    purchases_query = f'''
+    SELECT e.Event_Id, e.Event_Name, t.Tier_Name, tp.Purchase_Date, s.Seat_Row, s.Seat_Number
+    FROM Event AS e
+        JOIN Ticket_Purchase AS tp ON e.Event_Id = tp.Event_Id AND tp.Fan_Id = %s
+        JOIN Ticket_Tier AS t ON t.Tier_Id = tp.Tier_Id 
+        LEFT JOIN Seat AS s ON tp.Seat_Id = s.Seat_Id
+    '''
+
+    memberships = execute_select_query(memberships_query, (current_fan_id,))
+    purchases = execute_select_query(purchases_query, (current_fan_id,))
 
     return render_template('profile.html', fan=fan, memberships=memberships, purchases=purchases)
 
@@ -548,7 +581,7 @@ def buy_ticket(event_id):
         Tier_ID = tier_id
         Seat_ID = seat_id            
 
-        insert_ticket_purchase = '''
+        insert_ticket_purchase = f'''
         INSERT INTO Ticket_Purchase (Fan_ID, Event_ID, Tier_ID, Seat_ID)
         VALUES (%s, %s, %s, %s)
         '''

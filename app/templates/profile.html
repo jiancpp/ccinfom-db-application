@@ -35,7 +35,7 @@
                     {% for membership in memberships %}
                         <div style="background: #fcfcfc; padding: 12px 15px; border-radius: 8px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-weight: 600; color: #444;">
-                                {{ membership.fanclub.Fanclub_Name }}
+                                {{ membership.Fanclub_Name }}
                             </span>
                             <span class="badge" style="background: #d4edda; color: #155724; padding: 6px 10px;">
                                 Joined {{ membership.Date_Joined.strftime('%b %Y') }}
@@ -70,25 +70,26 @@
                     {% for purchase in purchases %}
                         <tr>
                             <td>
-                                <a href="{{ url_for('main_routes.buy_ticket', event_id=purchase.event.Event_ID) }}" style="color: #764ba2; text-decoration: none;">                                    {{ purchase.event.Event_Name }}
+                                <a href="{{ url_for('main_routes.buy_ticket', event_id=purchase.Event_Id) }}" style="color: #764ba2; text-decoration: none;">
+                                    {{ purchase.Event_Name }}
                                 </a>
                             </td>
                             <td>
                                 <span class="badge" style="background: #e9ecef; color: #333;">
-                                    {{ purchase.ticket_tier.Tier_Name }}
+                                    {{ purchase.Tier_Name }}
                                 </span>
                             </td>
                             <td class="date-time-col" style="font-size: 0.9em;">
                                 {{ purchase.Purchase_Date.strftime('%Y-%m-%d at %H:%M') }}
                             </td>
                             <td>
+                                <span class="badge" style="background: #e9ecef; color: #333;">
                                 {% if purchase.seat %}
-                                    Row: {{ purchase.seat.Seat_Row }}, Seat: {{ purchase.seat.Seat_Number }}
+                                    Row: {{ purchase.Seat_Row }}, Seat: {{ purchase.Seat_Number }}
                                 {% else %}
-                                    <span class="badge" style="background: #f0f0f0; color: #6c757d;">
-                                        General Admission
-                                    </span>
+                                    General Admission
                                 {% endif %}
+                                </span>
                             </td>
                         </tr>
                     {% endfor %}
