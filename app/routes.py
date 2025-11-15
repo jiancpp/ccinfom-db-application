@@ -477,7 +477,12 @@ def register():
 @main_routes.route('/profile')
 def profile():
     current_fan_id = g.current_user.Fan_ID
-    fan = Fan.query.get(current_fan_id)
+    
+    fan_query = '''
+        SELECT Fan_ID, First_Name, Last_Name, Username, Email, Date_Joined
+        FROM Fan
+        WHERE Fan_ID = %s
+        '''
 
     memberships_query = '''
     SELECT f.Fanclub_Name, fm.Date_Joined
@@ -495,6 +500,7 @@ def profile():
         LEFT JOIN Seat AS s ON tp.Seat_Id = s.Seat_Id
     '''
 
+    fan = execute_select_query(fan_query, (current_fan_id,))
     memberships = execute_select_query(memberships_query, (current_fan_id,))
     purchases = execute_select_query(purchases_query, (current_fan_id,))
 
