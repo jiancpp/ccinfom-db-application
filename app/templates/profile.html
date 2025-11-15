@@ -18,11 +18,11 @@
                 <i class="fa fa-user-circle-o"></i> Account Information
             </h3>
             
-            <p><strong>Fan ID:</strong> ID{{ "%05d" | format(fan.Fan_ID) }}</p>
-            <p><strong>Username:</strong> @{{ fan.Username }}</p>
-            <p><strong>Full Name:</strong> {{ fan.First_Name }} {{ fan.Last_Name }}</p>
-            <p><strong>Email:</strong> {{ fan.Email }}</p>
-            <p><strong>Joined:</strong> <span class="date">{{ fan.Date_Joined }}</span></p>
+            <p><strong>Fan ID:</strong> ID{{ "%05d" | format(fan[0].Fan_ID) }}</p>
+            <p><strong>Username:</strong> @{{ fan[0].Username }}</p>
+            <p><strong>Full Name:</strong> {{ fan[0].First_Name }} {{ fan[0].Last_Name }}</p>
+            <p><strong>Email:</strong> {{ fan[0].Email }}</p>
+            <p><strong>Joined:</strong> <span class="date">{{ fan[0].Date_Joined }}</span></p>
         </div>
 
         <div class="card">
