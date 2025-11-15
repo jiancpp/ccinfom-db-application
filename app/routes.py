@@ -529,9 +529,35 @@ def buy_ticket(event_id):
 
     # Fetch record from database
     event_query = '''
-    SELECT * 
-    FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
-    WHERE e.Event_ID = %s
+    SELECT 
+        Event_Record.*,
+        (Event_Record.Total_Duration_In_Minutes / 60) AS Duration_Hours,
+        (Event_Record.Total_Duration_In_Minutes % 60) AS Duration_Minutes,
+
+        (   SELECT COUNT(*)
+            FROM Ticket_Purchase tp
+            WHERE tp.Event_ID = Event_Record.Event_ID
+        )   AS Tickets_Sold,
+
+        (   SELECT SUM(tt.Total_Quantity)
+            FROM Ticket_Tier tt
+            WHERE tt.Event_ID = Event_Record.Event_ID
+        )   AS Max_Capacity
+    FROM (
+        SELECT 
+            e.*,
+            v.Venue_Name, v.City, v.Country,
+            DATEDIFF(e.Start_Date, CURDATE()) AS Days_Left,
+            CASE
+                WHEN e.End_Time >= e.Start_Time 
+                THEN 
+                    TIME_TO_SEC(TIMEDIFF(e.End_Time, e.Start_Time)) / 60
+                ELSE 
+                    TIME_TO_SEC(TIMEDIFF(ADDTIME(e.End_Time, '24:00:00'), e.Start_Time)) / 60
+            END AS Total_Duration_In_Minutes
+        FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+        WHERE e.Event_ID = %s
+    ) AS Event_Record
     '''
 
     # Error handling
@@ -604,7 +630,7 @@ def get_seats(event_id, section_id):
     ?page=1&per_page=450
     """
     page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 450, type=int)
+    per_page = request.args.get("per_page", 1000, type=int)
 
     seats_query = '''
     SELECT 

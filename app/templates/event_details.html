@@ -1,7 +1,100 @@
-{% extends "events.html" %}
-{% block title %}Artists - K-Pop Fan Hub{% endblock %}
+{% extends "base.html" %}
+{% block title %}Buy Event Ticket - KSync{% endblock %}
 {% block content %}
+
 <style>
+    /* Container Grid */
+    .details-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr; /* Layout: 1/3 for metadata, 2/3 for content */
+        gap: 40px;
+        margin-top: 20px;
+    }
+
+    /* LEFT COLUMN -- Event Header Styling */
+    .event-header {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start; /* Stops children from stretching horizontally */
+        justify-content: space-between;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 10px;
+    }
+
+    .event-header h1 {
+        margin: 0;
+        color: #667eea;
+        font-size: 2.5rem;
+    }
+
+    .badges-container {
+        display: flex;
+        margin-top: 10px;
+        justify-content: space-between;
+    }
+    
+    /* RIGHT COLUMN -- Event Details */
+    .details-sidebar {
+        /* Sidebar container for Event and Venue details */
+        padding-top: 10px;
+    }
+
+    .details-card {
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 20px;
+        background-color: #f7f9fc; /* Light background for the card */
+    }
+
+    .details-card h4 {
+        color: #667eea;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #e0eeef;
+        padding-bottom: 5px;
+    }
+
+    .derived-field {
+        background: #dbe0e6;
+        color: #363638;
+        padding: 5px 15px;
+        border-radius: 20px;
+        width: auto;
+
+        /* Prevents auto wrapping */
+        white-space: nowrap;
+    }
+
+    .duration {
+        font-size: 11px;
+        margin-left: 10px;
+        margin-bottom: 3px;
+        padding: 2px 15px;
+    }
+
+    .days-left, .sold-out, .available {
+        font-size: 15px;
+        text-align: center;
+    }
+
+    .sold-out {
+        background: rgb(219, 120, 120);
+        color: rgb(102, 26, 26);
+    }
+
+    .available {
+        margin-left: 10px;
+        background: rgb(194, 220, 169);
+        color: rgb(44, 88, 14);
+    }
+
+    .icon {
+        display: inline-block;
+        width: 20px;
+    }
+
+    /* LEFT COLUMN -- Ticket Transaction Sections */
     .event-type {
         display: inline-block;
         font-size: 14px;
@@ -73,7 +166,7 @@
         justify-content: center;
     }
 
-    .icon-btn {
+    .search-btn {
         background: none;
         border: none;
         padding: 6px 10px;
@@ -96,77 +189,188 @@
         vertical-align: middle;
     }
 
-    .icon-btn:disabled {
+    .search-btn:disabled {
         display: none;
     }
 
-    .icon-btn:hover:not(:disabled) {
+    .search-btn:hover:not(:disabled) {
         color: #a29bfe;
     }
 
     .payment {
         margin-top: 30px;
     }
+
+    /* Confirmation Popup Styling */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;  /* top, right, bottom, left: 0, stretch out whole overlay */
+        background: rgba(35, 26, 36, 0.5);
+        justify-content: center;  /* horizontal alignment */
+        align-items: center;      /* vertical alignment */
+        z-index: 9999;
+    }
+
+    .modal-content {
+        background: #ccc;
+        padding: 20px 30px;
+        border-radius: 15px;
+        width: 300px;
+        text-align: center;
+    }
+
+    .modal-actions {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    #confirmPayment {
+        background: #6c5ce7;
+        color: #dbe0e6;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    #cancelPayment {
+        background: #b9b6ba;
+        color: #444;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
 </style>
 
-{# --- BACK BUTTON BAR --- #}
-<div style="margin-bottom: 1.5rem;">
-    <a href="{{ url_for('main_routes.events') }}" 
-        class="btn btn-small btn-outline" 
-        style="text-decoration: none; padding: 5px 12px; font-size: 0.85rem; color: #555;">
-        &larr; Back to Event List
-    </a>
+<div id="paymentModal" class="modal">
+    <div class="modal-content">
+        <h3>Confirm Payment</h3>
+        <p>Are you sure you want to proceed with this payment?</p>
+
+        <div class="modal-actions">
+            <button id="confirmPayment" class="confirm">Yes, Pay Now</button>
+            <button id="cancelPayment" class="cancel">Cancel</button>
+        </div>
+    </div>
 </div>
 
-{# EVENT DETAILS #}
-<h3>{{ event.Event_Name }}</h3>
-{% for t in event.Event_Type %}
-    <span class="event-type">{{ t }}</span>
-{% endfor %}
 
-<p>
-    <span class="date">{{ event.Start_Date }}</span> • 
-    <span class="time">{{ event.Start_Time }}</span>
-     - 
-    <span class="time">{{ event.End_Time }}</span>
-</p>
-<p>{{ event.Venue_Name }}, {{ event.City }}, {{ event.Country }}</p>
+<div class="details-container">
+    {# RIGHT COLUMN -- MAIN CONTENT -- TICKET PURCHASE #}
+    <div class="main-content">
+        {# EVENT PAGE HEADER #}
+        <div class="event-header">
+            <div><h1>{{ event.Event_Name }}</h1></div>
+            <div class="badges-container"> 
+                <div class="derived-field days-left">{{event.Days_Left}} days left</div>
+                {% if event.Tickets_Sold >= event.Max_Capacity %}
+                    <div class="derived-field sold-out">Sold Out</div>
+                {% else %}
+                    <div class="derived-field available">Tickets Available</div>
+                {% endif %}
+            </div>
+        </div>
 
-{# TICKET PURCHASE TRANSACTION #}
-<h2>Buy Ticket</h2>
-<form class="form-group" method="POST">
-    <input type="hidden" name="event_id" value="{{ event.Event_ID }}">
+        {# TICKET PURCHASE TRANSACTION #}
+        <div class="transaction-container">
+            <h2>Buy Ticket</h2>
+            <form class="form-group" method="POST">
+                <input type="hidden" name="event_id" value="{{ event.Event_ID }}">
+            
+                <label for="ticket_tier">Select Ticket Tier</label>
+                <select name="ticket_tier" id="ticket_tier" required>
+                    <option value="">-- Choose Tier --</option>
+                    {% for tier in ticket_tiers %}
+                    <option value="{{ tier.Tier_ID }}">{{ tier.Tier_Name }} - ₱{{ tier.Price }}</option>
+                {% endfor %}
+                </select>
+            
+                <!-- Load after tier is selected -->
+                <p id="tier_benefits" class="tier-benefits"></p>
+            
+                <label class="section" for="section">Select Section</label>
+                <select class="section" name="section" id="section" required>
+                    <option value="">-- Choose Section --</option>
+                </select>
+            
+                <label id="seatLabel" for="seat_id"></label>
+                <div id="seatMap"></div>
+                <div id="pagination"></div>
+            
+                <input type="hidden" name="seat_id" id="seat_id" required>
+            
+                <button type="button" id="pay-btn" class="btn payment">
+                    Proceed to Payment
+                </button>
+            </form>            
+        </div>
+    </div>
+    
+    {# RIGHT COLUMN -- EVENT DETAILS #}
+    <div class="details-sidebar">
+        {# Event Dates #}
+        <div class="details-card">
+            <h4><i class="icon fa fa-calendar"></i>Event Dates</h4>
+            {% if event.Start_Date != event.End_Date %}
+                <span class="detail-container">
+                    <span class="date">{{ event.Start_Date }}</span> to 
+                    <span class="date">{{ event.End_Date }}</span>
+                </span> 
+            {% else %}
+                <span class="detail-container">
+                    <span class="date">{{ event.Start_Date }}</span>
+                </span>
+            {% endif %}
+        </div>
+        {# Event Times #}
+        <div class="details-card">
+            <h4><i class="icon fa fa-clock-o"></i>Event Time</h4>
+            <p style="display: flex; align-items: center; width: 100%;">
+                <span class="time">{{ event.Start_Time }}</span> - 
+                <span class="time">{{ event.End_Time }}</span>
+                <span class="derived-field duration"> 
+                    {% if event.Duration_Hours|default(0) > 0 %}
+                        {{ event.Duration_Hours|int }}
+                        {% if event.Duration_Hours == 1 %}
+                            hour
+                        {% else %}
+                            hours
+                        {% endif %}
+                    {% endif %}
+                    {% if event.Duration_Minutes|default(0) > 0 %}
+                        {{ event.Duration_Minutes|int }}
+                        {% if event.Duration_Minutes == 1 %}
+                            minute 
+                        {% else %}
+                            minutes 
+                        {% endif %}
+                    {% endif %}
+                </span>
+            </p>
+        </div>
+        {# Venue and Location #}
+        <div class="details-card">
+            <h4><i class="icon fa fa-map-marker"></i>Event Venue and Location</h4>
+            <p>
+                {{ event.Venue_Name }}<br>
+                {{ event.City }}, {{ event.Country }}
+            </p>
+        </div>
+    </div>
 
-    <label for="ticket_tier">Select Ticket Tier</label>
-    <select name="ticket_tier" id="ticket_tier" required>
-        <option value="">-- Choose Tier --</option>
-        {% for tier in ticket_tiers %}
-        <option value="{{ tier.Tier_ID }}">{{ tier.Tier_Name }} - ₱{{ tier.Price }}</option>
-    {% endfor %}
-    </select>
 
-    <!-- Load after tier is selected -->
-    <p id="tier_benefits" class="tier-benefits"></p>
-
-    <label class="section" for="section">Select Section</label>
-    <select class="section" name="section" id="section">
-        <option value="">-- Choose Section --</option>
-    </select>
-
-    <label id="seatLabel" for="seat_id"></label>
-    <div id="seatMap"></div>
-    <div id="pagination"></div>
-
-    <input type="hidden" name="seat_id" id="seat_id" required>
-
-    <button class="btn payment" type="submit">Proceed to Payment</button>
-</form>
+</div>
 {% endblock %}
+
 
 {% block scripts %}
 <script>
 
-    // Build tier -> sections & benefits mapping
+    // TICKET PURCHASE
     const tierSections = {
         {% for tier in ticket_tiers %}
         "{{ tier.Tier_ID }}": {
@@ -334,14 +538,14 @@
     function renderPagination() {
         const prevBtn = document.createElement("button");
         prevBtn.type = "button";
-        prevBtn.className = "icon-btn";
+        prevBtn.className = "search-btn";
         prevBtn.innerHTML = "&#11164;"; 
         prevBtn.disabled = currentPage === 1;
         prevBtn.onclick = () => { currentPage--; loadSeats(); };
 
         const nextBtn = document.createElement("button");
         nextBtn.type = "button";
-        nextBtn.className = "icon-btn";
+        nextBtn.className = "search-btn";
         nextBtn.innerHTML = "&#11166;";
         nextBtn.disabled = currentPage >= totalPages;
         nextBtn.onclick = () => { currentPage++; loadSeats(); };
@@ -365,24 +569,55 @@
         totalPages = 0;
     }
 
-    ticketForm.addEventListener("submit", (event) => {
+    // PAYMENT CONFIRMATION
+    const modal = document.getElementById("paymentModal");
+    const cancelBtn = document.getElementById("cancelPayment");
+    const confirmBtn = document.getElementById("confirmPayment");
+    const payBtn = document.getElementById("pay-btn");
+
+    // Close modal
+    // Open modal when clicking Pay Now
+    payBtn.onclick = () => {
         // Check if the current tier is reserved seating (tierId is the selected tier's ID)
         const tierData = tierSections[tierId];
 
         // Required to have a tier selected
         if (!tierId || !tierData) {
-            alert("Please select a ticket tier.");
-            event.preventDefault(); 
+            tierSelect.reportValidity();
+            return;
+        }
+
+        if (tierData.IsReserved === 1 && !sectionSelect.value) {
+            sectionSelect.reportValidity();
             return;
         }
 
         // Check if Reserved Seating (IsReserved === 1) AND seat_id is empty
         if (tierData.IsReserved === 1 && !seatIdInput.value) {
-            alert("Please select a seat before proceeding to payment.");
-            event.preventDefault(); // Stop the form submission
+            seatIdInput.reportValidity();
             return;
         }
-            });
+
+        modal.style.display = "flex";
+    };
+
+    // Confirm payment
+    confirmBtn.onclick = () => {
+        modal.style.display = "none";  // hide modal
+        ticketForm.submit();            // submit form
+    };
+
+    // Cancel payment
+    cancelBtn.onclick = () => {
+        modal.style.display = "none";  // hide modal
+    };
+
+    // Optional: click outside modal closes it
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    };
 
 </script>
 {% endblock %}
