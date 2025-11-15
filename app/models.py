@@ -281,19 +281,18 @@ class Artist(db.Model):
     # SQL SET maps to SQLAlchemy Enum
     Activity_Status = db.Column(SET('Active', 'Inactive', 'Hiatus'), nullable=False)
     Debut_Date = db.Column(db.Date, nullable=False)
-    Debut_Days= db.Column(db.Integer, nullable=False)
 
     # Relationships
     manager = db.relationship("Manager", back_populates="artist")
-    member_detail = db.relationship("Member_Detail", back_populates="artist")
+    member = db.relationship("Member", back_populates="artist")
     followers = db.relationship("Fan", secondary="Artist_Follower", back_populates="artists_following")
     events = db.relationship("Event", secondary="Artist_Event", back_populates="artists")
     merchandise = db.relationship("Merchandise", back_populates="artist")
     setlists = db.relationship("Setlist", back_populates="artist")
     fanclubs = db.relationship("Fanclub", back_populates="artist")
 
-class Member_Detail(db.Model):
-    __tablename__ = "Member_Detail"
+class Member(db.Model):
+    __tablename__ = "Member"
 
     Member_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     Artist_ID = db.Column(
@@ -302,15 +301,62 @@ class Member_Detail(db.Model):
         nullable=False
     )
     Member_Name = db.Column(db.String(100), nullable=False)
-    Role = db.Column(db.String(100), nullable=True)
-    Nationality = db.Column(db.String(100), nullable=True)
     # SQL SET maps to SQLAlchemy Enum
     Activity_Status = db.Column(SET('Active', 'Inactive', 'Hiatus'), nullable=False)
     Birth_Date = db.Column(db.Date, nullable=False)
     Age = db.Column(db.Integer, nullable=False)
 
     # Relationships
-    artist = db.relationship("Artist", back_populates="member_detail")
+    artist = db.relationship("Artist", back_populates="member")
+    nationality = db.relationship("Nationality", back_populates="member")
+    role = db.relationship("Role", back_populates="member")
+
+class Nationality(db.Model):
+    __tablename__ = "Nationality"
+
+    Nationality_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Nationality_Name = db.Column(db.String(100), nullable=False)
+
+    # Relationships
+    member = db.relationship("Member", back_populates="nationality")
+
+class Member_Nationality(db.Model):
+    __tablename__ = "Member_Nationality"
+
+    Member_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Member.Member_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
+    Nationality_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Nationality.Nationality_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
+
+class Role(db.Model):
+    __tablename__ = "Role"
+
+    Role_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Role_Name = db.Column(db.String(100), nullable=False)
+
+    # Relationships
+    member = db.relationship("Member", back_populates="role")
+
+class Member_Role(db.Model):
+    __tablename__ = "Member_Role"
+
+    Member_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Member.Member_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
+    Role_ID = db.Column(
+        db.Integer, 
+        db.ForeignKey("Role.Role_ID", ondelete="CASCADE", onupdate="CASCADE"), 
+        primary_key=True
+    )
+
 
 class Manager(db.Model):
     __tablename__ = "Manager"

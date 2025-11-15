@@ -154,16 +154,6 @@ def artists():
         
         elif current_filter == 'not-followed':
             artists_query = artists_query.filter(Artist.Artist_ID.notin_(followed_artist_ids))
-    
-    # Execute the final, filtered query
-    artists_list = artists_query.order_by(Artist.Artist_Name).all()
-    
-    # 4. Attach the 'is_followed' flag to the returned objects
-    # This step is essential for the Jinja template's conditional logic.
-    if g.get('current_user'):
-        for artist in artists_list:
-            # Dynamically attach the 'is_followed' attribute
-            artist.is_followed = artist.Artist_ID in followed_artist_ids
 
     return render_template(
         'artists.html', 

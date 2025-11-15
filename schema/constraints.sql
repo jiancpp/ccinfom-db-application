@@ -79,11 +79,49 @@ ADD CONSTRAINT fk_artist_manager
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
--- Constraints for `Member_Detail`
+-- Constraints for `Member`
 -- 
-ALTER TABLE Member_Detail
-ADD CONSTRAINT fk_artist_member_detail
+ALTER TABLE Member
+ADD CONSTRAINT fk_artist_Member
     FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+    
+-- 
+-- Constraints for `Nationality`
+-- 
+ALTER TABLE Nationality
+ADD CONSTRAINT fk_member_nationality
+    FOREIGN KEY (`Member_ID`) REFERENCES Member(`Member_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+    
+-- 
+-- Constraints for `Member_Nationality`
+-- 
+ALTER TABLE Member_Nationality
+ADD CONSTRAINT fk_member_member_nationality
+    FOREIGN KEY (`Member_ID`) REFERENCES Member(`Member_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT fk_nationality_member_nationality
+    FOREIGN KEY (`Nationality_ID`) REFERENCES Nationality(`Nationality_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+    
+-- 
+-- Constraints for `Role`
+-- 
+ALTER TABLE Role
+ADD CONSTRAINT fk_member_role
+    FOREIGN KEY (`Member_ID`) REFERENCES Member(`Member_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+    
+-- 
+-- Constraints for `Member_Role`
+-- 
+ALTER TABLE Member_Role
+ADD CONSTRAINT fk_member_member_role
+    FOREIGN KEY (`Member_ID`) REFERENCES Member(`Member_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT fk_nationality_member_role
+    FOREIGN KEY (`Role_ID`) REFERENCES Role(`Role_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
