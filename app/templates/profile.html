@@ -84,10 +84,10 @@
                             </td>
                             <td>
                                 <span class="badge" style="background: #e9ecef; color: #333;">
-                                {% if purchase.seat %}
-                                    Row: {{ purchase.Seat_Row }}, Seat: {{ purchase.Seat_Number }}
+                                {% if purchase.Seat_Row %}
+                                    Row {{ purchase.Seat_Row }} - Seat {{ purchase.Seat_Number }}
                                 {% else %}
-                                    General Admission
+                                    No reserved seat
                                 {% endif %}
                                 </span>
                             </td>
