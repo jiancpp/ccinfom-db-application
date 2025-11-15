@@ -65,7 +65,7 @@ def execute_insert_query(sql, params=()):
         if conn:
             conn.close()
 
-        return is_successful
+    return is_successful
 
 # ============================================
 #           CORE PAGES
@@ -320,67 +320,80 @@ def merchandise():
 
 @main_routes.route('/fanclubs', methods=['GET'])
 def fanclubs():
-    current_filter = request.args.get('filter', 'all') 
+    # ----------------------------------------------------
+    # SETUP & INPUTS
+    # ---------------------------------------------------- 
+    conditions = []
+    query_parameters = []
+
+    current_fan_id = g.current_user.Fan_ID
     current_search = request.args.get('fanclub-name', '').strip()
+    current_filter = request.args.get('filter', 'all') 
     current_artist = request.args.get('artist', 'all').strip()
-    
-    artist_names = [artist.Artist_Name for artist in db.session.query(Artist.Artist_Name).distinct().order_by(Artist.Artist_Name).all()]
-    
-    base_query = db.session.query(
-        Fanclub.Fanclub_ID,
-        Fanclub.Fanclub_Name,
-        Artist.Artist_Name.label('artist_name'),
-        func.count(Fanclub_Membership.Fan_ID).label('member_count')
-    ).join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
-    .outerjoin(Fanclub_Membership, Fanclub.Fanclub_ID == Fanclub_Membership.Fanclub_ID) \
-    .group_by(Fanclub.Fanclub_ID, Artist.Artist_ID) \
-    .order_by(Artist.Artist_Name, Fanclub.Fanclub_Name)
 
+    # ----------------------------------------------------
+    # APPLY SEARCH FILTER 
+    # ----------------------------------------------------     
     if current_search:
-        base_query = base_query.filter(Fanclub.Fanclub_Name.ilike(f'%{current_search}%'))
+        search_condition = "f.Fanclub_Name LIKE %s"
+        search_pattern = f"%{current_search}%"
+        query_parameters.append(search_pattern)
 
-    if current_artist and current_artist != 'all':
-        base_query = base_query.filter(Artist.Artist_Name == current_artist)
+    # ----------------------------------------------------
+    # APPLY JOINED FANCLUBS FILTER 
+    # ----------------------------------------------------     
+    if current_filter == 'joined':
+        conditions.append("fm.Fan_ID IS NOT NULL")
+
+    if current_filter == 'not-joined':
+        conditions.append("fm.Fan_ID IS NULL")
+
+    # ----------------------------------------------------
+    # APPLY ARTIST FANCLUBS FILTER 
+    # ----------------------------------------------------     
+    if current_artist != "all":
+        artist_condition = "AND a.Artist_Name LIKE %s"
+        artist_pattern = f"%{current_artist}%"
+        query_parameters.append(artist_pattern)
+
+
+    # ----------------------------------------------------
+    # BUILD QUERY 
+    # ----------------------------------------------------
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+    artist_query = f'''
+    SELECT Artist_Name 
+    FROM Artist
+    ORDER BY Artist_Name
+    '''
+
+    artists = execute_select_query(artist_query)
+
+    fanclub_query = f'''
+    SELECT fm.Fan_Id AS is_member_fan_id, f.Fanclub_ID, f.Fanclub_Name, a.Artist_Name, 
+           COUNT(fm.Fan_Id) AS Member_Count
+    FROM Fanclub AS f
+        LEFT JOIN Artist AS a ON f.Artist_ID = a.Artist_ID
+        LEFT JOIN Fanclub_Membership AS m ON f.Fanclub_ID = m.Fanclub_ID
+        LEFT JOIN Fanclub_Membership AS fm ON f.Fanclub_ID = fm.Fanclub_ID AND fm.Fan_ID = %s
     
-    joined_fanclub_ids = set()
-    current_fan_id = None
-    
-    if g.get('current_user'):
-        current_fan_id = g.current_user.Fan_ID
+    {where_clause}
+    GROUP BY f.Fanclub_ID, f.Fanclub_Name, a.Artist_Name, fm.Fan_ID
+    ORDER BY a.Artist_Name, f.Fanclub_Name
+    '''
 
-        joined_fanclub_ids_tuples = db.session.query(Fanclub_Membership.Fanclub_ID).filter(
-            Fanclub_Membership.Fan_ID == current_fan_id
-        ).all()
-
-        joined_fanclub_ids = {fanclub_id for (fanclub_id,) in joined_fanclub_ids_tuples}
-
-        if current_filter == 'joined':
-            base_query = base_query.filter(Fanclub.Fanclub_ID.in_(joined_fanclub_ids))
-        
-        elif current_filter == 'not-joined':
-            base_query = base_query.filter(Fanclub.Fanclub_ID.notin_(joined_fanclub_ids))
-
-    fanclub_data_results = base_query.all()
-    fanclubs_list = []
-    
-    for fanclub in fanclub_data_results:
-        is_member = fanclub.Fanclub_ID in joined_fanclub_ids
-        
-        fanclubs_list.append({
-            'fanclub_id': fanclub.Fanclub_ID,
-            'fanclub_name': fanclub.Fanclub_Name,
-            'artist_name': fanclub.artist_name,
-            'member_count': fanclub.member_count,
-            'is_member': is_member
-        })
+    query_parameters.insert(0, current_fan_id)
+    fanclubs = execute_select_query(fanclub_query, tuple(query_parameters))
 
     return render_template(
         'fanclubs.html', 
-        fanclubs=fanclubs_list,
+        fanclubs=fanclubs,
         current_filter=current_filter,
         current_search=current_search,
         current_artist=current_artist, 
-        artist_names=artist_names     
+        artists=artists     
     )
 
 
@@ -392,16 +405,20 @@ def login():
     if request.method == 'POST':
         username_or_email = request.form.get('username')
         
-        fan = Fan.query.filter(
-            (Fan.Username == username_or_email) | (Fan.Email == username_or_email)
-        ).first()
+        fan_query = '''
+        SELECT Fan_ID, First_Name, Username, Email
+        FROM Fan
+        WHERE Username = %s OR Email = %s
+        '''
+
+        fan = execute_select_query(fan_query, (username_or_email, username_or_email))
 
         if fan:
             session['logged_in'] = True
-            session['username'] = fan.Username
-            session['fan_id'] = fan.Fan_ID
+            session['username'] = fan[0]['Username']
+            session['fan_id'] = fan[0]['Fan_ID']
             
-            flash(f'Login successful! Welcome back, {fan.First_Name}.', 'success')
+            flash(f'Login successful! Welcome back, {fan[0]['First_Name']}.', 'success')
             return redirect(url_for('main_routes.index')) 
         else:
             flash('Login failed: Account with that username or email not found.', 'error')
@@ -424,35 +441,48 @@ def register():
         last_name = request.form.get('last_name')
         username = request.form.get('username')
         email = request.form.get('email')
+
+        fan_username_query = '''
+        SELECT Fan_ID
+        FROM Fan
+        WHERE Username = %s
+        '''
+
+        fan_email_query = '''
+        SELECT Fan_ID
+        FROM Fan
+        WHERE Email = %s
+        '''
+
+        fan_username = execute_select_query(fan_username_query, (username,))
+        fan_email = execute_select_query(fan_email_query, (email,))
         
         if not all([first_name, last_name, username, email]):
             flash('All fields are required. Did you forget something?', 'error')
             return redirect(url_for('main_routes.register'))
 
-        if Fan.query.filter_by(Username=username).first():
+        if fan_username:
             flash('An account with that username already exists. Try logging in!', 'error')
             return redirect(url_for('main_routes.register'))
 
-        if Fan.query.filter_by(Email=email).first():
+        if fan_email:
             flash('An account with that email already exists. Try logging in!', 'error')
             return redirect(url_for('main_routes.register'))
 
-        try:
-            new_fan = Fan(
-                First_Name=first_name,
-                Last_Name=last_name,
-                Username=username,
-                Email=email,
-            )
+        First_Name=first_name
+        Last_Name=last_name
+        Username=username
+        Email=email
+            
+        insert_fan_record = f'''
+        INSERT INTO Fan (First_Name, Last_Name, Username, Email)
+        VALUES (%s, %s, %s, %s)
+        '''
 
-            db.session.add(new_fan)
-            db.session.commit()
-
-            flash(f'Welcome, {username}! You can now log in.', 'success')
+        if execute_insert_query(insert_fan_record, (First_Name, Last_Name, Username, Email)):
+            flash(f'Welcome, {Username}! You can now log in.', 'success')
             return redirect(url_for('main_routes.login'))
-        
-        except Exception:
-            db.session.rollback()
+        else:
             flash('A server error occurred during registration. Please try again.', 'error')
 
     return render_template('register.html')
@@ -460,11 +490,33 @@ def register():
 
 @main_routes.route('/profile')
 def profile():
-    current_fan_id = session.get('fan_id')
-    fan = Fan.query.get(current_fan_id)
+    current_fan_id = g.current_user.Fan_ID
+    
+    fan_query = '''
+        SELECT Fan_ID, First_Name, Last_Name, Username, Email, Date_Joined
+        FROM Fan
+        WHERE Fan_ID = %s
+        '''
 
-    memberships = fan.memberships
-    purchases = fan.ticket_purchases
+    memberships_query = '''
+    SELECT f.Fanclub_Name, fm.Date_Joined
+    FROM Fanclub AS f
+        JOIN Fanclub_Membership AS fm
+            ON f.Fanclub_Id = fm.Fanclub_Id
+            AND fm.Fan_Id = %s
+    '''
+
+    purchases_query = f'''
+    SELECT e.Event_Id, e.Event_Name, t.Tier_Name, tp.Purchase_Date, s.Seat_Row, s.Seat_Number
+    FROM Event AS e
+        JOIN Ticket_Purchase AS tp ON e.Event_Id = tp.Event_Id AND tp.Fan_Id = %s
+        JOIN Ticket_Tier AS t ON t.Tier_Id = tp.Tier_Id 
+        LEFT JOIN Seat AS s ON tp.Seat_Id = s.Seat_Id
+    '''
+
+    fan = execute_select_query(fan_query, (current_fan_id,))
+    memberships = execute_select_query(memberships_query, (current_fan_id,))
+    purchases = execute_select_query(purchases_query, (current_fan_id,))
 
     return render_template('profile.html', fan=fan, memberships=memberships, purchases=purchases)
 
@@ -497,9 +549,35 @@ def buy_ticket(event_id):
 
     # Fetch record from database
     event_query = '''
-    SELECT * 
-    FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
-    WHERE e.Event_ID = %s
+    SELECT 
+        Event_Record.*,
+        (Event_Record.Total_Duration_In_Minutes / 60) AS Duration_Hours,
+        (Event_Record.Total_Duration_In_Minutes % 60) AS Duration_Minutes,
+
+        (   SELECT COUNT(*)
+            FROM Ticket_Purchase tp
+            WHERE tp.Event_ID = Event_Record.Event_ID
+        )   AS Tickets_Sold,
+
+        (   SELECT SUM(tt.Total_Quantity)
+            FROM Ticket_Tier tt
+            WHERE tt.Event_ID = Event_Record.Event_ID
+        )   AS Max_Capacity
+    FROM (
+        SELECT 
+            e.*,
+            v.Venue_Name, v.City, v.Country, v.Is_Seated,
+            DATEDIFF(e.Start_Date, CURDATE()) AS Days_Left,
+            CASE
+                WHEN e.End_Time >= e.Start_Time 
+                THEN 
+                    TIME_TO_SEC(TIMEDIFF(e.End_Time, e.Start_Time)) / 60
+                ELSE 
+                    TIME_TO_SEC(TIMEDIFF(ADDTIME(e.End_Time, '24:00:00'), e.Start_Time)) / 60
+            END AS Total_Duration_In_Minutes
+        FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+        WHERE e.Event_ID = %s
+    ) AS Event_Record
     '''
 
     # Error handling
@@ -510,8 +588,14 @@ def buy_ticket(event_id):
         return redirect(url_for('main_routes.events'))
 
     tier_query = '''
-    SELECT * 
-    FROM Ticket_Tier
+    SELECT tt.*, 
+           tt.Total_Quantity - COALESCE(tp.Tickets_Sold, 0) AS Tickets_Left
+    FROM Ticket_Tier tt 
+    LEFT JOIN (
+        SELECT Tier_ID, COUNT(Ticket_ID) AS Tickets_Sold
+        FROM Ticket_Purchase
+        GROUP BY Tier_ID
+    ) tp ON tt.Tier_ID = tp.Tier_ID
     WHERE Event_ID = %s
     '''
     ticket_tiers = execute_select_query(tier_query, (event_id,))  
@@ -539,28 +623,41 @@ def buy_ticket(event_id):
     # Get purchase details
     if request.method == "POST":
         tier_id = request.form["ticket_tier"]
-        seat_id = request.form.get("seat_id", None)     
+        seats_chosen = request.form.getlist("seat")
+        values = []
 
-        if seat_id == "":
-            seat_id = None   
-
-        Fan_ID = session.get('fan_id')                 
+        # Get non form values
+        Fan_ID = session.get('fan_id')    
         Event_ID = event_id
         Tier_ID = tier_id
-        Seat_ID = seat_id            
+        Seat_ID = None
+        
+        if seats_chosen:
+            for seat_id in seats_chosen:
+                if seat_id == "":
+                    seat_id = None   
+                Seat_ID = seat_id  
+                values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID))  
+        else:
+            values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID)) 
 
-        insert_ticket_purchase = '''
+        insert_ticket_purchase = f'''
         INSERT INTO Ticket_Purchase (Fan_ID, Event_ID, Tier_ID, Seat_ID)
         VALUES (%s, %s, %s, %s)
         '''
 
-        if execute_insert_query(insert_ticket_purchase, (Fan_ID, Event_ID, Tier_ID, Seat_ID)):
-            flash(f"Success! View your purchased ticket on your profile.", "success")
+        success = False
+        for value in values:
+            if execute_insert_query(insert_ticket_purchase, value):
+                success = True
+        
+        if success:
+            flash(f"Success! View your purchased tickets on your profile.", "success")
         else:
-            flash(f"Error purchasing.", "error")
+            flash(f"Error processing one or more purchases.", "error")
 
     return render_template(
-        "event_details.html", 
+        "buy_ticket.html", 
         event=event, 
         ticket_tiers=ticket_tiers, 
         tier_sections=tier_sections)
@@ -572,7 +669,7 @@ def get_seats(event_id, section_id):
     ?page=1&per_page=450
     """
     page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 450, type=int)
+    per_page = request.args.get("per_page", 1000, type=int)
 
     seats_query = '''
     SELECT 
@@ -584,9 +681,9 @@ def get_seats(event_id, section_id):
             WHEN EXISTS (
                 SELECT 1 FROM Ticket_Purchase AS tp
                 WHERE tp.Seat_ID = s.Seat_ID AND tp.Event_ID = %s
-            ) THEN TRUE
-            ELSE FALSE
-        END AS IsUnavailable
+            ) THEN 1
+            ELSE 0
+        END AS Is_Unavailable
 
     FROM Seat s
     WHERE s.Section_ID = %s
@@ -625,7 +722,9 @@ def get_seats(event_id, section_id):
     total = total_seats
 
     seat_list = [
-        { "id": s['Seat_ID'], "seat_row": s['Seat_Row'], "seat_number": s['Seat_Number'] }
+        { "id": s['Seat_ID'], "seat_row": s['Seat_Row'], "seat_number": s['Seat_Number'],
+          "is_unavailable": s['Is_Unavailable']
+        }
         for s in seats
     ]
 

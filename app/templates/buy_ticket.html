@@ -1,0 +1,815 @@
+{% extends "base.html" %}
+{% block title %}Buy Event Ticket - KSync{% endblock %}
+{% block content %}
+
+<style>
+    /* Container Grid */
+    .details-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr; /* Layout: 1/3 for metadata, 2/3 for content */
+        gap: 40px;
+        margin-top: 20px;
+    }
+
+    /* LEFT COLUMN -- Event Header Styling */
+    .event-header {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start; /* Stops children from stretching horizontally */
+        justify-content: space-between;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 10px;
+    }
+
+    .event-header h1 {
+        margin: 0;
+        color: #667eea;
+        font-size: 2.5rem;
+    }
+
+    .badges-container {
+        display: flex;
+        margin-top: 10px;
+        justify-content: space-between;
+    }
+    
+    /* RIGHT COLUMN -- Event Details */
+    .details-sidebar {
+        /* Sidebar container for Event and Venue details */
+        padding-top: 10px;
+    }
+
+    .details-card {
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 20px;
+        background-color: #f7f9fc; /* Light background for the card */
+    }
+
+    .details-card h4 {
+        color: #667eea;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #e0eeef;
+        padding-bottom: 5px;
+    }
+
+    .derived-field {
+        background: #dbe0e6;
+        color: #363638;
+        padding: 5px 15px;
+        border-radius: 20px;
+        width: auto;
+
+        /* Prevents auto wrapping */
+        white-space: nowrap;
+    }
+
+    .duration {
+        font-size: 11px;
+        margin-left: 10px;
+        margin-bottom: 3px;
+        padding: 2px 15px;
+    }
+
+    .days-left, .sold-out, .available {
+        font-size: 15px;
+        text-align: center;
+    }
+
+    .sold-out {
+        background: rgb(219, 120, 120);
+        color: rgb(102, 26, 26);
+    }
+
+    .available {
+        margin-left: 10px;
+        background: rgb(194, 220, 169);
+        color: rgb(44, 88, 14);
+    }
+
+    .icon {
+        display: inline-block;
+        width: 20px;
+    }
+
+    /* LEFT COLUMN -- Ticket Transaction Sections */
+    .event-type {
+        display: inline-block;
+        font-size: 14px;
+        font-style: italic;
+        color: white;
+        margin-bottom: 8px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .tier-benefits {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        color: #444;
+        margin: 5px 0 8px 0;
+        font-style: italic;
+    }
+
+    .tier-benefits.show {
+        opacity: 1;
+    }
+
+    .section {
+        display: none;
+    }
+
+    #seatLabel {
+        margin-top: 8px;
+    }
+
+    .seat {
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        font-size: 8px;
+        margin: 0 1.5px;
+        background-color: #eee;
+        border-radius: 5px;
+        line-height: 15px;
+        text-align: center;
+        cursor: pointer;
+        border: 1px solid #ccc;
+    }
+
+    input[type="checkbox"]:checked + .seat {
+        background-color: #6c5ce7;
+        color: white;
+    }
+
+    input[type="checkbox"]:disabled + .seat {
+        background-color: #cccccc;
+        color: white;
+    }
+
+    .seat:hover {
+        background-color: #a29bfe;
+    }
+
+    .seat-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .row-label {
+        font-size: 8px;
+        color: #4f4f4fca;
+        margin: 0 5px;
+        text-align: center;
+    }
+
+    #paginationDiv {
+        display: flex;
+        flex-direction: wrap;
+        width: 100%;
+
+        align-content: center;
+        justify-content: center;
+    }
+
+    .search-btn {
+        background: none;
+        border: none;
+        padding: 6px 10px;
+        cursor: pointer;
+        color: #6c5ce7;
+        font-size: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s ease;
+
+        vertical-align: middle; /* fixes misalignment */
+        line-height: 1;         /* keeps icon height tight */
+
+    }
+
+    .pagination-info {
+        font-size: 14px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        vertical-align: middle;
+    }
+
+    .search-btn:disabled {
+        display: none;
+    }
+
+    .search-btn:hover:not(:disabled) {
+        color: #a29bfe;
+    }
+
+    .payment {
+        margin-top: 30px;
+    }
+
+    #pay-btn:disabled {
+        background: #66666796;
+        transition: 0.3s;
+    }
+
+    /* Quantity for non-seated tiers or venues */
+    #quantity-label, #ticket-quantity {
+        display: none;
+    }
+
+    /* Confirmation Popup Styling */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;  /* top, right, bottom, left: 0, stretch out whole overlay */
+        background: rgba(35, 26, 36, 0.5);
+        justify-content: center;  /* horizontal alignment */
+        align-items: center;      /* vertical alignment */
+        z-index: 9999;
+    }
+
+    .modal-content {
+        background: #ccc;
+        padding: 20px 30px;
+        border-radius: 15px;
+        width: 300px;
+        text-align: center;
+    }
+
+    .modal-actions {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    #confirmPayment {
+        background: #6c5ce7;
+        color: #dbe0e6;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    #cancelPayment {
+        background: #b9b6ba;
+        color: #444;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    /* Ticket Summary */
+    #purchase-summary {
+        background: white;
+
+    }
+
+    #purchase-summary #total-price {
+        font-weight: bold;
+        color: #363638;
+    }
+
+    .divider {
+        width: 100%;
+        height: 0.5px;
+        background-color: #44444449;
+        margin: 8px 0;
+    }
+
+
+
+</style>
+
+<div id="paymentModal" class="modal">
+    <div class="modal-content">
+        <h3>Confirm Payment</h3>
+        <p>Are you sure you want to proceed with this payment?</p>
+
+        <div class="modal-actions">
+            <button id="confirmPayment" class="confirm">Yes, Pay Now</button>
+            <button id="cancelPayment" class="cancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+
+<div class="details-container">
+    {# RIGHT COLUMN -- MAIN CONTENT -- TICKET PURCHASE #}
+    <div class="main-content">
+        {# EVENT PAGE HEADER #}
+        <div class="event-header">
+            <div><h1>{{ event.Event_Name }}</h1></div>
+            <div class="badges-container"> 
+                <div class="derived-field days-left">{{event.Days_Left}} days left</div>
+                {% if event.Is_Seated == 1 %}
+                    {% if event.Tickets_Sold >= event.Max_Capacity %}
+                        <div class="derived-field sold-out">Sold Out</div>
+                    {% else %}
+                        <div class="derived-field available">Tickets Available</div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        {# TICKET PURCHASE TRANSACTION #}
+        <div class="transaction-container">
+            <h2>Buy Ticket</h2>
+            <form class="form-group" method="POST">
+                <input type="hidden" name="event_id" value="{{ event.Event_ID }}">
+            
+                <label for="ticket_tier">Select Ticket Tier</label>
+                <select name="ticket_tier" id="ticket_tier" required>
+                    <option value="">-- Choose Tier --</option>
+                    {% for tier in ticket_tiers %}
+                        <option 
+                            value="{{ tier.Tier_ID }}"
+                            data-tickets-left="{{ tier.Tickets_Left }}"
+                            data-ticket-price="{{ tier.Price }}"
+                            data-is-reserved="{{ tier.Is_Reserved_Seating }}"
+                        >{{ tier.Tier_Name }} - ₱{{ tier.Price }}</option>
+                    {% endfor %}
+                </select>
+            
+                <!-- Load after tier is selected -->
+                <p id="tier_benefits" class="tier-benefits"></p>
+            
+                <label class="section" for="section">Select Section</label>
+                <select class="section" name="section" id="section" required>
+                    <option value="">-- Choose Section --</option>
+                </select>
+            
+                <label id="seatLabel" for="seat_id"></label>
+                <div id="seatMap"></div>
+                <div id="pagination"></div>
+                <input type="hidden" name="seat_id" id="seat_id" required>
+
+
+                <label id="quantity-label" for="seat_id">Add Tickets</label>
+                <input 
+                    type="number" 
+                    name="ticket-quantity" 
+                    id="ticket-quantity" 
+                    min="1" 
+                    step="1" 
+                    required>            
+
+                <button type="button" id="pay-btn" class="btn payment">
+                    Proceed to Payment
+                </button>
+            </form>            
+        </div>
+    </div>
+    
+    {# RIGHT COLUMN -- EVENT DETAILS #}
+    <div class="details-sidebar">
+        {# Event Dates #}
+        <div class="details-card">
+            <h4><i class="icon fa fa-calendar"></i>Event Dates</h4>
+            {% if event.Start_Date != event.End_Date %}
+                <span class="detail-container">
+                    <span class="date">{{ event.Start_Date }}</span> to 
+                    <span class="date">{{ event.End_Date }}</span>
+                </span> 
+            {% else %}
+                <span class="detail-container">
+                    <span class="date">{{ event.Start_Date }}</span>
+                </span>
+            {% endif %}
+        </div>
+        {# Event Times #}
+        <div class="details-card">
+            <h4><i class="icon fa fa-clock-o"></i>Event Time</h4>
+            <p style="display: flex; align-items: center; width: 100%;">
+                <span class="time">{{ event.Start_Time }}</span> - 
+                <span class="time">{{ event.End_Time }}</span>
+                <span class="derived-field duration"> 
+                    {% if event.Duration_Hours|default(0) > 0 %}
+                        {{ event.Duration_Hours|int }}
+                        {% if event.Duration_Hours == 1 %}
+                            hour
+                        {% else %}
+                            hours
+                        {% endif %}
+                    {% endif %}
+                    {% if event.Duration_Minutes|default(0) > 0 %}
+                        {{ event.Duration_Minutes|int }}
+                        {% if event.Duration_Minutes == 1 %}
+                            minute 
+                        {% else %}
+                            minutes 
+                        {% endif %}
+                    {% endif %}
+                </span>
+            </p>
+        </div>
+        {# Venue and Location #}
+        <div class="details-card">
+            <h4><i class="icon fa fa-map-marker"></i>Event Venue and Location</h4>
+            <p>
+                {{ event.Venue_Name }}<br>
+                {{ event.City }}, {{ event.Country }}
+            </p>
+        </div>
+        <div id="purchase-summary" class="details-card">
+            <h4>Ticket Purchase</h4>
+            <p id="selected-tier">Ticket: </p>
+            <p id="quantity">Quantity: </p>
+            <p id="validationError" style="color: red; display: none;">
+                Your current ticket purchase exceeds the maximum limit of quantity (10 per purchase) or 
+                number of available tickets left. <br><br>
+                Please select less than <span id="maxDisplay"></span> tickets.
+            </p>
+            <p class="divider"></p>
+            <p id="total-price">Total Price: </p>
+        </div>
+    </div>
+
+
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+
+    // TICKET PURCHASE
+    const tierSections = {
+        {% for tier in ticket_tiers %}
+        "{{ tier.Tier_ID }}": {
+            "Name": "{{ tier.Tier_Name }}",
+            "IsReserved": {{ tier.Is_Reserved_Seating }},
+            "Benefits": "{{ tier.Benefits|escape }}",
+            "Sections": [
+                {% for section in tier_sections[tier.Tier_ID] %}
+                    {id: "{{ section.Section_ID }}", name: "{{ section.Section_Name }}"}
+                {% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    };
+
+
+    /** For Pagination **/
+    const ticketForm = document.querySelector('form');
+    const tierSelect = document.getElementById("ticket_tier");
+    const benefitDescription = document.getElementById("tier_benefits");
+    const sectionSelect = document.getElementById("section");
+    const sectionFields = document.getElementsByClassName("section");
+    const quantityLabel = document.getElementById('quantity-label');
+    const quantityInput = document.getElementById('ticket-quantity');
+    const quantityDisplay = document.getElementById("quantity");
+    const totalPriceDisplay = document.getElementById("total-price");
+    const errorMessage = document.getElementById('validationError');
+    const maxDisplay = document.getElementById('maxDisplay');
+
+    /** For Pagination **/
+    const eventId = {{ event.Event_ID }};
+    const seatMapLabel = document.getElementById("seatLabel")
+    const seatMapDiv = document.getElementById("seatMap");
+    const paginationDiv = document.getElementById("pagination")
+    const seatIdInput = document.getElementById("seat_id");    
+
+    let currentPage = 1;
+    const perPage = 450;
+    let totalSeats = 0;
+    let totalPages = 0;
+    let selectedSeatId = null;
+
+    let tierId = null;
+
+    tierSelect.addEventListener("change", () => {
+        unloadSeatMap();
+        updatePurchaseSummaryAndValidate()  
+
+        if (tierSelect.value == "") {
+            tierId = null;
+            document.getElementById("selected-tier").textContent = `Ticket: `
+        } else {
+            tierId = tierSelect.value;
+        }
+        
+        const tierData = tierSections[tierId];
+        document.getElementById("selected-tier").textContent = `Ticket: ${tierData.Name}`
+
+
+        // Show/hide tier benefits
+        if(tierData && tierData.Benefits) {
+            benefitDescription.textContent = `Benefits: ${tierData.Benefits}`;
+            benefitDescription.classList.add("show"); // fade in
+        } else {
+            benefitDescription.classList.remove("show"); // fade out
+            benefitDescription.textContent = "";
+        }
+
+        // Populate section dropdown
+        sectionSelect.innerHTML = '<option value="">-- Choose Section --</option>';
+        if(tierData && tierData.IsReserved === 1 && tierData.Sections) {
+            Array.from(sectionFields).forEach(el => {
+                // Set display to block to ensure proper form layout
+                el.style.display = "block"; 
+            });
+
+            sectionSelect.setAttribute("required", "required");
+            seatIdInput.setAttribute("required", "required");
+
+            tierData.Sections.forEach(section => {
+                const opt = document.createElement("option");
+                opt.value = section.id;
+                opt.textContent = section.name;
+                sectionSelect.appendChild(opt);
+            });
+
+            // Hide Quantity Input
+            quantityInput.removeAttribute("required");
+            quantityInput.value = 0;
+            quantityInput.style.display = "none";
+            quantityLabel.style.display = "none";
+        } else {
+            Array.from(sectionFields).forEach(el => {
+                // Set display to block to ensure proper form layout
+                el.style.display = "none"; 
+            });
+
+            sectionSelect.removeAttribute("required");
+            seatIdInput.removeAttribute("required");
+            unloadSeatMap()
+
+            // Show Quantity Input
+            quantityInput.setAttribute("required", "required");
+            quantityInput.style.display = "inline-block";
+            quantityLabel.style.display = "inline-block";
+        }
+    });
+
+    sectionSelect.addEventListener("change", () => {
+        updatePurchaseSummaryAndValidate()
+        const tierData = tierSections[tierId];
+        currentPage = 1;
+
+        // if tier is reserved seating
+        if (sectionSelect.value !== "") {
+            seatMapLabel.textContent = "Select Seat"
+            loadSeats()
+        } else {
+            unloadSeatMap()
+        }
+    });
+
+    async function loadSeats() {
+        const sectionId = sectionSelect.value;
+        seatMapDiv.innerHTML = "<p>Loading seats...</p>"
+        paginationDiv.innerHTML = ""
+
+        // Look for get_seats in routes.py
+        const res = await fetch(`/events/buy_ticket/${eventId}/${sectionId}/seats?page=${currentPage}&per_page=${perPage}`);
+        const data = await res.json();
+
+        totalSeats = data.total;
+        totalPages = Math.ceil(totalSeats / perPage);
+
+        seatMapDiv.innerHTML = ""
+        renderSeats(data.seats)
+        renderPagination();
+    }
+
+    function renderSeats(seats) {
+        const frag = document.createDocumentFragment();
+        let currentRow = null;
+        let rowDiv = null;
+
+        seats.forEach((seat, index) => {
+            if (seat.seat_row !== currentRow) {
+                currentRow = seat.seat_row;
+
+                const rowLabel = document.createElement("div");
+                rowLabel.textContent = `${currentRow} `;
+                rowLabel.className = "row-label";
+
+
+                rowDiv = document.createElement("div");
+                rowDiv.className = "seat-row";
+                rowDiv.append(rowLabel);
+                frag.appendChild(rowDiv);
+            }
+
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.name = "seat";
+            input.id = `${seat.seat_row}${seat.seat_number}`
+            input.value = seat.id
+            input.hidden = true;
+            input.disabled = seat.is_unavailable == 1;
+
+            // Update Purchase Summary
+            input.addEventListener("change", updatePurchaseSummaryAndValidate);
+
+            const label = document.createElement("label");
+            label.htmlFor = input.id;
+            label.className = "seat";
+
+            input.addEventListener("change", () => {
+                selectedSeatId = seat.id;
+                seatIdInput.value = seat.id;
+            })
+
+            rowDiv.appendChild(input);
+            rowDiv.appendChild(label);
+
+            if (seat.seat_number === 30) {
+                const rowLabel = document.createElement("div");
+                rowLabel.textContent = `${currentRow} `;
+                rowLabel.className = "row-label";
+                rowDiv.append(rowLabel);
+
+            }
+        })
+        seatMapDiv.appendChild(frag)
+    }
+
+    function renderPagination() {
+        const prevBtn = document.createElement("button");
+        prevBtn.type = "button";
+        prevBtn.className = "search-btn";
+        prevBtn.innerHTML = "&#11164;"; 
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.onclick = () => { currentPage--; loadSeats(); };
+
+        const nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.className = "search-btn";
+        nextBtn.innerHTML = "&#11166;";
+        nextBtn.disabled = currentPage >= totalPages;
+        nextBtn.onclick = () => { currentPage++; loadSeats(); };
+
+        const info = document.createElement("span");
+        info.textContent = ` Page ${currentPage} of ${totalPages} `;
+        info.className = "pagination-info"
+
+        paginationDiv.appendChild(prevBtn);
+        paginationDiv.appendChild(info);
+        paginationDiv.appendChild(nextBtn);
+    }
+
+    function unloadSeatMap() {
+        seatMapLabel.textContent = ""
+        seatMapDiv.innerHTML = "";
+        paginationDiv.innerHTML = "";
+        seatIdInput.value = "";
+        selectedSeatId = null;
+        totalSeats = 0;
+        totalPages = 0;
+    }
+
+    // PAYMENT CONFIRMATION
+    const modal = document.getElementById("paymentModal");
+    const cancelBtn = document.getElementById("cancelPayment");
+    const confirmBtn = document.getElementById("confirmPayment");
+    const payBtn = document.getElementById("pay-btn");
+
+    // Close modal
+    // Open modal when clicking Pay Now
+    payBtn.onclick = () => {
+        // Check if the current tier is reserved seating (tierId is the selected tier's ID)
+        const tierData = tierSections[tierId];
+
+        // Required to have a tier selected
+        if (!tierId || !tierData) {
+            tierSelect.reportValidity();
+            return;
+        }
+
+        if (tierData.IsReserved === 1 && !sectionSelect.value) {
+            sectionSelect.reportValidity();
+            return;
+        }
+
+        // Check if Reserved Seating (IsReserved === 1) AND seat_id is empty
+        if (tierData.IsReserved === 1 && !seatIdInput.value) {
+            seatIdInput.reportValidity();
+            return;
+        }
+
+        updatePurchaseSummaryAndValidate();
+
+        // 2. Check if the button is disabled (meaning validation failed)
+        if (document.getElementById("pay-btn").disabled) {
+            errorMessage.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
+            
+        modal.style.display = "flex";
+    };
+
+    // Confirm payment
+    confirmBtn.onclick = () => {
+        modal.style.display = "none";  // hide modal
+        ticketForm.submit();            // submit form
+    };
+
+    // Cancel payment
+    cancelBtn.onclick = () => {
+        modal.style.display = "none";  // hide modal
+    };
+
+    // Optional: click outside modal closes it
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    };
+  
+
+    quantityInput.addEventListener("change", updatePurchaseSummaryAndValidate);
+
+    function updatePurchaseSummaryAndValidate() {
+        // Fetch selected tier
+        const selectedTier = tierSelect.options[tierSelect.selectedIndex]
+        const selectedSection = sectionSelect.options[sectionSelect.selectedIndex]
+        const selectedSeats = document.querySelectorAll('input[name="seat"]:checked')
+        const selectedCount = selectedSeats.length
+        
+        // Safety check: ensure a tier and section is selected before getting data
+        if (!selectedTier || selectedTier.value === "") {
+            // Reset or exit if no tier is selected
+            quantityDisplay.textContent = `Quantity: `;
+            totalPriceDisplay.textContent = `Total Price: `;
+            return;
+        }
+
+        const ticketsLeftString = selectedTier.getAttribute("data-tickets-left")
+        const ticketPrice = selectedTier.getAttribute("data-ticket-price")
+        const ticketIsReservedSeating = selectedTier.getAttribute("data-is-reserved")
+
+        const ticketsLeft = parseInt(ticketsLeftString || 0, 10)
+        const pricePerTicket = parseInt(ticketPrice || 0, 10)
+        const isReserved = parseInt(ticketIsReservedSeating || 0, 10)
+
+        const maxPerPurchase = 10;
+        const maxAllowed = Math.min(maxPerPurchase, ticketsLeft) + 1;
+
+        if (isReserved === 1) {
+            if ((!selectedSection || selectedSection.value === "")) {
+                // Reset or exit if no section is selected
+                quantityDisplay.textContent = `Quantity: `;
+                totalPriceDisplay.textContent = `Total Price: `;
+                return;
+            }
+            // Calculate the total maximum allowed
+            const totalPrice = pricePerTicket * selectedCount;
+
+            // Update the Summary Display
+            quantityDisplay.textContent = `Quantity: ${selectedCount}`;
+            totalPriceDisplay.textContent = `Total Price: ₱${totalPrice.toFixed(2)}`;
+
+             // Show error message
+            if (selectedCount > maxAllowed) {
+                maxDisplay.textContent = maxAllowed;
+                errorMessage.style.display = 'block'; // Show the error message
+                
+                // Optional: Scroll to the error message
+                errorMessage.scrollIntoView({ behavior: 'smooth' });
+
+                document.getElementById("pay-btn").disabled = true;
+                return;
+            } else {
+                document.getElementById("pay-btn").disabled = false;
+                errorMessage.style.display = 'none'; // Hide the error message
+            }
+        } else {
+            // Calculate the total maximum allowed
+            const quantityTickets = quantityInput.value
+            const totalPrice = pricePerTicket * quantityTickets;
+
+            // Update the Summary Display
+            quantityDisplay.textContent = `Quantity: ${quantityTickets}`;
+            totalPriceDisplay.textContent = `Total Price: ₱${totalPrice.toFixed(2)}`;
+
+             // Show error message
+            if (quantityTickets > 10) {
+                maxDisplay.textContent = 10;
+                errorMessage.style.display = 'block'; // Show the error message
+                
+                // Optional: Scroll to the error message
+                errorMessage.scrollIntoView({ behavior: 'smooth' });
+
+                document.getElementById("pay-btn").disabled = true;
+                return;
+            } else {
+                document.getElementById("pay-btn").disabled = false;
+                errorMessage.style.display = 'none'; // Hide the error message
+
+            }
+        }
+    }
+
+</script>
+{% endblock %}

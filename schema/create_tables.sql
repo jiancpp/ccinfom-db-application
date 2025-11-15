@@ -91,11 +91,10 @@ CREATE TABLE `Event` (
 	`End_Date` DATE NOT NULL,
 	`Start_Time` TIME NOT NULL,
 	`End_Time` TIME,
-	
+
     PRIMARY KEY (`Event_ID`),
-	CONSTRAINT is_valid_datetime CHECK(
-		(`End_Date` > `Start_Date`) OR
-		(`End_Date` = `Start_Date` AND `End_Time` > `Start_Time`)
+	CONSTRAINT is_valid_date CHECK(
+		(`End_Date` >= `Start_Date`)
 	)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -156,7 +155,7 @@ CREATE TABLE `Ticket_Tier` (
     `Event_ID` INT(11) NOT NULL,
     `Tier_Name` VARCHAR(100) DEFAULT 'General Admissions',
     `Price` DECIMAL(10,2) DEFAULT 0.00,
-    `Total_Quantity` INT DEFAULT 0,
+    `Total_Quantity` INT,
 	`Benefits` VARCHAR(150),
     `Is_Reserved_Seating` TINYINT DEFAULT 0,
 	
@@ -179,7 +178,8 @@ CREATE TABLE `Venue` (
     `Venue_Name` VARCHAR(255) NOT NULL, 
     `City` VARCHAR(255),
 	`Country` VARCHAR(255) NOT NULL,
-    `Capacity` INT NOT NULL CHECK (capacity > 0),
+    `Capacity` INT,
+	`Is_Seated` TINYINT NOT NULL,
     
     PRIMARY KEY (`Venue_ID`),
     UNIQUE (`Venue_Name`, `Country`, `City`) -- Prevents duplicate venues with the same name and location

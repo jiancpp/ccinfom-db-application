@@ -189,7 +189,7 @@
         <span style="margin-right: 5px">
             <select name="artist" id="artist-select" onchange="this.form.submit()">
                 <option value="all" {% if current_artist == 'all' %}selected{% endif %}>All</option>
-                {% for artist in artist_names %}
+                {% for artist in artist %}
                     <option value="{{ artist }}" {% if current_artist == artist %}selected{% endif %}>{{ artist }}</option>
                 {% endfor %}
             </select>
@@ -216,25 +216,26 @@
         {% for fanclub in fanclubs %}
             <li class="fanclub-card card">
                 <div>
-                    <h3>{{ fanclub.fanclub_name }}</h3>
+                    <h3>{{ fanclub.Fanclub_Name }}</h3>
+                    <p class="artist-name">{{ fanclub.Artist_Name }}</p>
                     <div class="fanclub-details">
                         <p>
-                            <i class="fa fa-users"></i> Members: {{ fanclub.member_count }}
+                            <i class="fa fa-users"></i> Members: {{ fanclub.Member_Count }}
                         </p>
                     </div>
                 </div>
 
                 <div class="button-group">
                     
-                    {% if fanclub.is_member %}
-                        <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.fanclub_id) }}" class="btn-group-form">
+                    {% if fanclub.is_member_fan_id %}
+                        <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.Fanclub_ID) }}" class="btn-group-form">
                             <button type="submit" 
                                     class="fanclub-btn btn-leave">
                                 Leave Fanclub
                             </button>
                         </form>
                     {% else %}
-                        <form method="POST" action="{{ url_for('main_routes.join_fanclub', fanclub_id=fanclub.fanclub_id) }}" class="btn-group-form">
+                        <form method="POST" action="{{ url_for('main_routes.join_fanclub', fanclub_id=fanclub.Fanclub_ID) }}" class="btn-group-form">
                             <button type="submit" 
                                     class="fanclub-btn btn-join">
                                 Join Fanclub
@@ -242,7 +243,7 @@
                         </form>
                     {% endif %}
 
-                    <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=fanclub.fanclub_id) }}" class="fanclub-btn btn-outline btn-link">View Fanclub</a>
+                    <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=fanclub.Fanclub_ID) }}" class="fanclub-btn btn-outline btn-link">View Fanclub</a>
                 </div>
             </li>
         {% endfor %}

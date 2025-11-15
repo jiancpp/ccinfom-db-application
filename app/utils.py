@@ -12,7 +12,7 @@ def get_row_label(i):
 def generate_seats_for_section(venue_id, section_id, section_capacity):
     # Default seats per row
     seats = []
-    seats_per_row = 45
+    seats_per_row = 30
     rows_needed = (section_capacity + seats_per_row - 1) // seats_per_row
     row_labels = string.ascii_uppercase  # A to Z
 
