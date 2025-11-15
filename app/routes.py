@@ -43,7 +43,7 @@ def execute_select_query(sql, params=()):
         
     except Exception as e:
         print(f"Error fetching user: {e}")
-        return None
+        return []
     
 def execute_insert_query(sql, params=()):
     # Pass dictionary=True to the cursor method
@@ -161,9 +161,11 @@ def artists():
 @main_routes.route('/events', methods=["GET", "POST"])
 def events():
 
+    join_condition = ""
     filter_condition = ""
     search_condition = ""
     query_parameters = []
+    event_types = {}
     
     # Filtering events
     search_term = request.form.get("event-name", "").strip()
@@ -173,33 +175,39 @@ def events():
     # APPLY EVENT TYPE FILTER 
     # ----------------------------------------------------     
     if filter == 'artist-events':
-        filter_condition = '''
-        AND Event_ID IN (
-            SELECT DISTINCT Event_ID 
-            FROM Artist_Event
-        )
-        '''
+        filter_condition = "AND a.Artist_Name IS NOT NULL"
 
     if filter == 'fanclub-events':
-        filter_condition = '''
-            AND Event_ID IN (
-            SELECT DISTINCT Event_ID 
-            FROM Fanclub_Event
-        )
-        '''
+        filter_condition = "AND f.Fanclub_Name IS NOT NULL"
     # ----------------------------------------------------
     # APPLY TEXT SEARCH FILTER 
     # ----------------------------------------------------
 
     if search_term:
-        search_condition = "AND Event_Name LIKE %s"
+        search_condition = '''
+        AND (
+            e.Event_Name LIKE %s 
+            OR COALESCE(fa.Artist_Name,'') LIKE %s 
+            OR COALESCE(a.Artist_Name,'') LIKE %s 
+            OR COALESCE(f.Fanclub_Name,'') LIKE %s
+        )
+        '''
         search_pattern = f"%{search_term}%"
         query_parameters.append(search_pattern)
+        query_parameters.append(search_pattern)
+        query_parameters.append(search_pattern)
+        query_parameters.append(search_pattern)
         
-    
     event_query = f'''
-    SELECT e.*, v.Venue_Name 
-    FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+    SELECT DISTINCT e.*, 
+           v.Venue_Name
+    FROM Event AS e 
+        JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+        LEFT JOIN Artist_Event ae ON e.Event_ID = ae.Event_ID
+        LEFT JOIN Artist a ON ae.Artist_ID = a.Artist_ID
+        LEFT JOIN Fanclub_Event fe ON e.Event_ID = fe.Event_ID
+        LEFT JOIN Fanclub f ON fe.Fanclub_ID = f.Fanclub_ID
+        LEFT JOIN Artist fa ON f.Artist_ID = fa.Artist_ID
     WHERE e.Start_Date >= CURDATE()
         {filter_condition}
         {search_condition}
@@ -207,9 +215,24 @@ def events():
     '''
     events = execute_select_query(event_query, tuple(query_parameters))
 
+    for event in events:
+        type_query = '''
+        SELECT l.Event_ID, r.*
+        FROM LINK_Event_Type l
+        JOIN REF_Event_Type r ON r.Type_ID = l.Type_ID
+        WHERE l.Event_ID = %s
+        '''
+
+        types = execute_select_query(type_query, (event['Event_ID'],))
+        if types:
+            event_types[event['Event_ID']] = types
+        else:
+            event_types[event['Event_ID']] = []
+
     return render_template(
         'events.html', 
         events=events, 
+        event_types=event_types,
         current_filter=filter,
         current_search=search_term
     )
@@ -404,7 +427,7 @@ def login():
             session['username'] = fan[0]['Username']
             session['fan_id'] = fan[0]['Fan_ID']
             
-            flash(f'Login successful! Welcome back, {fan[0]['First_Name']}.', 'success')
+            flash(f'Login successful! Welcome back, {fan[0]["First_Name"]}.', 'success')
             return redirect(url_for('main_routes.index')) 
         else:
             flash('Login failed: Account with that username or email not found.', 'error')

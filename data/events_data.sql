@@ -1,13 +1,3 @@
--- 1. Temporarily disable foreign key checks
--- SET foreign_key_checks = 0;
--- TRUNCATE TABLE Seat;
--- 2. Truncate the table
--- TRUNCATE TABLE Ticket_Tier;
--- TRUNCATE TABLE Section;
--- TRUNCATE TABLE Tier_Section;
--- 3. Re-enable foreign key checks
--- SET foreign_key_checks = 1;
-
 USE dbApp;
 
 INSERT INTO Venue (Venue_Name,City,Country,Capacity,Is_Seated)
@@ -23,38 +13,44 @@ VALUES  ("Philippine Arena","Bocaue, Bulacan","Philippines",55000,1),
 		("Nineteen Degress - MOA","Pasay, Metro Manila","Philippines",NULL,0),
 		("Coffee Grind Calamba City","Calamba, Laguna","Philippines",NULL,0);
 
-INSERT INTO Event (Event_ID,Event_Name, Event_Type, Venue_ID, Start_Date, End_Date, Start_Time, End_Time)
-VALUES  (1,"BLACKPINK Comeback Tour","Concert",1,"2026-08-10","2026-08-10","20:00:00","0:00:00"),
-		(2,"ENHYPEN Dunkin Donut Collab x Fanmeet","Fanmeet,Hi Touch",4,"2026-09-05","2026-09-05","14:00:00","16:30:00"),
-		(3,"ZB1 Hi-Five Session","Hi Touch",4,"2026-10-18","2026-10-18","11:00:00","13:00:00"),
-		(4,"AKMU Birthday Cupsleeve Cafe","Cupsleeve",5,"2026-11-25","2026-11-25","10:00:00","17:00:00"),
-		(5,"AESPA Artist Showcase","Concert",2,"2026-12-07","2026-12-07","18:30:00","22:30:00"),
-		(6,"BLINKS United Rosé Birthday Cupsleeve","Cupsleeve",6,"2026-02-11","2026-02-11","9:00:00","20:00:00"),
-		(7,"Zerose Squad Anniversary Cupsleeve","Cupsleeve",8,"2026-07-10","2026-07-10","10:00:00","19:00:00"),
-		(8,"WinRina 4ever Winter Cupsleeve Cafe","Cupsleeve",9,"2026-01-15","2026-01-15","9:30:00","18:30:00"),
-		(9,"ENGENE-ers Sunghoon Birthday Cupsleeve","Cupsleeve",10,"2026-12-08","2026-12-08","10:00:00","20:00:00"),
-		(10,"Pink Venom Club Jisoo Cupsleeve","Cupsleeve",11,"2026-01-03","2026-01-03","9:00:00","19:00:00"),
-		(11,"MY Dreams Karina Birthday Cupsleeve","Cupsleeve",6,"2026-04-11","2026-04-11","10:00:00","18:00:00"),
-		(12,"Tokki Squad Hanni Cupsleeve Event","Cupsleeve",8,"2026-10-06","2026-10-06","9:30:00","19:30:00"),
-		(13,"AKKADEMY Chanhyuk Birthday Cupsleeve","Cupsleeve",9,"2026-09-12","2026-09-12","10:00:00","17:00:00"),
-		(14,"Bunnies Forever Hyein Cupsleeve","Cupsleeve",10,"2026-04-21","2026-04-21","9:00:00","18:00:00"),
-		(15,"ENGENE Nation Jungwon Cupsleeve","Cupsleeve",5,"2026-02-09","2026-02-12","10:00:00","19:00:00"),
-		(16,"Zero Days Hanbin Birthday Cupsleeve","Cupsleeve",5,"2026-01-16","2026-01-18","9:30:00","20:00:00"),
-		(17,"BP World Lisa Birthday Cupsleeve","Cupsleeve",8,"2026-03-27","2026-03-27","10:00:00","19:00:00"),
-		(18,"Next Level Fans Winter Cupsleeve","Cupsleeve",9,"2026-02-14","2026-02-20","9:00:00","18:00:00"),
-		(19,"WIZONE Forever Sakura Cupsleeve","Cupsleeve",10,"2026-03-19","2026-03-19","10:00:00","19:00:00"),
-		(20,"Bunny Camp Minji Birthday Cupsleeve","Cupsleeve",5,"2026-05-07","2026-05-07","9:30:00","19:30:00"),
-		(21,"BLINK Paradise Jennie Cupsleeve","Cupsleeve",6,"2026-01-16","2026-01-16","10:00:00","20:00:00"),
-		(22,"Vampire Lovers Heeseung Cupsleeve","Cupsleeve",8,"2026-10-15","2026-10-15","9:00:00","18:00:00"),
-		(23,"ZB1 United Jiwoong Birthday Cupsleeve","Cupsleeve",9,"2026-12-14","2026-12-14","10:00:00","19:00:00"),
-		(24,"Aespa Synk Ningning Cupsleeve","Cupsleeve",10,"2026-10-23","2026-10-23","9:30:00","18:30:00"),
-		(25,"Suhyun & Chanhyuk Fans Anniversary Cupsleeve","Cupsleeve",11,"2026-04-19","2026-04-19","10:00:00","17:00:00"),
-		(26,"IU Concert: Blooming in Blue","Concert,Hi Touch",1,"2026-04-11","2026-04-12","20:00:00","0:00:00"),
-		(27,"IZNA Anniversary Fanmeet","Fanmeet,Hi Touch",4,"2026-11-25","2026-11-25","17:00:00","22:00:00"),
-		(28,"LISA: Lovesick Concert","Concert",3,"2026-01-15","2026-01-17","20:00:00","23:00:00"),
-		(29,"SEVENTEEN Comeback Tour","Concert",1,"2027-01-23","2027-01-24","17:00:00","22:00:00"),
-		(30,"ZB1 Summer in Manila Concert","Concert",2,"2026-02-28","2026-03-01","17:00:00","22:00:00"),
-		(31,"SB19 Asia Stage: Manila","Concert",3,"2025-12-12","2025-12-14","17:00:00","22:00:00");
+INSERT INTO REF_Event_Type (Type_Name)
+VALUES	('Concert'),
+		('Fanmeet'),
+		('Hi-Touch'),
+		('Cupsleeve');
+
+INSERT INTO Event (Event_ID, Event_Name, Venue_ID, Start_Date, End_Date, Start_Time, End_Time)
+VALUES  (1,"BLACKPINK Comeback Tour",1,"2026-08-10","2026-08-10","20:00:00","0:00:00"),
+		(2,"ENHYPEN Dunkin Donut Collab x Fanmeet",4,"2026-09-05","2026-09-05","14:00:00","16:30:00"),
+		(3,"ZB1 Hi-Five Session",4,"2026-10-18","2026-10-18","11:00:00","13:00:00"),
+		(4,"AKMU Birthday Cupsleeve Cafe",5,"2026-11-25","2026-11-25","10:00:00","17:00:00"),
+		(5,"AESPA Artist Showcase",2,"2026-12-07","2026-12-07","18:30:00","22:30:00"),
+		(6,"BLINKS United Rosé Birthday Cupsleeve",6,"2026-02-11","2026-02-11","9:00:00","20:00:00"),
+		(7,"Zerose Squad Anniversary Cupsleeve",8,"2026-07-10","2026-07-10","10:00:00","19:00:00"),
+		(8,"WinRina 4ever Winter Cupsleeve Cafe",9,"2026-01-15","2026-01-15","9:30:00","18:30:00"),
+		(9,"ENGENE-ers Sunghoon Birthday Cupsleeve",10,"2026-12-08","2026-12-08","10:00:00","20:00:00"),
+		(10,"Pink Venom Club Jisoo Cupsleeve",11,"2026-01-03","2026-01-03","9:00:00","19:00:00"),
+		(11,"MY Dreams Karina Birthday Cupsleeve",6,"2026-04-11","2026-04-11","10:00:00","18:00:00"),
+		(12,"Tokki Squad Hanni Cupsleeve Event",8,"2026-10-06","2026-10-06","9:30:00","19:30:00"),
+		(13,"AKKADEMY Chanhyuk Birthday Cupsleeve",9,"2026-09-12","2026-09-12","10:00:00","17:00:00"),
+		(14,"Bunnies Forever Hyein Cupsleeve",10,"2026-04-21","2026-04-21","9:00:00","18:00:00"),
+		(15,"ENGENE Nation Jungwon Cupsleeve",5,"2026-02-09","2026-02-12","10:00:00","19:00:00"),
+		(16,"Zero Days Hanbin Birthday Cupsleeve",5,"2026-01-16","2026-01-18","9:30:00","20:00:00"),
+		(17,"BP World Lisa Birthday Cupsleeve",8,"2026-03-27","2026-03-27","10:00:00","19:00:00"),
+		(18,"Next Level Fans Winter Cupsleeve",9,"2026-02-14","2026-02-20","9:00:00","18:00:00"),
+		(19,"WIZONE Forever Sakura Cupsleeve",10,"2026-03-19","2026-03-19","10:00:00","19:00:00"),
+		(20,"Bunny Camp Minji Birthday Cupsleeve",5,"2026-05-07","2026-05-07","9:30:00","19:30:00"),
+		(21,"BLINK Paradise Jennie Cupsleeve",6,"2026-01-16","2026-01-16","10:00:00","20:00:00"),
+		(22,"Vampire Lovers Heeseung Cupsleeve",8,"2026-10-15","2026-10-15","9:00:00","18:00:00"),
+		(23,"ZB1 United Jiwoong Birthday Cupsleeve",9,"2026-12-14","2026-12-14","10:00:00","19:00:00"),
+		(24,"Aespa Synk Ningning Cupsleeve",10,"2026-10-23","2026-10-23","9:30:00","18:30:00"),
+		(25,"Suhyun & Chanhyuk Fans Anniversary Cupsleeve",11,"2026-04-19","2026-04-19","10:00:00","17:00:00"),
+		(26,"IU Concert: Blooming in Blue",1,"2026-04-11","2026-04-12","20:00:00","0:00:00"),
+		(27,"IZNA Anniversary Fanmeet",4,"2026-11-25","2026-11-25","17:00:00","22:00:00"),
+		(28,"LISA: Lovesick Concert",3,"2026-01-15","2026-01-17","20:00:00","23:00:00"),
+		(29,"SEVENTEEN Comeback Tour",1,"2027-01-23","2027-01-24","17:00:00","22:00:00"),
+		(30,"ZB1 Summer in Manila Concert",2,"2026-02-28","2026-03-01","17:00:00","22:00:00"),
+		(31,"SB19 Asia Stage: Manila",3,"2025-12-12","2025-12-14","17:00:00","22:00:00");
         
 INSERT INTO Ticket_Tier(Tier_ID,Event_ID,Tier_Name,Price,Total_Quantity,Benefits,Is_Reserved_Seating)
 VALUES	(1,1,"VIP Pit",15125,3900,"Early Entry, Sound Check Access",0),
@@ -340,6 +336,8 @@ VALUES	(1,1,"101",500),
 		(204,3,"423",435),
 		(205,3,"Gen. Ad.",2400);
 
+-- Links
+
 INSERT INTO Tier_Section (Tier_ID, Section_ID)
 VALUES	(3,1), (3,2), (3,3), (3,4), (3,5), (2,6), 
         (2,7), (2,8), (2,9), (2,10), (3,11), (3,12), 
@@ -421,3 +419,59 @@ VALUES	(3,1), (3,2), (3,3), (3,4), (3,5), (2,6),
         (73,190), (73,191), (73,192), (74,193), (74,194), (74,195), 
         (74,196), (74,197), (74,198), (74,199), (74,200), (74,201), 
         (74,202), (74,203), (74,204), (75,205);
+
+INSERT INTO LINK_Event_Type (Event_ID, Type_ID)
+VALUES
+-- Event 1: "BLACKPINK Comeback Tour" -> "Concert" (ID 1)
+(1, 1),
+
+-- Event 2: "ENHYPEN Dunkin Donut Collab x Fanmeet" -> "Fanmeet" (ID 2), "Hi-Touch" (ID 3)
+(2, 2),
+(2, 3),
+
+-- Event 3: "ZB1 Hi-Five Session" -> "Hi-Touch" (ID 3)
+(3, 3),
+
+-- Event 4 to 25 are all single "Cupsleeve" events (ID 4)
+(4, 4),
+(5, 1),  -- AESPA Artist Showcase -> Concert
+(6, 4),
+(7, 4),
+(8, 4),
+(9, 4),
+(10, 4),
+(11, 4),
+(12, 4),
+(13, 4),
+(14, 4),
+(15, 4),
+(16, 4),
+(17, 4),
+(18, 4),
+(19, 4),
+(20, 4),
+(21, 4),
+(22, 4),
+(23, 4),
+(24, 4),
+(25, 4),
+
+-- Event 26: "IU Concert: Blooming in Blue" -> "Concert" (ID 1), "Hi-Touch" (ID 3)
+(26, 1),
+(26, 3),
+
+-- Event 27: "IZNA Anniversary Fanmeet" -> "Fanmeet" (ID 2), "Hi-Touch" (ID 3)
+(27, 2),
+(27, 3),
+
+-- Event 28: "LISA: Lovesick Concert" -> "Concert" (ID 1)
+(28, 1),
+
+-- Event 29: "SEVENTEEN Comeback Tour" -> "Concert" (ID 1)
+(29, 1),
+
+-- Event 30: "ZB1 Summer in Manila Concert" -> "Concert" (ID 1)
+(30, 1),
+
+-- Event 31: "SB19 Asia Stage: Manila" -> "Concert" (ID 1)
+(31, 1);

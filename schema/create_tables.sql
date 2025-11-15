@@ -85,7 +85,6 @@ DROP TABLE IF EXISTS `Event`;
 CREATE TABLE `Event` (
     `Event_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Event_Name` VARCHAR(100) NOT NULL,
-    `Event_Type` SET('Concert', 'Fanmeet', 'Hi Touch', 'Cupsleeve') NOT NULL,
     `Venue_ID` INT(11) NOT NULL,
 	`Start_Date` DATE NOT NULL,
 	`End_Date` DATE NOT NULL,
@@ -360,3 +359,32 @@ CREATE TABLE `Artist_Follower` (
     PRIMARY KEY (`Artist_ID`, `Fan_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+-- ==============================================
+--              REFERENCE TABLES
+-- ==============================================
+
+--
+-- Table structure for table `Fanclub_Membership`
+--
+DROP TABLE IF EXISTS `REF_Event_Type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `REF_Event_Type` (
+    `Type_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Type_Name` VARCHAR(255) NOT NULL,
+    
+    PRIMARY KEY (`Type_ID`),
+    CONSTRAINT is_type_unique UNIQUE (`Type_Name`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+DROP TABLE IF EXISTS `LINK_Event_Type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `LINK_Event_Type` (
+    `Event_ID` INT(11) NOT NULL,
+    `Type_ID` INT(11) NOT NULL,
+    
+    PRIMARY KEY (`Event_ID`, `Type_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
