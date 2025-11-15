@@ -43,7 +43,7 @@ def execute_select_query(sql, params=()):
         
     except Exception as e:
         print(f"Error fetching user: {e}")
-        return None
+        return []
     
 def execute_insert_query(sql, params=()):
     # Pass dictionary=True to the cursor method
@@ -73,37 +73,51 @@ def execute_insert_query(sql, params=()):
 @main_routes.route('/')
 def index():
    
-    events, artists = [], []
     title = ""
-
-    follower_count = db.session.query(
-        Artist_Follower.Artist_ID,
-        func.count(Artist_Follower.Fan_ID).label('num_followers')
-    ).group_by(Artist_Follower.Artist_ID).subquery()
+    artist_query = ""
     
     if g.get('current_user'):
-        title = "Followed Artists"
-        artists = Artist.query.join(Artist.followers).filter(
-            Artist_Follower.Fan_ID == g.current_user.Fan_ID
-        ).all()
+            title = "Artists You Follow"
+            fan_ID = g.current_user.Fan_ID
+            artist_query = '''
+                SELECT * FROM Artist AS a
+                JOIN Artist_Follower AS af ON a.Artist_ID = af.Artist_ID
+                WHERE af.Fan_ID = %s
+                ORDER BY a.Artist_Name ASC;
+                '''
+            total_artists_query = '''
+                SELECT COUNT(*) AS Total_Artists FROM Artist_Follower
+                WHERE Fan_ID = %s;
+                '''
+            artists = execute_select_query(artist_query, (fan_ID,))
+            total_artists = execute_select_query(total_artists_query, (fan_ID,))
+            
+            if total_artists:
+                total_artists = total_artists[0]['Total_Artists']
+            else :
+                total_artists = 0
+
     else:
-        title = "Active Artists"
-        artists = Artist.query.filter(
-            Artist.Activity_Status == 'Active'
-        ).outerjoin(
-            follower_count, Artist.Artist_ID == follower_count.c.Artist_ID
-        ).order_by(
-            desc(follower_count.c.num_followers)
-        ).limit(5).all()
+        title = "Popular Artists"
+        artist_query = '''
+            SELECT a.*, COUNT(af.Fan_ID) AS Num_Followers FROM Artist AS a
+            LEFT JOIN Artist_Follower AS af ON a.Artist_ID = af.Artist_ID
+            WHERE a.Activity_Status = 'Active'
+            GROUP BY a.Artist_ID, a.Artist_Name
+            ORDER BY num_followers DESC
+            LIMIT 5;
+            '''
+        artists = execute_select_query(artist_query)
+        total_artists = 5
 
     event_query = '''
-    SELECT * FROM Event as e
-    WHERE e.Start_Date >= CURDATE()
-    ORDER BY e.Start_Date ASC
-    '''
+        SELECT * FROM Event AS e
+        WHERE e.Start_Date >= CURDATE()
+        ORDER BY e.Start_Date ASC
+        '''
     events = execute_select_query(event_query)
 
-    return render_template('index.html', artists=artists, events=events, title=title)
+    return render_template('index.html', artists=artists, events=events, total_artists=total_artists, title=title)
 
 @main_routes.route('/artists', methods=['GET'])
 def artists():
@@ -161,9 +175,11 @@ def artists():
 @main_routes.route('/events', methods=["GET", "POST"])
 def events():
 
+    join_condition = ""
     filter_condition = ""
     search_condition = ""
     query_parameters = []
+    event_types = {}
     
     # Filtering events
     search_term = request.form.get("event-name", "").strip()
@@ -173,33 +189,39 @@ def events():
     # APPLY EVENT TYPE FILTER 
     # ----------------------------------------------------     
     if filter == 'artist-events':
-        filter_condition = '''
-        AND Event_ID IN (
-            SELECT DISTINCT Event_ID 
-            FROM Artist_Event
-        )
-        '''
+        filter_condition = "AND a.Artist_Name IS NOT NULL"
 
     if filter == 'fanclub-events':
-        filter_condition = '''
-            AND Event_ID IN (
-            SELECT DISTINCT Event_ID 
-            FROM Fanclub_Event
-        )
-        '''
+        filter_condition = "AND f.Fanclub_Name IS NOT NULL"
     # ----------------------------------------------------
     # APPLY TEXT SEARCH FILTER 
     # ----------------------------------------------------
 
     if search_term:
-        search_condition = "AND Event_Name LIKE %s"
+        search_condition = '''
+        AND (
+            e.Event_Name LIKE %s 
+            OR COALESCE(fa.Artist_Name,'') LIKE %s 
+            OR COALESCE(a.Artist_Name,'') LIKE %s 
+            OR COALESCE(f.Fanclub_Name,'') LIKE %s
+        )
+        '''
         search_pattern = f"%{search_term}%"
         query_parameters.append(search_pattern)
+        query_parameters.append(search_pattern)
+        query_parameters.append(search_pattern)
+        query_parameters.append(search_pattern)
         
-    
     event_query = f'''
-    SELECT e.*, v.Venue_Name 
-    FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+    SELECT DISTINCT e.*, 
+           v.Venue_Name
+    FROM Event AS e 
+        JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+        LEFT JOIN Artist_Event ae ON e.Event_ID = ae.Event_ID
+        LEFT JOIN Artist a ON ae.Artist_ID = a.Artist_ID
+        LEFT JOIN Fanclub_Event fe ON e.Event_ID = fe.Event_ID
+        LEFT JOIN Fanclub f ON fe.Fanclub_ID = f.Fanclub_ID
+        LEFT JOIN Artist fa ON f.Artist_ID = fa.Artist_ID
     WHERE e.Start_Date >= CURDATE()
         {filter_condition}
         {search_condition}
@@ -207,9 +229,24 @@ def events():
     '''
     events = execute_select_query(event_query, tuple(query_parameters))
 
+    for event in events:
+        type_query = '''
+        SELECT l.Event_ID, r.*
+        FROM LINK_Event_Type l
+        JOIN REF_Event_Type r ON r.Type_ID = l.Type_ID
+        WHERE l.Event_ID = %s
+        '''
+
+        types = execute_select_query(type_query, (event['Event_ID'],))
+        if types:
+            event_types[event['Event_ID']] = types
+        else:
+            event_types[event['Event_ID']] = []
+
     return render_template(
         'events.html', 
         events=events, 
+        event_types=event_types,
         current_filter=filter,
         current_search=search_term
     )
@@ -404,7 +441,7 @@ def login():
             session['username'] = fan[0]['Username']
             session['fan_id'] = fan[0]['Fan_ID']
             
-            flash(f'Login successful! Welcome back, {fan[0]['First_Name']}.', 'success')
+            flash(f'Login successful! Welcome back, {fan[0]["First_Name"]}.', 'success')
             return redirect(url_for('main_routes.index')) 
         else:
             flash('Login failed: Account with that username or email not found.', 'error')

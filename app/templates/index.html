@@ -4,13 +4,18 @@
 <h1>🎵 Welcome to KSync</h1>
 <p style="color: #666;">Manage artists, events, and fans — or explore the shop!</p>
 
-<h2>{{title}} ({{ artists|length }})</h2>
+<h2>{{title}} ({{ total_artists }})</h2>
 {% if artists %}
 <div class="grid">
     {% for artist in artists %}
     <div class="card">
         <h3>{{ artist.Artist_Name }}</h3>
-        <p>Status: {{ artist.Activity_Status | first}}</p>
+        <p>{{ artist.Activity_Status }}</p>
+            {% if artist.Num_Followers != 1 %}
+                <p>{{ artist.Num_Followers }} followers </p>
+            {% else %}
+                <p>{{ artist.Num_Followers }} follower </p>
+            {% endif %}
     </div>
     {% endfor %}
 </div>

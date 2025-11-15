@@ -131,7 +131,7 @@
             <input  type="text" 
                     id="event-name" 
                     name="event-name" 
-                    placeholder="Search Event..."
+                    placeholder="Search Event, Artist, or Fanclub"
                     value="{{ current_search | default('') }}">
         </div>
 
@@ -167,8 +167,8 @@
                         <h3>{{ event.Event_Name }}</h3>
                         <ul class="event-details">
                             <li>
-                                {% for t in event.Event_Type %}
-                                <span class="event-type">{{ t }}</span>
+                                {% for t in event_types[event.Event_ID] %}
+                                <span class="event-type">{{ t.Type_Name  }}</span>
                                 {% endfor %}
                             </li>
                             <li class="indent">

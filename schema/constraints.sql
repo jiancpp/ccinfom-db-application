@@ -16,6 +16,18 @@ ADD CONSTRAINT fk_event_venue
     FOREIGN KEY (`Venue_ID`) REFERENCES Venue(`Venue_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
+--
+-- Constraints for `Event`
+--
+ALTER TABLE LINK_Event_Type
+ADD CONSTRAINT fk_link_type
+    FOREIGN KEY (`Type_ID`) REFERENCES REF_Event_Type(`Type_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT fk_link_event
+    FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+
 -- 
 -- Constraints for `Section`
 -- 
@@ -65,6 +77,85 @@ ADD CONSTRAINT fk_ticket_seat
     FOREIGN KEY (`Seat_ID`) REFERENCES Seat(`Seat_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
+DROP PROCEDURE IF EXISTS generate_seats_for_section;
+DELIMITER $$
+DROP PROCEDURE IF EXISTS generate_seats_for_section;
+
+DELIMITER $$
+
+CREATE FUNCTION get_row_label(i INT)
+RETURNS VARCHAR(10)
+DETERMINISTIC
+BEGIN
+    DECLARE letters VARCHAR(26) DEFAULT 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    DECLARE label VARCHAR(10) DEFAULT '';
+    DECLARE idx INT;
+
+    WHILE i >= 0 DO
+        SET idx = i % 26;
+        SET label = CONCAT(SUBSTRING(letters, idx + 1, 1), label);
+        SET i = FLOOR(i / 26) - 1;
+    END WHILE;
+
+    RETURN label;
+END$$
+
+CREATE PROCEDURE generate_seats_for_section(
+    IN venue_id INT,
+    IN section_id INT,
+    IN section_capacity INT
+)
+BEGIN
+    DECLARE seats_per_row INT DEFAULT 30;
+    DECLARE row_index INT DEFAULT 0;
+    DECLARE seat_num INT;
+    DECLARE max_rows INT;
+
+    SET max_rows = CEIL(section_capacity / seats_per_row);
+
+    seat_loop: LOOP
+        IF row_index >= max_rows THEN
+            LEAVE seat_loop;
+        END IF;
+
+        SET seat_num = 1;
+
+        seat_number_loop: LOOP
+            IF (row_index * seats_per_row + seat_num) > section_capacity THEN
+                LEAVE seat_number_loop;
+            END IF;
+
+            INSERT INTO Seat (Venue_ID, Section_ID, Seat_Row, Seat_Number)
+            VALUES (
+                venue_id,
+                section_id,
+                get_row_label(row_index),
+                seat_num
+            );
+
+            SET seat_num = seat_num + 1;
+            IF seat_num > seats_per_row THEN
+                LEAVE seat_number_loop;
+            END IF;
+        END LOOP;
+
+        SET row_index = row_index + 1;
+    END LOOP seat_loop;
+
+END$$
+
+CREATE TRIGGER trg_generate_seats_after_section
+AFTER INSERT ON Section
+FOR EACH ROW
+BEGIN
+    CALL generate_seats_for_section(
+        NEW.Venue_ID,
+        NEW.Section_ID,
+        NEW.Max_Capacity
+    );
+END$$
+
+DELIMITER ;
 
 -- ==========================================================
 --   ARTIST CORE AND SUBTABLES
