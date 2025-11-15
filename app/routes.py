@@ -73,37 +73,51 @@ def execute_insert_query(sql, params=()):
 @main_routes.route('/')
 def index():
    
-    events, artists = [], []
     title = ""
-
-    follower_count = db.session.query(
-        Artist_Follower.Artist_ID,
-        func.count(Artist_Follower.Fan_ID).label('num_followers')
-    ).group_by(Artist_Follower.Artist_ID).subquery()
+    artist_query = ""
     
     if g.get('current_user'):
-        title = "Followed Artists"
-        artists = Artist.query.join(Artist.followers).filter(
-            Artist_Follower.Fan_ID == g.current_user.Fan_ID
-        ).all()
+            title = "Artists You Follow"
+            fan_ID = g.current_user.Fan_ID
+            artist_query = '''
+                SELECT * FROM Artist AS a
+                JOIN Artist_Follower AS af ON a.Artist_ID = af.Artist_ID
+                WHERE af.Fan_ID = %s
+                ORDER BY a.Artist_Name ASC;
+                '''
+            total_artists_query = '''
+                SELECT COUNT(*) AS Total_Artists FROM Artist_Follower
+                WHERE Fan_ID = %s;
+                '''
+            artists = execute_select_query(artist_query, (fan_ID,))
+            total_artists = execute_select_query(total_artists_query, (fan_ID,))
+            
+            if total_artists:
+                total_artists = total_artists[0]['Total_Artists']
+            else :
+                total_artists = 0
+
     else:
-        title = "Active Artists"
-        artists = Artist.query.filter(
-            Artist.Activity_Status == 'Active'
-        ).outerjoin(
-            follower_count, Artist.Artist_ID == follower_count.c.Artist_ID
-        ).order_by(
-            desc(follower_count.c.num_followers)
-        ).limit(5).all()
+        title = "Popular Artists"
+        artist_query = '''
+            SELECT a.*, COUNT(af.Fan_ID) AS Num_Followers FROM Artist AS a
+            LEFT JOIN Artist_Follower AS af ON a.Artist_ID = af.Artist_ID
+            WHERE a.Activity_Status = 'Active'
+            GROUP BY a.Artist_ID, a.Artist_Name
+            ORDER BY num_followers DESC
+            LIMIT 5;
+            '''
+        artists = execute_select_query(artist_query)
+        total_artists = 5
 
     event_query = '''
-    SELECT * FROM Event as e
-    WHERE e.Start_Date >= CURDATE()
-    ORDER BY e.Start_Date ASC
-    '''
+        SELECT * FROM Event AS e
+        WHERE e.Start_Date >= CURDATE()
+        ORDER BY e.Start_Date ASC
+        '''
     events = execute_select_query(event_query)
 
-    return render_template('index.html', artists=artists, events=events, title=title)
+    return render_template('index.html', artists=artists, events=events, total_artists=total_artists, title=title)
 
 @main_routes.route('/artists', methods=['GET'])
 def artists():
