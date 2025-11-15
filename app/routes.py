@@ -891,16 +891,34 @@ def leave_fanclub(fanclub_id):
 
 @main_routes.route('/fanclub/<int:fanclub_id>/create-event', methods=['GET', 'POST'])
 def create_fanclub_event(fanclub_id):
-    fanclub = Fanclub.query.get_or_404(fanclub_id)
-    artist = Artist.query.get(fanclub.Artist_ID) if fanclub.Artist_ID else None
-    all_venues = Venue.query.order_by(Venue.Venue_Name).all()
+
+    fanclub_query = '''
+    SELECT Fanclub_ID, Fanclub_Name, Artist_ID 
+    FROM Fanclub
+    WHERE Fanclub_ID = %s
+    '''
+
+    artist_query = '''
+    SELECT Artist_Name
+    FROM Artist
+    WHERE Artist_ID = %s
+    '''
+
+    venue_query = '''
+    SELECT Venue_ID, Venue_Name
+    FROM Venue
+    '''
+
+    fanclub = execute_select_query(fanclub_query,  (fanclub_id,))
+    artist = execute_select_query(artist_query, (fanclub[0]['Artist_ID'],))
+    venues = execute_select_query(venue_query)
     
     if request.method == 'GET':        
         return render_template(
             'create_fanclub_event.html', 
             fanclub=fanclub, 
             artist=artist, 
-            venues=all_venues
+            venues=venues
         )
 
     if request.method == 'POST':
@@ -922,52 +940,67 @@ def create_fanclub_event(fanclub_id):
             end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else start_date
             end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time()
 
-            new_event = Event(
-                Event_Name=event_name,
-                Event_Type=event_type,
-                Venue_ID=venue_id,
-                Start_Date=start_date,
-                End_Date=end_date,
-                Start_Time=start_time,
-                End_Time=end_time
+
+            insert_fanclub_membership_record = '''
+            INSERT INTO Event (Event_Name, Event_Type, Venue_ID, Start_Date, End_Date, Start_Time, End_Time)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            '''
+
+            event_query = '''
+            SELECT Event_ID
+            FROM Event
+            WHERE Event_Name = %s
+            '''
+
+            insert_default_tier_record = '''
+            INSERT INTO Ticket_Tier (Event_ID)
+            VALUES (%s)
+            '''
+
+            insert_fanclub_event_record = '''
+            INSERT INTO Fanclub_Event (Fanclub_ID, Event_ID)
+            VALUES (%s, %s)
+            '''
+
+            execute_insert_query(insert_fanclub_membership_record, (
+                event_name, 
+                event_type,
+                venue_id,
+                start_date,
+                end_date,
+                start_time,
+                end_time)
             )
 
+            event = execute_select_query(event_query,  (event_name,))
 
-            db.session.add(new_event)
-            db.session.flush()
-
-            default_tier = Ticket_Tier(
-                Event_ID=new_event.Event_ID
-            )
-            db.session.add(default_tier)
-            db.session.flush()
-
-            new_fanclub_event = Fanclub_Event(
-                Fanclub_ID=fanclub.Fanclub_ID,
-                Event_ID=new_event.Event_ID
-            )
-
-            db.session.add(new_fanclub_event)
-            db.session.commit()
+            execute_insert_query(insert_default_tier_record, (event[0]['Event_ID'],))
+            execute_insert_query(insert_fanclub_event_record, (fanclub_id, event[0]['Event_ID']))
             
             flash(f"Event '{event_name}' successfully created!", 'success')
             return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
-
-        except IntegrityError as e:
-            db.session.rollback()
-            flash(f"Database Error (Integrity constraint failed). Please check inputs.", 'error')
-            print(f"SQLAlchemy Integrity Error: {e}")
+        
         except Exception as e:
-            db.session.rollback()
             flash(f"An unexpected error occurred. {e}", 'error')
 
-        artist = Artist.query.get(fanclub.Artist_ID) if fanclub.Artist_ID else None
-        all_venues = Venue.query.order_by(Venue.Venue_Name).all()
+        artist_query = '''
+        SELECT Artist_Name
+        FROM Artist
+        WHERE Artist_ID = %s
+        '''
+
+        venue_query = '''
+        SELECT Venue_ID, Venue_Name
+        FROM Venue
+        '''
+
+        artist = execute_select_query(artist_query, (fanclub[0]['Artist_ID'],))
+        venues = execute_select_query(venue_query)
 
         return render_template('create_fanclub_event.html', 
             fanclub=fanclub, 
             artist=artist, 
-            venues=all_venues
+            venues=venues
         )
     
 # ============================================
