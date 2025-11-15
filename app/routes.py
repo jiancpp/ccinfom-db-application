@@ -597,7 +597,7 @@ def get_seats(event_id, section_id):
     ?page=1&per_page=450
     """
     page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 450, type=int)
+    per_page = request.args.get("per_page", 1000, type=int)
 
     seats_query = '''
     SELECT 
