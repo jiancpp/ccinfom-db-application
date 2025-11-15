@@ -168,7 +168,8 @@ INSERT INTO Artist_Event (Artist_ID, Event_ID) VALUES
 (1, 1),
 (2, 2),
 (3, 3),
-(5, 5);
+(5, 5),
+(1, 5);
 
 -- 9. ARTIST_FOLLOWER TABLE (Junction, references Artist and Fan)
 -- NOTE: Assuming 'Fan' records are already inserted or the table is not required to be inserted first.

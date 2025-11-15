@@ -143,11 +143,13 @@
     input[type="checkbox"]:checked + .seat {
         background-color: #6c5ce7;
         color: white;
+        border: none;
     }
 
     input[type="checkbox"]:disabled + .seat {
         background-color: #cccccc;
         color: white;
+        border: none;
     }
 
     .seat:hover {
@@ -269,7 +271,7 @@
     /* Ticket Summary */
     #purchase-summary {
         background: white;
-
+        display: none;
     }
 
     #purchase-summary #total-price {
@@ -458,7 +460,8 @@
     };
 
 
-    /** For Pagination **/
+    /** For Transaction **/
+    const purcaseSummary = document.getElementById('purchase-summary');
     const ticketForm = document.querySelector('form');
     const tierSelect = document.getElementById("ticket_tier");
     const benefitDescription = document.getElementById("tier_benefits");
@@ -488,13 +491,21 @@
 
     tierSelect.addEventListener("change", () => {
         unloadSeatMap();
-        updatePurchaseSummaryAndValidate()  
+        updatePurchaseSummaryAndValidate();
 
         if (tierSelect.value == "") {
             tierId = null;
             document.getElementById("selected-tier").textContent = `Ticket: `
+            purcaseSummary.style.display = "none"
+
+            // Hide Quantity Input
+            quantityInput.removeAttribute("required");
+            quantityInput.value = 0;
+            quantityInput.style.display = "none";
+            quantityLabel.style.display = "none";
         } else {
             tierId = tierSelect.value;
+            purcaseSummary.style.display = "block"
         }
         
         const tierData = tierSections[tierId];
@@ -754,7 +765,7 @@
         const isReserved = parseInt(ticketIsReservedSeating || 0, 10)
 
         const maxPerPurchase = 10;
-        const maxAllowed = Math.min(maxPerPurchase, ticketsLeft) + 1;
+        const maxAllowed = Math.min(maxPerPurchase, ticketsLeft);
 
         if (isReserved === 1) {
             if ((!selectedSection || selectedSection.value === "")) {
@@ -772,7 +783,7 @@
 
              // Show error message
             if (selectedCount > maxAllowed) {
-                maxDisplay.textContent = maxAllowed;
+                maxDisplay.textContent = maxAllowed + 1;
                 errorMessage.style.display = 'block'; // Show the error message
                 
                 // Optional: Scroll to the error message
@@ -795,7 +806,7 @@
 
              // Show error message
             if (quantityTickets > 10) {
-                maxDisplay.textContent = 10;
+                maxDisplay.textContent = 11;
                 errorMessage.style.display = 'block'; // Show the error message
                 
                 // Optional: Scroll to the error message

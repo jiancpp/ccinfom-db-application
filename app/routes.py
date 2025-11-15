@@ -43,7 +43,7 @@ def execute_select_query(sql, params=()):
         
     except Exception as e:
         print(f"Error fetching user: {e}")
-        return None
+        return []
     
 def execute_insert_query(sql, params=()):
     # Pass dictionary=True to the cursor method
@@ -165,9 +165,11 @@ def artists():
 @main_routes.route('/events', methods=["GET", "POST"])
 def events():
 
+    join_condition = ""
     filter_condition = ""
     search_condition = ""
     query_parameters = []
+    event_types = {}
     
     # Filtering events
     search_term = request.form.get("event-name", "").strip()
@@ -177,33 +179,39 @@ def events():
     # APPLY EVENT TYPE FILTER 
     # ----------------------------------------------------     
     if filter == 'artist-events':
-        filter_condition = '''
-        AND Event_ID IN (
-            SELECT DISTINCT Event_ID 
-            FROM Artist_Event
-        )
-        '''
+        filter_condition = "AND a.Artist_Name IS NOT NULL"
 
     if filter == 'fanclub-events':
-        filter_condition = '''
-            AND Event_ID IN (
-            SELECT DISTINCT Event_ID 
-            FROM Fanclub_Event
-        )
-        '''
+        filter_condition = "AND f.Fanclub_Name IS NOT NULL"
     # ----------------------------------------------------
     # APPLY TEXT SEARCH FILTER 
     # ----------------------------------------------------
 
     if search_term:
-        search_condition = "AND Event_Name LIKE %s"
+        search_condition = '''
+        AND (
+            e.Event_Name LIKE %s 
+            OR COALESCE(fa.Artist_Name,'') LIKE %s 
+            OR COALESCE(a.Artist_Name,'') LIKE %s 
+            OR COALESCE(f.Fanclub_Name,'') LIKE %s
+        )
+        '''
         search_pattern = f"%{search_term}%"
         query_parameters.append(search_pattern)
+        query_parameters.append(search_pattern)
+        query_parameters.append(search_pattern)
+        query_parameters.append(search_pattern)
         
-    
     event_query = f'''
-    SELECT e.*, v.Venue_Name 
-    FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+    SELECT DISTINCT e.*, 
+           v.Venue_Name
+    FROM Event AS e 
+        JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+        LEFT JOIN Artist_Event ae ON e.Event_ID = ae.Event_ID
+        LEFT JOIN Artist a ON ae.Artist_ID = a.Artist_ID
+        LEFT JOIN Fanclub_Event fe ON e.Event_ID = fe.Event_ID
+        LEFT JOIN Fanclub f ON fe.Fanclub_ID = f.Fanclub_ID
+        LEFT JOIN Artist fa ON f.Artist_ID = fa.Artist_ID
     WHERE e.Start_Date >= CURDATE()
         {filter_condition}
         {search_condition}
@@ -211,9 +219,24 @@ def events():
     '''
     events = execute_select_query(event_query, tuple(query_parameters))
 
+    for event in events:
+        type_query = '''
+        SELECT l.Event_ID, r.*
+        FROM LINK_Event_Type l
+        JOIN REF_Event_Type r ON r.Type_ID = l.Type_ID
+        WHERE l.Event_ID = %s
+        '''
+
+        types = execute_select_query(type_query, (event['Event_ID'],))
+        if types:
+            event_types[event['Event_ID']] = types
+        else:
+            event_types[event['Event_ID']] = []
+
     return render_template(
         'events.html', 
         events=events, 
+        event_types=event_types,
         current_filter=filter,
         current_search=search_term
     )
@@ -408,7 +431,7 @@ def login():
             session['username'] = fan[0]['Username']
             session['fan_id'] = fan[0]['Fan_ID']
             
-            flash(f'Login successful! Welcome back, {fan[0]['First_Name']}.', 'success')
+            flash(f'Login successful! Welcome back, {fan[0]["First_Name"]}.', 'success')
             return redirect(url_for('main_routes.index')) 
         else:
             flash('Login failed: Account with that username or email not found.', 'error')
@@ -458,19 +481,14 @@ def register():
         if fan_email:
             flash('An account with that email already exists. Try logging in!', 'error')
             return redirect(url_for('main_routes.register'))
-
-        First_Name=first_name
-        Last_Name=last_name
-        Username=username
-        Email=email
             
         insert_fan_record = f'''
         INSERT INTO Fan (First_Name, Last_Name, Username, Email)
         VALUES (%s, %s, %s, %s)
         '''
 
-        if execute_insert_query(insert_fan_record, (First_Name, Last_Name, Username, Email)):
-            flash(f'Welcome, {Username}! You can now log in.', 'success')
+        if execute_insert_query(insert_fan_record, (first_name, last_name, username, email)):
+            flash(f'Welcome, {username}! You can now log in.', 'success')
             return redirect(url_for('main_routes.login'))
         else:
             flash('A server error occurred during registration. Please try again.', 'error')
@@ -731,78 +749,132 @@ def get_seats(event_id, section_id):
 
 @main_routes.route('/fanclubs/<int:fanclub_id>')
 def fanclub_details(fanclub_id):
-    fanclub_query = Fanclub.query.join(Artist, Fanclub.Artist_ID == Artist.Artist_ID) \
-        .filter(Fanclub.Fanclub_ID == fanclub_id) \
-        .with_entities(Fanclub, Artist.Artist_Name.label('artist_name')).first_or_404()
-    
-    club, artist_name = fanclub_query
 
-    member_count = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id).count()
-    event_list = club.events
-    
-    merch_list = Merchandise.query.filter_by(Fanclub_ID=fanclub_id).all()
-    
-    is_member = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID).first() is not None
+    current_fan_id = g.current_user.Fan_ID
 
-    context = {
-        'fanclub_id': club.Fanclub_ID,
-        'fanclub_name': club.Fanclub_Name,
-        'artist_id': club.Artist_ID,
-        'artist_name': artist_name,
-        'member_count': member_count,
-        'is_member': is_member,
-        'merchandise': [{'merch_name': m.Merchandise_Name, 'price': m.Merchandise_Price, 'merch_ID': m.Merchandise_ID} for m in merch_list],
-        'events': [{'event_name': e.Event_Name, 'start_date': e.Start_Date, 'end_date': e.End_Date, 'event_id': e.Event_ID} for e in event_list],
-    }
-    
-    return render_template('fanclub_details.html', fanclub=context)
+    fanclub_query = '''
+    SELECT f.*, a.Artist_Name, COUNT(fm.Fan_ID) AS Member_Count
+    FROM Fanclub AS f 
+        JOIN Artist AS a ON f.Artist_ID = a.Artist_ID
+        LEFT JOIN Fanclub_Membership AS fm ON f.Fanclub_ID = fm.Fanclub_ID
+    WHERE f.Fanclub_ID = %s
+    GROUP BY f.Fanclub_ID
+    '''
+
+    is_member_query = '''
+    SELECT Fan_Id
+    FROM Fanclub_Membership
+    WHERE Fanclub_ID = %s AND Fan_ID = %s
+    '''
+
+    merch_list_query = '''
+    SELECT m.Merchandise_ID, m.Merchandise_Name, m.Merchandise_Price
+    FROM Merchandise AS m 
+        JOIN Fanclub AS f ON m.Fanclub_ID = f.Fanclub_ID
+            AND f.Fanclub_ID = %s
+    '''
+
+    event_list_query = '''
+    SELECT e.Event_ID, e.Event_Name, e.Start_Date, e.End_Date
+    FROM Event AS e 
+        JOIN Fanclub_Event AS fe ON e.Event_ID = fe.Event_ID
+            AND fe.Fanclub_ID = %s
+    '''
+
+    event_merch_count_query = '''
+    SELECT list1.Event_Count, list2.Merch_Count
+    FROM (SELECT COUNT(*) AS Event_Count
+            FROM Event AS e 
+                JOIN Fanclub_Event AS fe ON e.Event_ID = fe.Event_ID
+            WHERE fe.Fanclub_ID = %s) AS list1
+        JOIN (SELECT COUNT(*) AS Merch_Count
+                    FROM Merchandise AS m 
+                        JOIN Fanclub AS f ON m.Fanclub_ID = f.Fanclub_ID
+                    WHERE f.Fanclub_ID = %s) AS list2
+    '''
+
+    fanclub = execute_select_query(fanclub_query, (fanclub_id,))
+    is_member = execute_select_query(is_member_query, (fanclub_id, current_fan_id))
+    merch_list = execute_select_query(merch_list_query, (fanclub_id,))
+    event_list = execute_select_query(event_list_query, (fanclub_id,))
+    event_merch_count = execute_select_query(event_merch_count_query, (fanclub_id, fanclub_id))
+
+    return render_template(
+        'fanclub_details.html', 
+        fanclub=fanclub,
+        is_member=is_member,
+        merch_list=merch_list,
+        event_list=event_list,
+        event_merch_count=event_merch_count)
 
 
 @main_routes.route('/fanclubs/<int:fanclub_id>/members')
 # @login_required # Ensure only logged-in users can view the list
 def fanclub_members(fanclub_id):
-    club = Fanclub.query.filter_by(Fanclub_ID=fanclub_id).first_or_404()
-    
-    is_member = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID).first() is not None
-    
-    if not is_member:
-        flash(f"You must be a member of {club.Fanclub_Name} to view this.", 'error')
-        return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
 
-    members_data = db.session.query(
-        Fan.Username, 
-        Fan.Date_Joined
-    ) \
-        .join(Fanclub_Membership, Fan.Fan_ID == Fanclub_Membership.Fan_ID) \
-        .filter(Fanclub_Membership.Fanclub_ID == club.Fanclub_ID) \
-        .all()
+    current_fan_id = g.current_user.Fan_ID
+
+    is_member_query = '''
+    SELECT Fan_Id
+    FROM Fanclub_Membership
+    WHERE Fanclub_ID = %s AND Fan_ID = %s
+    '''
+
+    fanclub_query = '''
+    SELECT Fanclub_ID, Fanclub_Name
+    FROM Fanclub
+    WHERE Fanclub_ID = %s
+    '''
+
+    member_query = '''
+    SELECT f.Username
+    FROM Fanclub AS fc
+        JOIN Fanclub_Membership AS fm ON fc.Fanclub_ID = fm.Fanclub_ID
+        JOIN Fan AS f ON fm.Fan_ID = f.Fan_ID
+    WHERE fc.Fanclub_ID = %s
+    '''
+
+    is_member = execute_select_query(is_member_query, (fanclub_id, current_fan_id))
+    fanclub = execute_select_query(fanclub_query, (fanclub_id,))
+    members = execute_select_query(member_query, (fanclub_id,))
     
-    context = {
-        'fanclub_id': club.Fanclub_ID,
-        'fanclub_name': club.Fanclub_Name,
-        'members': [
-            {'username': name, 'join_date': date.strftime('%Y-%m-%d')} 
-            for name, date in members_data
-        ]
-    }
+    if not is_member[0]:
+        flash(f"You must be a member of {fanclub[0].Fanclub_Name} to view this.", 'error')
+        return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
     
-    return render_template('fanclub_members.html', fanclub=context)
+    return render_template(
+        'fanclub_members.html', 
+        fanclub=fanclub,
+        is_member=is_member,
+        members=members)
 
 
 @main_routes.route('/fanclubs/<int:fanclub_id>/join', methods=['POST'])
 def join_fanclub(fanclub_id):
-    membership = Fanclub_Membership(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID)
-    db.session.add(membership)
-    db.session.commit()
+
+    current_fan_id = g.current_user.Fan_ID
+
+    insert_fanclub_membership_record = '''
+    INSERT INTO Fanclub_Membership (Fan_ID, Fanclub_ID)
+    VALUES (%s, %s)
+    '''
+
+    execute_insert_query(insert_fanclub_membership_record, (current_fan_id, fanclub_id))
     
     flash(f"You successfully joined this fanclub!", "success")
     return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
 
 @main_routes.route('/fanclubs/<int:fanclub_id>/leave', methods=['POST'])
 def leave_fanclub(fanclub_id):
-    membership = Fanclub_Membership.query.filter_by(Fanclub_ID=fanclub_id, Fan_ID=g.current_user.Fan_ID).first()
-    db.session.delete(membership)
-    db.session.commit()
+
+    current_fan_id = g.current_user.Fan_ID
+
+    delete_fanclub_membership_record = '''
+    DELETE FROM Fanclub_Membership
+    WHERE Fan_ID = %s AND Fanclub_ID = %s
+    '''
+
+    execute_insert_query(delete_fanclub_membership_record, (current_fan_id, fanclub_id))
         
     flash(f"You successfully left this fanclub.", "success")
     return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))

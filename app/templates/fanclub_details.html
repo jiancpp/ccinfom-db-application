@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ fanclub.fanclub_name }} - KSync{% endblock %}
+{% block title %}{{ fanclub[0].Fanclub_Name }} - KSync{% endblock %}
 
 {% block content %}
 
@@ -20,26 +20,26 @@
 
         <div class="header-titles">
             <h1 style="color: #667eea; margin-top: 0.5rem; margin-bottom: 0.1rem; font-size: 3rem; white-space: nowrap;">
-                ✨ {{ fanclub.fanclub_name }}
+                ✨ {{ fanclub[0].Fanclub_Name }}
             </h1>
             
             <p style="font-size: 1.3rem; font-weight: 300; color: #555; margin-top: 0; white-space: nowrap;">
-                {{ fanclub.artist_name }} Fan Community
+                {{ fanclub[0].Artist_Name }} Fan Community
             </p>
         </div>
 
         <div class="action-buttons" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
             
             {# View Members Button #}
-            <a href="{{ url_for('main_routes.fanclub_members', fanclub_id=fanclub.fanclub_id) }}" 
+            <a href="{{ url_for('main_routes.fanclub_members', fanclub_id=fanclub[0].Fanclub_ID) }}" 
                class="btn btn-outline" 
                style="padding: 8px 18px;  
                       font-weight: 500; font-size: 0.95rem;">
                 View Fanclub Members &rarr;
             </a>
 
-            {% if fanclub.is_member %}
-                <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub.fanclub_id) }}" style="display: inline;">
+            {% if is_member[0] %}
+                <form method="POST" action="{{ url_for('main_routes.leave_fanclub', fanclub_id=fanclub[0].Fanclub_ID) }}" style="display: inline;">
                     <button type="submit" 
                             class="btn btn-action-danger" 
                             style="background-color: #d53f3f; 
@@ -49,7 +49,7 @@
                     </button>
                 </form>
             {% else %}
-                <form method="POST" action="{{ url_for('main_routes.join_fanclub', fanclub_id=fanclub.fanclub_id) }}" style="display: inline;">
+                <form method="POST" action="{{ url_for('main_routes.join_fanclub', fanclub_id=fanclub[0].Fanclub_ID) }}" style="display: inline;">
                     <button type="submit" 
                             class="btn btn-action-primary" 
                             style="background-color: #667eea; 
@@ -66,12 +66,12 @@
         
         <section>
             <h2 style="color: #667eea; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; margin-bottom: 2rem;">
-                🛍️ Exclusive Merchandise ({{ fanclub.merchandise | length }})
+                🛍️ Exclusive Merchandise ({{ event_merch_count.Event_Count }})
             </h2>
             
-            {% if fanclub.merchandise %}
+            {% if merch_list %}
                 <div class="merch-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2rem;">
-                    {% for merch in fanclub.merchandise %}
+                    {% for merch in merch_list %}
                         <div class="merch-card" 
                              style="text-align: center; 
                                     padding: 1.5rem 1rem; 
@@ -79,10 +79,10 @@
                                     border-radius: 12px; 
                                     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);">
                         
-                            <h5 style="margin-top: 0; margin-bottom: 0.5rem; color: #333; font-size: 1.1rem;">{{ merch.merch_name }}</h5>
-                            <p style="color: #4CAF50; font-weight: 700; font-size: 1.2rem; margin-bottom: 1rem;">${{ merch.price }}</p>
+                            <h5 style="margin-top: 0; margin-bottom: 0.5rem; color: #333; font-size: 1.1rem;">{{ merch.Merchandise_Name }}</h5>
+                            <p style="color: #4CAF50; font-weight: 700; font-size: 1.2rem; margin-bottom: 1rem;">${{ merch.Merchandise_Price }}</p>
 
-                            <a href="/merchandise/{{ merch.merch_id }}" class="btn btn-small" 
+                            <a href="/merchandise/{{ merch.Merchandise_ID }}" class="btn btn-small" 
                                style="background: #667eea; color: white; padding: 8px 15px; border-radius: 6px; font-weight: 500;">View</a>
                         </div>
                     {% endfor %}
@@ -105,17 +105,17 @@
             ">
                 
                 <h2 style="color: #667eea; margin: 0; padding: 0;">
-                    📅 Upcoming Fanclub Events ({{ fanclub.events | length }})
+                    📅 Upcoming Fanclub Events ({{ event_merch_count.Merch_Count }})
                 </h2>
                 
-                <a href="{{ url_for('main_routes.create_fanclub_event', fanclub_id=fanclub.fanclub_id) }}" class="btn">
+                <a href="{{ url_for('main_routes.create_fanclub_event', fanclub_id=fanclub[0].Fanclub_ID) }}" class="btn">
                     <i class="fa fa-plus-circle"></i> Create Event
                 </a>
             </div>
             
-            {% if fanclub.events %}
+            {% if event_list %}
                 <div class="event-list">
-                    {% for event in fanclub.events %}
+                    {% for event in event_list %}
                         <div class="event-item-card" 
                              style="margin-bottom: 1.5rem; padding: 1.5rem; 
                                     background: #f0f8ff; 
@@ -124,18 +124,18 @@
                                     display: flex; justify-content: space-between; align-items: center; 
                                     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);">
                             <div style="flex-grow: 1;">
-                                <h4 style="margin-top: 0; margin-bottom: 0.25rem; color: #333;">{{ event.event_name }}</h4>
+                                <h4 style="margin-top: 0; margin-bottom: 0.25rem; color: #333;">{{ event.Event_Name }}</h4>
                                 <p style="color: #555; margin: 0; font-weight: 500;">
-                                    {% if event.start_date != event.end_date %}
-                                        <span class="date">{{ event.start_date }}</span> to 
-                                        <span class="date">{{ event.end_date }}</span>
+                                    {% if event.Start_Date != event.End_Date %}
+                                        <span class="date">{{ event.Start_Date }}</span> to 
+                                        <span class="date">{{ event.End_Date }}</span>
                                     {% else %}
-                                        <span class="date">{{ event.start_date }}</span>
+                                        <span class="date">{{ event.Start_Date }}</span>
                                     {% endif %}
                                 </p>
                             </div>
                             {# Details Button #}
-                            <a href="{{ url_for('main_routes.buy_ticket', event_id=event.event_id) }}" class="btn btn-small btn-primary" 
+                            <a href="{{ url_for('main_routes.buy_ticket', event_id=event.Event_ID) }}" class="btn btn-small btn-primary" 
                                style="background: #00bcd4; color: white; padding: 10px 18px; border-radius: 6px; font-weight: 500;">Buy Tickets</a>
                         </div>
                     {% endfor %}
