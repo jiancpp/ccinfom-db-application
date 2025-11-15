@@ -513,7 +513,7 @@ def buy_ticket(event_id):
     FROM (
         SELECT 
             e.*,
-            v.Venue_Name, v.City, v.Country,
+            v.Venue_Name, v.City, v.Country, v.Is_Seated,
             DATEDIFF(e.Start_Date, CURDATE()) AS Days_Left,
             CASE
                 WHEN e.End_Time >= e.Start_Time 
@@ -535,8 +535,14 @@ def buy_ticket(event_id):
         return redirect(url_for('main_routes.events'))
 
     tier_query = '''
-    SELECT * 
-    FROM Ticket_Tier
+    SELECT tt.*, 
+           tt.Total_Quantity - COALESCE(tp.Tickets_Sold, 0) AS Tickets_Left
+    FROM Ticket_Tier tt 
+    LEFT JOIN (
+        SELECT Tier_ID, COUNT(Ticket_ID) AS Tickets_Sold
+        FROM Ticket_Purchase
+        GROUP BY Tier_ID
+    ) tp ON tt.Tier_ID = tp.Tier_ID
     WHERE Event_ID = %s
     '''
     ticket_tiers = execute_select_query(tier_query, (event_id,))  
@@ -564,28 +570,41 @@ def buy_ticket(event_id):
     # Get purchase details
     if request.method == "POST":
         tier_id = request.form["ticket_tier"]
-        seat_id = request.form.get("seat_id", None)     
+        seats_chosen = request.form.getlist("seat")
+        values = []
 
-        if seat_id == "":
-            seat_id = None   
-
-        Fan_ID = session.get('fan_id')                 
+        # Get non form values
+        Fan_ID = session.get('fan_id')    
         Event_ID = event_id
         Tier_ID = tier_id
-        Seat_ID = seat_id            
+        Seat_ID = None
+        
+        if seats_chosen:
+            for seat_id in seats_chosen:
+                if seat_id == "":
+                    seat_id = None   
+                Seat_ID = seat_id  
+                values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID))  
+        else:
+            values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID)) 
 
         insert_ticket_purchase = '''
         INSERT INTO Ticket_Purchase (Fan_ID, Event_ID, Tier_ID, Seat_ID)
         VALUES (%s, %s, %s, %s)
         '''
 
-        if execute_insert_query(insert_ticket_purchase, (Fan_ID, Event_ID, Tier_ID, Seat_ID)):
-            flash(f"Success! View your purchased ticket on your profile.", "success")
+        success = False
+        for value in values:
+            if execute_insert_query(insert_ticket_purchase, value):
+                success = True
+        
+        if success:
+            flash(f"Success! View your purchased tickets on your profile.", "success")
         else:
-            flash(f"Error purchasing.", "error")
+            flash(f"Error processing one or more purchases.", "error")
 
     return render_template(
-        "event_details.html", 
+        "buy_ticket.html", 
         event=event, 
         ticket_tiers=ticket_tiers, 
         tier_sections=tier_sections)
@@ -609,9 +628,9 @@ def get_seats(event_id, section_id):
             WHEN EXISTS (
                 SELECT 1 FROM Ticket_Purchase AS tp
                 WHERE tp.Seat_ID = s.Seat_ID AND tp.Event_ID = %s
-            ) THEN TRUE
-            ELSE FALSE
-        END AS IsUnavailable
+            ) THEN 1
+            ELSE 0
+        END AS Is_Unavailable
 
     FROM Seat s
     WHERE s.Section_ID = %s
@@ -650,7 +669,9 @@ def get_seats(event_id, section_id):
     total = total_seats
 
     seat_list = [
-        { "id": s['Seat_ID'], "seat_row": s['Seat_Row'], "seat_number": s['Seat_Number'] }
+        { "id": s['Seat_ID'], "seat_row": s['Seat_Row'], "seat_number": s['Seat_Number'],
+          "is_unavailable": s['Is_Unavailable']
+        }
         for s in seats
     ]
 

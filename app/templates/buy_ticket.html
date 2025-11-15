@@ -128,20 +128,25 @@
 
     .seat {
         display: inline-block;
-        width: 22px;
-        height: 22px;
+        width: 15px;
+        height: 15px;
         font-size: 8px;
         margin: 0 1.5px;
         background-color: #eee;
         border-radius: 5px;
-        line-height: 22px;
+        line-height: 15px;
         text-align: center;
         cursor: pointer;
         border: 1px solid #ccc;
     }
 
-    input[type="radio"]:checked + .seat {
+    input[type="checkbox"]:checked + .seat {
         background-color: #6c5ce7;
+        color: white;
+    }
+
+    input[type="checkbox"]:disabled + .seat {
+        background-color: #cccccc;
         color: white;
     }
 
@@ -155,6 +160,13 @@
         align-items: center;
         justify-content: center;
         margin-bottom: 10px;
+    }
+
+    .row-label {
+        font-size: 8px;
+        color: #4f4f4fca;
+        margin: 0 5px;
+        text-align: center;
     }
 
     #paginationDiv {
@@ -201,6 +213,16 @@
         margin-top: 30px;
     }
 
+    #pay-btn:disabled {
+        background: #66666796;
+        transition: 0.3s;
+    }
+
+    /* Quantity for non-seated tiers or venues */
+    #quantity-label, #ticket-quantity {
+        display: none;
+    }
+
     /* Confirmation Popup Styling */
     .modal {
         display: none;
@@ -244,6 +266,26 @@
         cursor: pointer;
     }
 
+    /* Ticket Summary */
+    #purchase-summary {
+        background: white;
+
+    }
+
+    #purchase-summary #total-price {
+        font-weight: bold;
+        color: #363638;
+    }
+
+    .divider {
+        width: 100%;
+        height: 0.5px;
+        background-color: #44444449;
+        margin: 8px 0;
+    }
+
+
+
 </style>
 
 <div id="paymentModal" class="modal">
@@ -267,10 +309,12 @@
             <div><h1>{{ event.Event_Name }}</h1></div>
             <div class="badges-container"> 
                 <div class="derived-field days-left">{{event.Days_Left}} days left</div>
-                {% if event.Tickets_Sold >= event.Max_Capacity %}
-                    <div class="derived-field sold-out">Sold Out</div>
-                {% else %}
-                    <div class="derived-field available">Tickets Available</div>
+                {% if event.Is_Seated == 1 %}
+                    {% if event.Tickets_Sold >= event.Max_Capacity %}
+                        <div class="derived-field sold-out">Sold Out</div>
+                    {% else %}
+                        <div class="derived-field available">Tickets Available</div>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -285,8 +329,13 @@
                 <select name="ticket_tier" id="ticket_tier" required>
                     <option value="">-- Choose Tier --</option>
                     {% for tier in ticket_tiers %}
-                    <option value="{{ tier.Tier_ID }}">{{ tier.Tier_Name }} - ₱{{ tier.Price }}</option>
-                {% endfor %}
+                        <option 
+                            value="{{ tier.Tier_ID }}"
+                            data-tickets-left="{{ tier.Tickets_Left }}"
+                            data-ticket-price="{{ tier.Price }}"
+                            data-is-reserved="{{ tier.Is_Reserved_Seating }}"
+                        >{{ tier.Tier_Name }} - ₱{{ tier.Price }}</option>
+                    {% endfor %}
                 </select>
             
                 <!-- Load after tier is selected -->
@@ -300,9 +349,18 @@
                 <label id="seatLabel" for="seat_id"></label>
                 <div id="seatMap"></div>
                 <div id="pagination"></div>
-            
                 <input type="hidden" name="seat_id" id="seat_id" required>
-            
+
+
+                <label id="quantity-label" for="seat_id">Add Tickets</label>
+                <input 
+                    type="number" 
+                    name="ticket-quantity" 
+                    id="ticket-quantity" 
+                    min="1" 
+                    step="1" 
+                    required>            
+
                 <button type="button" id="pay-btn" class="btn payment">
                     Proceed to Payment
                 </button>
@@ -360,6 +418,18 @@
                 {{ event.City }}, {{ event.Country }}
             </p>
         </div>
+        <div id="purchase-summary" class="details-card">
+            <h4>Ticket Purchase</h4>
+            <p id="selected-tier">Ticket: </p>
+            <p id="quantity">Quantity: </p>
+            <p id="validationError" style="color: red; display: none;">
+                Your current ticket purchase exceeds the maximum limit of quantity (10 per purchase) or 
+                number of available tickets left. <br><br>
+                Please select less than <span id="maxDisplay"></span> tickets.
+            </p>
+            <p class="divider"></p>
+            <p id="total-price">Total Price: </p>
+        </div>
     </div>
 
 
@@ -374,6 +444,7 @@
     const tierSections = {
         {% for tier in ticket_tiers %}
         "{{ tier.Tier_ID }}": {
+            "Name": "{{ tier.Tier_Name }}",
             "IsReserved": {{ tier.Is_Reserved_Seating }},
             "Benefits": "{{ tier.Benefits|escape }}",
             "Sections": [
@@ -386,20 +457,26 @@
         {% endfor %}
     };
 
-    console.log(tierSections);
 
+    /** For Pagination **/
     const ticketForm = document.querySelector('form');
     const tierSelect = document.getElementById("ticket_tier");
     const benefitDescription = document.getElementById("tier_benefits");
     const sectionSelect = document.getElementById("section");
     const sectionFields = document.getElementsByClassName("section");
+    const quantityLabel = document.getElementById('quantity-label');
+    const quantityInput = document.getElementById('ticket-quantity');
+    const quantityDisplay = document.getElementById("quantity");
+    const totalPriceDisplay = document.getElementById("total-price");
+    const errorMessage = document.getElementById('validationError');
+    const maxDisplay = document.getElementById('maxDisplay');
 
     /** For Pagination **/
     const eventId = {{ event.Event_ID }};
     const seatMapLabel = document.getElementById("seatLabel")
     const seatMapDiv = document.getElementById("seatMap");
     const paginationDiv = document.getElementById("pagination")
-    const seatIdInput = document.getElementById("seat_id");
+    const seatIdInput = document.getElementById("seat_id");    
 
     let currentPage = 1;
     const perPage = 450;
@@ -411,14 +488,18 @@
 
     tierSelect.addEventListener("change", () => {
         unloadSeatMap();
+        updatePurchaseSummaryAndValidate()  
 
         if (tierSelect.value == "") {
             tierId = null;
+            document.getElementById("selected-tier").textContent = `Ticket: `
         } else {
             tierId = tierSelect.value;
         }
         
         const tierData = tierSections[tierId];
+        document.getElementById("selected-tier").textContent = `Ticket: ${tierData.Name}`
+
 
         // Show/hide tier benefits
         if(tierData && tierData.Benefits) {
@@ -446,6 +527,12 @@
                 opt.textContent = section.name;
                 sectionSelect.appendChild(opt);
             });
+
+            // Hide Quantity Input
+            quantityInput.removeAttribute("required");
+            quantityInput.value = 0;
+            quantityInput.style.display = "none";
+            quantityLabel.style.display = "none";
         } else {
             Array.from(sectionFields).forEach(el => {
                 // Set display to block to ensure proper form layout
@@ -455,10 +542,16 @@
             sectionSelect.removeAttribute("required");
             seatIdInput.removeAttribute("required");
             unloadSeatMap()
+
+            // Show Quantity Input
+            quantityInput.setAttribute("required", "required");
+            quantityInput.style.display = "inline-block";
+            quantityLabel.style.display = "inline-block";
         }
     });
 
     sectionSelect.addEventListener("change", () => {
+        updatePurchaseSummaryAndValidate()
         const tierData = tierSections[tierId];
         currentPage = 1;
 
@@ -498,31 +591,30 @@
                 currentRow = seat.seat_row;
 
                 const rowLabel = document.createElement("div");
-                rowLabel.textContent = `Row ${currentRow}`;
-                rowLabel.style.fontWeight = "bold";
-                rowLabel.style.marginRight = "4px";
+                rowLabel.textContent = `${currentRow} `;
+                rowLabel.className = "row-label";
 
-                if (seat.IsUnavailable) {
-                    rowLabel.style.marginRight = "4px";
-                    // unavailables seats
-                }
 
                 rowDiv = document.createElement("div");
                 rowDiv.className = "seat-row";
+                rowDiv.append(rowLabel);
                 frag.appendChild(rowDiv);
             }
 
             const input = document.createElement("input");
-            input.type = "radio";
+            input.type = "checkbox";
             input.name = "seat";
             input.id = `${seat.seat_row}${seat.seat_number}`
             input.value = seat.id
             input.hidden = true;
+            input.disabled = seat.is_unavailable == 1;
+
+            // Update Purchase Summary
+            input.addEventListener("change", updatePurchaseSummaryAndValidate);
 
             const label = document.createElement("label");
             label.htmlFor = input.id;
             label.className = "seat";
-            label.textContent = `${seat.seat_row}${seat.seat_number}`
 
             input.addEventListener("change", () => {
                 selectedSeatId = seat.id;
@@ -531,6 +623,14 @@
 
             rowDiv.appendChild(input);
             rowDiv.appendChild(label);
+
+            if (seat.seat_number === 30) {
+                const rowLabel = document.createElement("div");
+                rowLabel.textContent = `${currentRow} `;
+                rowLabel.className = "row-label";
+                rowDiv.append(rowLabel);
+
+            }
         })
         seatMapDiv.appendChild(frag)
     }
@@ -598,6 +698,14 @@
             return;
         }
 
+        updatePurchaseSummaryAndValidate();
+
+        // 2. Check if the button is disabled (meaning validation failed)
+        if (document.getElementById("pay-btn").disabled) {
+            errorMessage.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
+            
         modal.style.display = "flex";
     };
 
@@ -618,6 +726,90 @@
             modal.style.display = "none";
         }
     };
+  
+
+    quantityInput.addEventListener("change", updatePurchaseSummaryAndValidate);
+
+    function updatePurchaseSummaryAndValidate() {
+        // Fetch selected tier
+        const selectedTier = tierSelect.options[tierSelect.selectedIndex]
+        const selectedSection = sectionSelect.options[sectionSelect.selectedIndex]
+        const selectedSeats = document.querySelectorAll('input[name="seat"]:checked')
+        const selectedCount = selectedSeats.length
+        
+        // Safety check: ensure a tier and section is selected before getting data
+        if (!selectedTier || selectedTier.value === "") {
+            // Reset or exit if no tier is selected
+            quantityDisplay.textContent = `Quantity: `;
+            totalPriceDisplay.textContent = `Total Price: `;
+            return;
+        }
+
+        const ticketsLeftString = selectedTier.getAttribute("data-tickets-left")
+        const ticketPrice = selectedTier.getAttribute("data-ticket-price")
+        const ticketIsReservedSeating = selectedTier.getAttribute("data-is-reserved")
+
+        const ticketsLeft = parseInt(ticketsLeftString || 0, 10)
+        const pricePerTicket = parseInt(ticketPrice || 0, 10)
+        const isReserved = parseInt(ticketIsReservedSeating || 0, 10)
+
+        const maxPerPurchase = 10;
+        const maxAllowed = Math.min(maxPerPurchase, ticketsLeft) + 1;
+
+        if (isReserved === 1) {
+            if ((!selectedSection || selectedSection.value === "")) {
+                // Reset or exit if no section is selected
+                quantityDisplay.textContent = `Quantity: `;
+                totalPriceDisplay.textContent = `Total Price: `;
+                return;
+            }
+            // Calculate the total maximum allowed
+            const totalPrice = pricePerTicket * selectedCount;
+
+            // Update the Summary Display
+            quantityDisplay.textContent = `Quantity: ${selectedCount}`;
+            totalPriceDisplay.textContent = `Total Price: ₱${totalPrice.toFixed(2)}`;
+
+             // Show error message
+            if (selectedCount > maxAllowed) {
+                maxDisplay.textContent = maxAllowed;
+                errorMessage.style.display = 'block'; // Show the error message
+                
+                // Optional: Scroll to the error message
+                errorMessage.scrollIntoView({ behavior: 'smooth' });
+
+                document.getElementById("pay-btn").disabled = true;
+                return;
+            } else {
+                document.getElementById("pay-btn").disabled = false;
+                errorMessage.style.display = 'none'; // Hide the error message
+            }
+        } else {
+            // Calculate the total maximum allowed
+            const quantityTickets = quantityInput.value
+            const totalPrice = pricePerTicket * quantityTickets;
+
+            // Update the Summary Display
+            quantityDisplay.textContent = `Quantity: ${quantityTickets}`;
+            totalPriceDisplay.textContent = `Total Price: ₱${totalPrice.toFixed(2)}`;
+
+             // Show error message
+            if (quantityTickets > 10) {
+                maxDisplay.textContent = 10;
+                errorMessage.style.display = 'block'; // Show the error message
+                
+                // Optional: Scroll to the error message
+                errorMessage.scrollIntoView({ behavior: 'smooth' });
+
+                document.getElementById("pay-btn").disabled = true;
+                return;
+            } else {
+                document.getElementById("pay-btn").disabled = false;
+                errorMessage.style.display = 'none'; // Hide the error message
+
+            }
+        }
+    }
 
 </script>
 {% endblock %}
