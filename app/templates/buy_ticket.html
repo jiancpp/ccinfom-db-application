@@ -271,7 +271,7 @@
     /* Ticket Summary */
     #purchase-summary {
         background: white;
-
+        display: none;
     }
 
     #purchase-summary #total-price {
@@ -460,7 +460,8 @@
     };
 
 
-    /** For Pagination **/
+    /** For Transaction **/
+    const purcaseSummary = document.getElementById('purchase-summary');
     const ticketForm = document.querySelector('form');
     const tierSelect = document.getElementById("ticket_tier");
     const benefitDescription = document.getElementById("tier_benefits");
@@ -490,13 +491,21 @@
 
     tierSelect.addEventListener("change", () => {
         unloadSeatMap();
-        updatePurchaseSummaryAndValidate()  
+        updatePurchaseSummaryAndValidate();
 
         if (tierSelect.value == "") {
             tierId = null;
             document.getElementById("selected-tier").textContent = `Ticket: `
+            purcaseSummary.style.display = "none"
+
+            // Hide Quantity Input
+            quantityInput.removeAttribute("required");
+            quantityInput.value = 0;
+            quantityInput.style.display = "none";
+            quantityLabel.style.display = "none";
         } else {
             tierId = tierSelect.value;
+            purcaseSummary.style.display = "block"
         }
         
         const tierData = tierSections[tierId];
