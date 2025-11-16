@@ -1071,7 +1071,7 @@ def artist_details(artist_id):
         ).one_or_none()
         
         # Assign the boolean result to the new attribute
-        artist.is_followed = is_following_query is not None
+        artist.is_followed = is_following_query is not None     
         
     return render_template(
         'artist_details.html', 
@@ -1080,37 +1080,34 @@ def artist_details(artist_id):
 
 @main_routes.route('/artists/toggle_follow/<int:artist_id>', methods=['POST'])
 def toggle_follow(artist_id):
-    if not g.get('current_user'):
-        flash("You must be logged in to follow an artist.", 'error')
-        # Redirect to login, but store 'next' URL (not shown, but good practice)
-        return redirect(url_for('main_routes.login'))
 
-    artist = Artist.query.get_or_404(artist_id)
     current_fan_id = g.current_user.Fan_ID
-    
-    # Get the action from the hidden input field in the POST request
     action = request.form.get('action') 
 
-    # Check for existing follow relationship
-    follow_entry = db.session.query(Artist_Follower).filter(
-        Artist_Follower.Fan_ID == current_fan_id,
-        Artist_Follower.Artist_ID == artist_id
-    ).one_or_none()
+    artist_query = '''
+        SELECT * FROM Artist WHERE Artist_ID = %s
+        '''
+
+    insert_artist_follower = '''
+        INSERT INTO Artist_Follower (Fan_ID, Artist_ID)
+        VALUES (%s, %s)
+        '''
     
-    if action == 'follow' and not follow_entry:
-        # User requested to follow and isn't following yet
-        new_follow = Artist_Follower(Fan_ID=current_fan_id, Artist_ID=artist_id)
-        db.session.add(new_follow)
-        db.session.commit()
-        flash(f"🎉 You are now following {artist.Artist_Name}! ", 'success')
+    delete_artist_follower = '''
+        DELETE FROM Artist_Follower
+        WHERE Fan_ID = %s AND Artist_ID = %s
+        '''
+
+    artist = execute_select_query(artist_query, (artist_id,))
+    
+    if action == 'follow':
+        execute_insert_query(insert_artist_follower, (current_fan_id, artist_id))
+        flash(f"🎉 You are now following {artist[0]['Artist_Name']}! ", 'success')
         
-    elif action == 'unfollow' and follow_entry:
-        # User requested to unfollow and is currently following
-        db.session.delete(follow_entry)
-        db.session.commit()
-        flash(f"💔 You have unfollowed {artist.Artist_Name}.", 'info')
-        
-    # Redirect back to the page the user came from (artists list or details page)
+    elif action == 'unfollow':
+        execute_insert_query(delete_artist_follower, (current_fan_id, artist_id))
+        flash(f"💔 You have unfollowed {artist[0]['Artist_Name']}.", 'error')
+
     return redirect(request.referrer or url_for('main_routes.artists'))
 
 # =========================================================================
