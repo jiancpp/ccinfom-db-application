@@ -2,7 +2,6 @@
 {% block title %}{{ artist.Artist_Name }} Artist Profile - KSync{% endblock %}
 {% block content %}
 <style>
-    /* Profile Header Styling */
     .profile-header {
         display: flex;
         justify-content: space-between;
@@ -36,7 +35,6 @@
         color: #333; 
     }
 
-    /* Section Styles */
     .section-title {
         margin-top: 3rem;
         margin-bottom: 1rem;
@@ -45,8 +43,6 @@
         color: #333;
     }
 
-    /* --- ADDED/MODIFIED BUTTON STYLES --- */
-    /* Standardize general button look */
     .btn {
         display: inline-flex;
         align-items: center;
@@ -63,28 +59,24 @@
         transition: background-color 0.2s, border-color 0.2s;
     }
 
-    /* Styles for Follow button (Solid) */
     .btn-follow {
         background-color: #667eea; 
         color: white;
         border: 1px solid #667eea;
     }
 
-    /* Styles for Unfollow button (Outline/Red) */
     .btn-unfollow {
         background-color: white;
         color: #dc3545; 
         border: 1px solid #dc3545;
     }
     
-    /* Optional: Style for general outline button if not defined in base.html */
     .btn-outline {
         background-color: white;
         color: #667eea;
         border: 1px solid #667eea;
     }
 
-    /* --- MANAGER TOGGLE STYLES --- */
     .manager-hidden {
         display: none !important;
     }
@@ -92,7 +84,6 @@
         display: block !important;
     }
 
-    /* Optional: small button style (if 'btn-sm' is not defined in base.html) */
     .btn-sm {
         padding: 4px 8px;
         font-size: 12px;
@@ -100,7 +91,23 @@
         min-height: unset;
     }
 
-    /* Member Card Styling (similar to general card) */
+        .fanclub-list-group {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .fanclub-item {
+        padding: 10px 0; 
+    }
+
+    .fanclub-separator {
+        width: 100%; 
+        height: 1px; 
+        background-color: #f0f0f0; 
+        margin: 5px 0;
+    }
+
     .member-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -143,7 +150,6 @@
         color: #333; 
     }
 
-    /* Event Table adjustments for clarity */
     .artist-events table th:nth-child(2) {
         width: 40%;
     }
@@ -153,13 +159,12 @@
 
     .profile-container {
         display: grid;
-        grid-template-columns: 1fr 2fr; /* Layout: 1/3 for metadata, 2/3 for content */
+        grid-template-columns: 1fr 2fr;
         gap: 40px;
         margin-top: 20px;
     }
     
     .profile-sidebar {
-        /* Sidebar container for Fan Clubs, Merch, and Manager details */
         padding-top: 10px;
     }
 
@@ -168,7 +173,7 @@
         border-radius: 8px;
         border: 1px solid #e0e0e0;
         margin-bottom: 20px;
-        background-color: #f7f9fc; /* Light background for the card */
+        background-color: #f7f9fc;
     }
 
     .details-list p {
@@ -179,7 +184,6 @@
         color: #333;
     }
 
-    /* Fanclub & Merch Specific Styling */
     .fanclub-card h4, .merch-card h4 , .management-card h4{
         color: #667eea;
         margin-bottom: 10px;
@@ -197,26 +201,21 @@
     }
 
     .merch-item {
+        background-color: #f0f8ff;
         text-align: center;
         border: 1px solid #eee;
         padding: 10px;
         border-radius: 6px;
     }
 
-    /* --- END UNIQUE LAYOUT STYLES --- */
 
-    /* Profile Header Styling (Modified for new placement) */
      .profile-header {
-    /* Keep basic header styles, but remove flex/border for the main header */
         display: block;
         padding-bottom: 0;
         border-bottom: none;
         margin-bottom: 10px;
     }
 
-    /* The rest of your existing styles are here... */
-
-    /* Profile Header Styling */
     .profile-header {
         display: flex;
         justify-content: space-between;
@@ -236,21 +235,19 @@
         </p>
     </div>
     <div class="profile-meta">
-        {# Applying robust filter: |string | trim to ensure color works #}
-        <span class="artist-status status-{{ (artist.Activity_Status | first) | string | trim }}">
-            {{ artist.Activity_Status | first}}
+        <span class="artist-status status-{{ (artist.Activity_Status) }}">
+            {{ artist.Activity_Status }}
         </span>
         <p style="margin-top: 10px;">
-            <i class="fa fa-heart"></i> {{ artist.followers|length }} Followers
+            <i class="fa fa-heart"></i> {{ artist.Num_Followers }} Followers
         </p>
     </div>
 </div>
 
 <div style="text-align: right; margin-bottom: 20px;">
-    {# Follow/Unfollow Button remains here for prominence #}
     {% if g.current_user %}
         <form method="POST" action="{{ url_for('main_routes.toggle_follow', artist_id=artist.Artist_ID) }}" style="display: inline-block;">
-            {% if artist.is_followed %}
+            {% if Is_Followed %}
                 <input type="hidden" name="action" value="unfollow">
                 <button type="submit" class="btn btn-unfollow"> 
                 <i class="fa fa-times" style="margin-right: 5px;"></i> Unfollow Artist
@@ -274,7 +271,7 @@
     {# --- LEFT COLUMN (SIDEBAR) --- #}
     <div class="profile-sidebar">
         
-        {# MANAGER DETAILS (Moved to sidebar) #}
+        {# MANAGER DETAILS #}
         <div class="profile-details-card management-card">
             <h4><i class="fa fa-briefcase"></i> Management Contact</h4>
             <p>
@@ -296,20 +293,44 @@
         {# FANCLUBS CARD #}
         <div class="profile-details-card fanclub-card">
             <h4><i class="fa fa-users"></i> Fan Club Info</h4>
+            
             {% if artist.fanclub %}
-                <div class="details-list">
-                    <p><strong>Name:</strong> {{ artist.fanclub_details.Club_Name or 'N/A' }}</p>
-                    <p><strong>Established:</strong> {{ artist.fanclub_details.Established_Date or 'N/A' }}</p>
-                    {% if artist.fanclub_details.Link %}
-                        <p style="margin-top: 10px;">
-                            <a href="{{ artist.fanclub_details.Link }}" target="_blank" class="btn btn-sm btn-follow">
-                                Visit Official Site <i class="fa fa-external-link"></i>
-                            </a>
-                        </p>
-                    {% endif %}
-                </div>
+                
+                <ul class="fanclub-list-group">
+                    {% for club in artist.fanclub %}
+                        
+                        <li class="fanclub-item">                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <strong style="font-size: 1.1em; color: #333;">
+                                    {{ club.Fanclub_Name or 'N/A' }}
+                                </strong>
+                                
+                                <a href="{{ url_for('main_routes.fanclub_details', fanclub_id=club.Fanclub_ID) }}" 
+                                class="btn btn-sm btn-outline" 
+                                style="padding: 3px 10px; font-size: 0.85em; text-transform: uppercase;">
+                                    View
+                                </a>
+                            </div>
+                            
+                            <div style="font-size: 0.9em; color: #666; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                                {% if club.Member_Count is defined %}
+                                    <span><i class="fa fa-user-circle"></i> {{ club.Member_Count }} Members</span>
+                                {% endif %}                                
+                                {% if club.Established_Date %}
+                                    <span><i class="fa fa-calendar"></i> Est. {{ club.Established_Date }}</span>
+                                {% endif %}
+                            </div>
+                        </li>
+                        
+                        {% if not loop.last %}
+                            <div class="fanclub-separator"></div>
+                        {% endif %}
+                        
+                    {% endfor %} 
+                </ul>
+                
             {% else %}
-                <p>Fan club details not available.</p>
+                <p>No fanclubs yet.</p>
             {% endif %}
         </div>
         
@@ -321,9 +342,9 @@
                     {% for item in artist.merch %}
                         <li class="merch-item">
                             <i class="fa fa-tags" style="color: #667eea;"></i>
-                            <p style="margin-top: 5px; font-size: 14px; font-weight: 600;">{{ item.Item_Name }}</p>
-                            <p style="font-size: 12px; color: #dc3545;">${{ item.Price }}</p>
-                            <a href="{{ url_for('main_routes.buy_merch', merch_id=item.Item_ID) }}" class="btn btn-sm btn-outline" style="margin-top: 5px;">Buy Now</a>
+                            <p style="margin-top: 5px; font-size: 14px; font-weight: 600;">{{ item.Merchandise_Name }}</p>
+                            <p style="font-size: 12px; color: #dc3545;">${{ item.Merchandise_Price }}</p>
+                            <a href="{{ url_for('main_routes.add_to_cart', item_id=item.Merchandise_ID) }}" class="btn btn-sm btn-outline" style="margin-top: 5px;">Buy Now</a>
                         </li>
                     {% endfor %}
                 </ul>
@@ -336,19 +357,26 @@
     {# --- RIGHT COLUMN (MAIN CONTENT) --- #}
     <div class="profile-main-content">
 
-        <h2 class="section-title">Members ({{ artist.member_detail|length }})</h2>
-        {% if artist.member_detail %}
+        <h2 class="section-title">Members ({{ Count.Member }})</h2>
+        {% if artist.member %}
             <ul class="member-grid">
-                {% for member in artist.member_detail %}
+                {% for member in artist.member %}
                     <li class="member-card card">
                         <h4>{{ member.Member_Name }}</h4>
-                        <span class="member-role">{{ member.Role or 'Not Revealed' }}</span>
-                        {# Applying robust filter: |string | trim to ensure color works #}
-                        <span class="member-status status-{{ (member.Activity_Status | first) | string | trim }}">
-                            {{ member.Activity_Status | first }}
+                        {% if member.Roles %}
+                            <span class="member-role">{{ member.Roles | join(', ') }}</span>
+                        {% else %}
+                            <span class="member-role">Not Revealed</span>
+                        {% endif %}
+                        <span class="member-status status-{{ (member.Activity_Status ) }}">
+                            {{ member.Activity_Status }}
                         </span>
                         <p>{{ member.Age }} Years Old</p>
-                        <p>{{ member.Nationality or 'N/A' }}</p>
+                        {% if member.Nationalities %}
+                            <p>{{ member.Nationalities | join(', ') }}</p>
+                        {% else %}
+                            <p>Not Revealed</p>
+                        {% endif %}
                     </li>
                 {% endfor %}
             </ul>
@@ -356,7 +384,7 @@
             <p class="empty-state">This artist has no public member details.</p>
         {% endif %}
 
-        <h2 class="section-title">Upcoming Events ({{ artist.events|length }})</h2>
+        <h2 class="section-title">Upcoming Events ({{ Count.Event }})</h2>
         <div class="artist-events">
                         {% if artist.events %}
                 <div class="event-list">

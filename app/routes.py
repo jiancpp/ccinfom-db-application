@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, g
 from flask import render_template, request, redirect, url_for, jsonify
+from collections import defaultdict
 
 from app.models import *
 from sqlalchemy.exc import IntegrityError
@@ -145,7 +146,7 @@ def artists():
         current_fan_id = g.current_user.Fan_ID
 
     search_term = request.args.get("artist-name", "").strip()
-    filter_val = request.args.get("filter", "all") # Renamed from 'filter' to 'filter_val' to avoid shadowing built-in
+    filter_val = request.args.get("filter", "all") 
 
     query_parameters = []
     where_clauses = []
@@ -1060,28 +1061,142 @@ def create_fanclub_event(fanclub_id):
 # ============================================
 @main_routes.route('/artists/<int:artist_id>')
 def artist_details(artist_id):
-    artist = Artist.query.options(
-        joinedload(Artist.manager),          
-        joinedload(Artist.member_detail),      
-        joinedload(Artist.events).joinedload(Event.venue),
-        joinedload(Artist.fanclubs).joinedload(Fanclub.fanclub_memberships),
-        joinedload(Artist.merchandise)
-    ).get_or_404(artist_id)
-    
-    artist.is_followed = False
-    
-    if g.get('current_user'):
-        is_following_query = db.session.query(Artist_Follower).filter(
-            Artist_Follower.Fan_ID == g.current_user.Fan_ID,
-            Artist_Follower.Artist_ID == artist_id
-        ).one_or_none()
+    artist_query = '''
+        SELECT a.*,
+               COUNT(af.Fan_ID) AS Num_Followers,
+               TIMESTAMPDIFF(DAY, a.Debut_Date, CURDATE()) AS Debut_Days
+        FROM Artist AS a
+        LEFT JOIN Artist_Follower AS af ON a.Artist_ID = af.Artist_ID
+        WHERE a.Artist_ID = %s
+        GROUP BY a.Artist_ID
+        '''
         
-        # Assign the boolean result to the new attribute
-        artist.is_followed = is_following_query is not None     
+    manager_query = '''
+        SELECT m.*
+        FROM Manager AS m
+        JOIN Artist AS a ON m.Manager_ID = a.Manager_ID
+        WHERE a.Artist_ID = %s
+        '''
+
+    member_query = '''
+        SELECT me.*,
+            TIMESTAMPDIFF(YEAR, me.Birth_Date, CURDATE()) AS Age,
+            me.Member_ID
+        FROM Member AS me
+        WHERE me.Artist_ID = %s
+        ORDER BY me.Member_Name
+        '''
+    member_roles_query = '''
+        SELECT mr.Member_ID, 
+            r.Role_Name 
+        FROM Member_Role AS mr
+        JOIN Role AS r ON mr.Role_ID = r.Role_ID
+        JOIN Member AS me ON mr.Member_ID = me.Member_ID
+        WHERE me.Artist_ID = %s
+        '''
+    
+    member_nationality_query = '''
+        SELECT mn.Member_ID, 
+            n.Nationality_Name 
+        FROM Member_Nationality AS mn
+        JOIN Nationality AS n ON mn.Nationality_ID = n.Nationality_ID
+        JOIN Member AS me ON mn.Member_ID = me.Member_ID
+        WHERE me.Artist_ID = %s
+        '''
+
+    artist_event_query = '''
+        SELECT e.*
+        FROM Event AS e
+        JOIN Artist_Event AS ae ON e.Event_ID = ae.Event_ID
+        WHERE ae.Artist_ID = %s AND e.Start_Date >= CURDATE()
+        ORDER BY e.Start_Date ASC
+        '''
+    
+    fanclub_query = '''
+        SELECT f.*, 
+               COUNT(m.Fan_ID) AS Member_Count
+        FROM Fanclub AS f
+        LEFT JOIN Fanclub_Membership AS m ON f.Fanclub_ID = m.Fanclub_ID
+        WHERE f.Artist_ID = %s
+        GROUP BY f.Fanclub_ID
+        '''
+
+    merch_query = '''
+        SELECT * FROM Merchandise WHERE Artist_ID = %s
+        '''
+    
+    follow_query = '''
+        SELECT IF(COUNT(*) > 0, 1, 0) AS Is_Followed
+        FROM Artist_Follower
+        WHERE Artist_ID = %s AND Fan_ID = %s
+        '''
+    
+    event_fanclub_merch_count_query = '''
+        SELECT list1.Event_Count AS Event, list2.Merch_Count AS Merch, list3.Fanclub_Count AS Fanclub, list4.Member_Count AS Member
+        FROM (SELECT COUNT(*) AS Event_Count FROM Artist_Event AS ae
+              WHERE ae.Artist_ID = %s) AS list1,
+             (SELECT COUNT(*) AS Merch_Count FROM Merchandise AS m
+              WHERE m.Artist_ID = %s) AS list2,
+             (SELECT COUNT(*) AS Fanclub_Count FROM Fanclub AS f
+              WHERE f.Artist_ID = %s) AS list3,
+             (SELECT COUNT(*) AS Member_Count FROM Member AS me
+              WHERE me.Artist_ID = %s) AS list4
+    '''
+
+    artist_result = execute_select_query(artist_query, (artist_id,))
+    
+    artist = artist_result[0]
+
+    # artist['member'] = execute_select_query(member_query, (artist_id,))
+    
+    artist['events'] = execute_select_query(artist_event_query, (artist_id,))
+    
+    artist['merch'] = execute_select_query(merch_query, (artist_id,))
+
+    artist['fanclub'] = execute_select_query(fanclub_query, (artist_id,))
+    
+    manager_list = execute_select_query(manager_query, (artist_id,))
+    artist['manager'] = manager_list[0] if manager_list else None
+
+    base_members_list = execute_select_query(member_query, (artist_id,))
+    role_results = execute_select_query(member_roles_query, (artist_id,))
+    nationality_results = execute_select_query(member_nationality_query, (artist_id,))
+
+    member_roles_map = defaultdict(set) 
+    for row in role_results:
+        member_roles_map[row['Member_ID']].add(row['Role_Name'])
+
+    member_nationality_map = defaultdict(set)
+    for row in nationality_results:
+        member_nationality_map[row['Member_ID']].add(row['Nationality_Name'])
         
+    structured_members = []
+    for member_data in base_members_list:
+        member_id = member_data['Member_ID']
+        
+        roles_set = member_roles_map[member_id]
+        member_data['Roles'] = sorted(list(roles_set))
+        
+        nationality_set = member_nationality_map[member_id]
+        member_data['Nationalities'] = sorted(list(nationality_set))
+        
+        structured_members.append(member_data)
+
+    artist['member'] = structured_members
+    
+    current_fan_id = g.current_user.Fan_ID
+    Is_Followed = 0
+    
+    followed_result = execute_select_query(follow_query, (artist_id, current_fan_id))
+    Is_Followed = followed_result[0]['Is_Followed']
+    Count = execute_select_query(event_fanclub_merch_count_query, (artist_id, artist_id, artist_id, artist_id))
+    Count = Count[0] if Count else {'Event': 0, 'Merch': 0, 'Fanclub': 0, 'Member': 0}
+    
     return render_template(
         'artist_details.html', 
         artist=artist,
+        Is_Followed=Is_Followed,
+        Count=Count
     )
 
 @main_routes.route('/artists/toggle_follow/<int:artist_id>', methods=['POST'])
