@@ -361,7 +361,7 @@ class Manager(db.Model):
     Manager_Name = db.Column(db.String(100), nullable=False)
     Contact_Num = db.Column(db.String(20), nullable=True)
     Contact_Email = db.Column(db.String(100), nullable=True)
-    Agency_Address = db.Column(db.String(100), nullable=True)
+    Agency = db.Column(db.String(100), nullable=True)
 
     artist = db.relationship("Artist", back_populates="manager")
 

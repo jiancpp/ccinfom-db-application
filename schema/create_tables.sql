@@ -238,7 +238,7 @@ CREATE TABLE `Manager` (
     `Manager_Name` VARCHAR(255) NOT NULL,
 	`Contact_Num` VARCHAR(11),
     `Contact_Email` VARCHAR(255),
-    `Agency_Address` VARCHAR(255),
+    `Agency` VARCHAR(255),
     PRIMARY KEY (`Manager_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -252,7 +252,6 @@ CREATE TABLE `Member` (
     `Member_Name` VARCHAR(255) NOT NULL,
     `Activity_Status` ENUM('Active', 'Inactive', 'Hiatus') NOT NULL,
     `Birth_Date` DATE, 
-    `Age` INT(2),
     PRIMARY KEY (`Member_ID`),
     UNIQUE KEY `uk_artist_member_id` (`Artist_ID`, `Member_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
