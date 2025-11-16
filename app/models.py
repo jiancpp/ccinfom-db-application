@@ -236,6 +236,10 @@ class Fanclub_Membership(db.Model):
     )
     Date_Joined = db.Column(db.DateTime, nullable=False, default=func.now())
 
+    # Relationships
+    fan = db.relationship("Fan", back_populates="memberships")
+    fanclub = db.relationship("Fanclub", back_populates="members")
+
 class Fanclub_Event(db.Model):
     __tablename__ = "Fanclub_Event"
     
