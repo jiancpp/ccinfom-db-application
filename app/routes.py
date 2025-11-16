@@ -677,7 +677,8 @@ def buy_ticket(event_id):
     # Get purchase details
     if request.method == "POST":
         tier_id = request.form["ticket_tier"]
-        seats_chosen = request.form.getlist("seat")
+        seats_chosen = request.form.getlist("seat")  # Reserved seats
+        quantity = 0
         values = []
 
         # Get non form values
@@ -693,13 +694,19 @@ def buy_ticket(event_id):
                 Seat_ID = seat_id  
                 values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID))  
         else:
-            values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID)) 
+            try:
+                quantity = int(request.form.get('ticket-quantity', 0))
+            except ValueError:
+                quantity = 0
+                
+            for i in range(quantity):
+                values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID)) 
 
         insert_ticket_purchase = f'''
         INSERT INTO Ticket_Purchase (Fan_ID, Event_ID, Tier_ID, Seat_ID)
         VALUES (%s, %s, %s, %s)
         '''
-
+        
         success = False
         for value in values:
             if execute_insert_query(insert_ticket_purchase, value):
@@ -793,7 +800,7 @@ def get_seats(event_id, section_id):
 def view_ticket(ticket_id):
     ticket_query = '''
     SELECT tp.*, e.Event_Name, YEAR(e.Start_Date) AS Year, e.Start_Date, e.End_Date, 
-           e.Start_Time, e.End_Time, v.Venue_Name, v.Location
+           e.Start_Time, e.End_Time, v.Venue_Name, v.Location,
            tt.Tier_Name, tt.Price, s.Seat_Row, s.Seat_Number, se.Section_Name
     FROM Ticket_Purchase tp
         JOIN Event e ON e.Event_ID = tp.Event_ID

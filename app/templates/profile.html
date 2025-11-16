@@ -70,7 +70,7 @@
                     {% for purchase in purchases %}
                         <tr>
                             <td>
-                                <a href="{{ url_for('main_routes.buy_ticket', event_id=purchase.Event_Id) }}" style="color: #764ba2; text-decoration: none;">
+                                <a href="{{ url_for('main_routes.view_ticket', ticket_id=purchase.Ticket_ID) }}" style="color: #764ba2; text-decoration: none;">
                                     {{ purchase.Event_Name }}
                                 </a>
                             </td>
