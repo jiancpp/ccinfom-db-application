@@ -17,10 +17,10 @@ INSERT INTO Artist (Artist_ID, Manager_ID, Artist_Name, Activity_Status, Debut_D
 (5, 5, 'Aespa', 'Active', '2020-11-27'),
 (6, 6, 'New Jeans', 'Hiatus', '2022-07-22'),
 (7, 7, 'Iz*One', 'Inactive', '2018-10-29'),
-(8, 8, 'IU', 'Active', '2008-09-18'),
-(9, 9, 'IZNA', 'Active', '2024-11-25'),
-(10, 10, 'SEVENTEEN', 'Active', '2015-05-26'),
-(11, 11, 'UNIS', 'Active', '2024-03-07');
+(8, NULL, 'IU', 'Active', '2008-09-18'),
+(9, NULL, 'IZNA', 'Active', '2024-11-25'),
+(10, NULL, 'SEVENTEEN', 'Active', '2015-05-26'),
+(11, NULL, 'UNIS', 'Active', '2024-03-07');
 
 -- 3. MEMBER TABLE (Child, references Artist)
 INSERT INTO Member (Member_ID, Artist_ID, Member_Name, Activity_Status, Birth_Date) VALUES
@@ -75,12 +75,12 @@ INSERT INTO Member (Member_ID, Artist_ID, Member_Name, Activity_Status, Birth_Da
 (49, 9, 'Choi Jung-eun', 'Active', '2007-02-12'),
 (50, 9, 'Jeong Sae-bi', 'Active', '2008-01-22'),
 (51, 10, 'S.Coups (Choi Seung-cheol)', 'Active', '1995-08-08'),
-(52, 10, 'Jeonghan (Yoon Jeong-han)', 'Inactive (Military)', '1995-10-04'),
+(52, 10, 'Jeonghan (Yoon Jeong-han)', 'Inactive', '1995-10-04'),
 (53, 10, 'Joshua (Hong Ji-soo)', 'Active', '1995-12-30'),
 (54, 10, 'Jun (Wen Junhui)', 'Active', '1996-06-10'),
 (55, 10, 'Hoshi (Kwon Soon-young)', 'Active', '1996-06-15'),
 (56, 10, 'Wonwoo (Jeon Won-woo)', 'Active', '1996-07-17'),
-(57, 10, 'Woozi (Lee Ji-hoon)', 'Inactive (Military)', '1996-11-22'),
+(57, 10, 'Woozi (Lee Ji-hoon)', 'Inactive', '1996-11-22'),
 (58, 10, 'DK (Lee Seok-min)', 'Active', '1997-02-18'),
 (59, 10, 'Mingyu (Kim Min-gyu)', 'Active', '1997-04-06'),
 (60, 10, 'The8 (Xu Minghao)', 'Active', '1997-11-07'),
