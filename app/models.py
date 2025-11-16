@@ -193,7 +193,6 @@ class Fan(db.Model):
     Last_Name = db.Column(db.String(255), nullable=False)
     Email = db.Column(db.String(255), nullable=False, unique=True)
     Date_Joined = db.Column(db.DateTime, nullable=False, default=func.now())
-    Days_Since = db.Column(db.Integer, nullable=False) 
 
     # Relationships
     memberships = db.relationship("Fanclub_Membership", back_populates="fan", cascade="all, delete-orphan")
@@ -224,30 +223,22 @@ class Fanclub(db.Model):
 
 class Fanclub_Membership(db.Model):
     __tablename__ = "Fanclub_Membership"
-
-    Membership_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
-    # Foreign Keys
     Fan_ID = db.Column(
         db.Integer,
         db.ForeignKey("Fan.Fan_ID", ondelete="CASCADE", onupdate="CASCADE"),
-        nullable=False
+        primary_key=True
     )
     Fanclub_ID = db.Column(
         db.Integer,
         db.ForeignKey("Fanclub.Fanclub_ID", ondelete="CASCADE", onupdate="CASCADE"),
-        nullable=False
+        primary_key=True
     )
     Date_Joined = db.Column(db.DateTime, nullable=False, default=func.now())
 
     # Relationships
     fan = db.relationship("Fan", back_populates="memberships")
     fanclub = db.relationship("Fanclub", back_populates="members")
-
-    # Constraints
-    __table_args__ = (
-        db.UniqueConstraint("Fan_ID", "Fanclub_ID"),
-    )
 
 class Fanclub_Event(db.Model):
     __tablename__ = "Fanclub_Event"
@@ -308,8 +299,8 @@ class Member(db.Model):
 
     # Relationships
     artist = db.relationship("Artist", back_populates="member")
-    nationality = db.relationship("Member_Nationality", back_populates="member")
-    role = db.relationship("Member_Role", back_populates="member")
+    nationality = db.relationship("Nationality", back_populates="member")
+    role = db.relationship("Role", back_populates="member")
 
 class Nationality(db.Model):
     __tablename__ = "Nationality"
@@ -318,7 +309,7 @@ class Nationality(db.Model):
     Nationality_Name = db.Column(db.String(100), nullable=False)
 
     # Relationships
-    member_nationality = db.relationship("Member_Nationality", back_populates="nationality")
+    member = db.relationship("Member", back_populates="nationality")
 
 class Member_Nationality(db.Model):
     __tablename__ = "Member_Nationality"
@@ -334,9 +325,6 @@ class Member_Nationality(db.Model):
         primary_key=True
     )
 
-    member = db.relationship("Member", back_populates="nationality")
-    nationality = db.relationship("Nationality", back_populates="member_nationality")
-
 class Role(db.Model):
     __tablename__ = "Role"
 
@@ -344,7 +332,7 @@ class Role(db.Model):
     Role_Name = db.Column(db.String(100), nullable=False)
 
     # Relationships
-    member_role = db.relationship("Member_Role", back_populates="role")
+    member = db.relationship("Member", back_populates="role")
 
 class Member_Role(db.Model):
     __tablename__ = "Member_Role"
@@ -359,9 +347,6 @@ class Member_Role(db.Model):
         db.ForeignKey("Role.Role_ID", ondelete="CASCADE", onupdate="CASCADE"), 
         primary_key=True
     )
-
-    member = db.relationship("Member", back_populates="role")
-    role = db.relationship("Role", back_populates="member_role")
 
 
 class Manager(db.Model):

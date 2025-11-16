@@ -53,7 +53,7 @@ VALUES  (3, 4),
         (14, 24),
         (20, 25);
 
-INSERT INTO Fanclub_Membership (Membership_ID, Fan_ID, Fanclub_ID, Date_Joined) 
+INSERT INTO Fanclub_Membership (Fan_ID, Fanclub_ID, Date_Joined) 
 VALUES  (5, 2, '2020-10-09'),
         (4, 3, '2008-06-07'),
         (3, 1, '2014-12-13'),
