@@ -441,6 +441,12 @@ def fanclubs():
     )
 
 
+@main_routes.route('/reports', methods=['GET'])
+def reports():
+    
+    return render_template('reports.html')
+
+
 # ============================================
 #           USER MANAGEMENT (PLACEHOLDERS)
 # ============================================
