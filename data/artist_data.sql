@@ -1,5 +1,5 @@
 -- 1. MANAGER TABLE (Parent)
-INSERT INTO Manager (Manager_ID, Manager_Name, Contact_Num, Contact_Email, Agency_Address) VALUES
+INSERT INTO Manager (Manager_ID, Manager_Name, Contact_Num, Contact_Email, Agency) VALUES
 (1, 'Kim Min-jun', '01012345678', 'm.kim@ygmail.com', 'YG'),
 (2, 'Sejin', '01098765432', 's.jin@gmail.com', 'Belift Lab'),
 (3, 'Park Seo-joon', '01022446688', 's.park@wakeone.com', 'WakeOne'),
