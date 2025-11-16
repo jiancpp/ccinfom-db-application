@@ -1,6 +1,166 @@
 {% extends "base.html" %}
 {% block title %}Reports - KSync{% endblock %}
 {% block content %}
+<style>
+    .report-filter-container {
+        display: flex;
+        flex-direction: row;
+        gap: 15px;
+        align-items: center;
+        margin-top: 2rem;
+        margin-bottom: 3rem; 
+    }
+
+    .report-select-group {
+        display: block;
+        align-items: center;
+    }
+    .report-select-group label {
+        display: block;
+        white-space: nowrap;
+        margin-left: 5px;
+        color: #1f1d1e;
+        font-size: 15px;
+        font-weight: 600;
+    }
+    .report-select-group select {
+        display: block;
+        padding: 5px 20px;
+        margin: 0 3px;
+        border-radius: 50px;
+        max-height: 5rem;
+        font-size: 15px;
+        color: #1f1d1e;
+        transition: 0.3s;
+    }
+    
+    .summary-card {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .summary-card h3 {
+        margin-bottom: 0.5rem;
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+    .summary-card p {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .badge-success { background: #28a745; color: white; }
+    .badge-warning { background: #ffc107; color: #333; }
+</style>
+
 <h1>📊 Reports</h1>
 <p style="color: #666;">Detailed insights on ticket sales, merchandise performance, artist engagement, and fanclub contribution metrics.</p>
+
+<form action="{{ url_for('main_routes.reports') }}" method="GET" id="report-filter-form" class="report-filter-container">
+    <div class="report-select-group">
+        <label for="report-select">View Report:</label>
+        <select name="filter" id="report-options" onchange="this.form.submit()">
+            <option value="">-- Select Report --</option>
+            <option value="ticket-sales-report">Ticket Sales Report</option>
+            <option value="merchandise-sales-report">Merchandise Sales Report</option>
+            <option value="artist-engagement-index">Artist Engagement Index</option>
+            <option value="fanclub-contribution-report">Fanclub Contribution Report</option>
+        </select>
+    </div>
+</form>
+
+{% if report_filter == 'ticket-sales-report' %}
+    <h2>Ticket Sales Report: </h2>
+
+    {% if ticket_sales_data %}
+        <table>
+            <thead>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
+            <p>No ticket sales data available for this report.</p>
+        </div>
+    {% endif %}
+
+{% elif report_filter == 'merchandise-sales-report' %}
+    <h2>Merchandise Sales Report:</h2>
+    
+    {% if merchandise_sales_data %}
+        <table>
+            <thead>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
+            <p>No merchandise sales data available for this report.</p>
+        </div>
+    {% endif %}
+
+{% elif report_filter == 'artist-engagement-index' %}
+    <h2>Artist Engagement Index</h2>
+    
+    {% if artist_engagement_data %}
+        <table>
+            <thead>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
+            <p>No artist engagement data available for this report.</p>
+        </div>
+    {% endif %}
+
+{% elif report_filter == 'fanclub-contribution-report' %}
+    <h2>Fanclub Contribution Report:</h2>
+    <p style="margin-top: 1rem; margin-bottom: 2rem; color: #999;">
+        Tracks contributions through ticket sales, merchandise sales, and fan-driven events.
+    </p>
+
+    {% if fanclub_contribution_data %}
+        <h3 style="margin-top: 2rem;">Contribution Breakdown by Fanclub</h3>
+        <table>
+            <thead>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
+            <p>No fanclub contribution data available for this report.</p>
+        </div>
+    {% endif %}
+
+{% else %}
+    <div class="empty-state">
+        <i class="fa fa-area-chart" style="font-size: 40px; margin-bottom: 15px;"></i>
+        <h3>Select a Report to View</h3>
+        <p>Use the dropdown above to choose a detailed report on sales, engagement, or fan contributions.</p>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedReport = urlParams.get('filter') || '';
+    const reportSelect = document.getElementById('report-select');
+
+    if (reportSelect) {
+        reportSelect.value = selectedReport;
+    }
+</script>
 {% endblock %}

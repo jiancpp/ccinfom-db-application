@@ -417,7 +417,7 @@
             <h4><i class="icon fa fa-map-marker"></i>Event Venue and Location</h4>
             <p>
                 {{ event.Venue_Name }}<br>
-                {{ event.City }}, {{ event.Country }}
+                {{ event.Location }}, {{ event.Country }}
             </p>
         </div>
         <div id="purchase-summary" class="details-card">
@@ -805,8 +805,8 @@
             totalPriceDisplay.textContent = `Total Price: ₱${totalPrice.toFixed(2)}`;
 
              // Show error message
-            if (quantityTickets > 10) {
-                maxDisplay.textContent = 11;
+            if (quantityTickets > maxAllowed) {
+                maxDisplay.textContent = maxAllowed + 1;
                 errorMessage.style.display = 'block'; // Show the error message
                 
                 // Optional: Scroll to the error message

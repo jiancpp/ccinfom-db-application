@@ -173,13 +173,12 @@ DROP TABLE IF EXISTS `Venue`;
 CREATE TABLE `Venue` (
 	`Venue_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Venue_Name` VARCHAR(255) NOT NULL, 
-    `City` VARCHAR(255),
-	`Country` VARCHAR(255) NOT NULL,
+    `Location` VARCHAR(255),
     `Capacity` INT,
 	`Is_Seated` TINYINT NOT NULL,
     
     PRIMARY KEY (`Venue_ID`),
-    UNIQUE (`Venue_Name`, `Country`, `City`) -- Prevents duplicate venues with the same name and location
+    UNIQUE (`Venue_Name`, `Location`) -- Prevents duplicate venues with the same name and location
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -420,4 +419,15 @@ CREATE TABLE `LINK_Event_Type` (
     
     PRIMARY KEY (`Event_ID`, `Type_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+DROP TABLE IF EXISTS `Location_Country`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Location_Country` (
+    `Location` VARCHAR(255) NOT NULL,
+    `Country` VARCHAR(255) NOT NULL,
+    
+    PRIMARY KEY (`Location`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 

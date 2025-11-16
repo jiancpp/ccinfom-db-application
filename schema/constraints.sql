@@ -27,6 +27,13 @@ ADD CONSTRAINT fk_link_event
     FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- 
+-- Constraints for `Venue`
+-- 
+ALTER TABLE Venue
+ADD CONSTRAINT fk_city_country
+    FOREIGN KEY (`Location`) REFERENCES Location_Country(`Location`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
 -- Constraints for `Section`

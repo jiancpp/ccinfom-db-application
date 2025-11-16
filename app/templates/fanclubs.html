@@ -24,13 +24,6 @@
         font-size: 14px;
     }
 
-    .fanclub-details .btn-link {
-        margin-top: auto;
-        flex-shrink: 0;
-        align-self: center;
-        width: 100%; 
-    }
-
 /* --- NEW STYLES FOR BUTTONS --- */
     .fanclub-btn {
         display: inline-flex;
@@ -59,11 +52,6 @@
         gap: 5px;
         margin-top: 15px;
         width: 100%;
-    }
-
-    .button-group .fanclub-btn i.fa {
-        font-size: 12px;
-        margin-right: 5px;
     }
     
     .button-group .btn-link {
@@ -189,8 +177,8 @@
         <span style="margin-right: 5px">
             <select name="artist" id="artist-select" onchange="this.form.submit()">
                 <option value="all" {% if current_artist == 'all' %}selected{% endif %}>All</option>
-                {% for artist in artist %}
-                    <option value="{{ artist }}" {% if current_artist == artist %}selected{% endif %}>{{ artist }}</option>
+                {% for artist in artists %}
+                    <option value="{{ artist.Artist_Name }}" {% if current_artist == artist.Artist_Name %}selected{% endif %}>{{ artist.Artist_Name }}</option>
                 {% endfor %}
             </select>
         </span>

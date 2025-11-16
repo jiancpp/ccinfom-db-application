@@ -2,14 +2,16 @@ from flask import Blueprint, render_template, session, redirect, url_for, flash,
 from flask import render_template, request, redirect, url_for, jsonify
 from collections import defaultdict
 
+import datetime
+import mysql.connector
+from app.config import DB_HOST, DB_USER, DB_PASS, DB_NAME
+
+# =========== REMOVE LATER ===================
 from app.models import *
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func, desc
-
-import datetime
-import mysql.connector
-from app.config import DB_HOST, DB_USER, DB_PASS, DB_NAME
+# ============================================
 
 
 main_routes = Blueprint('main_routes', __name__)
@@ -382,6 +384,7 @@ def fanclubs():
     if current_search:
         search_condition = "f.Fanclub_Name LIKE %s"
         search_pattern = f"%{current_search}%"
+        conditions.append(search_condition)
         query_parameters.append(search_pattern)
 
     # ----------------------------------------------------
@@ -397,8 +400,9 @@ def fanclubs():
     # APPLY ARTIST FANCLUBS FILTER 
     # ----------------------------------------------------     
     if current_artist != "all":
-        artist_condition = "AND a.Artist_Name LIKE %s"
+        artist_condition = "a.Artist_Name LIKE %s"
         artist_pattern = f"%{current_artist}%"
+        conditions.append(artist_condition)
         query_parameters.append(artist_pattern)
 
 
@@ -408,13 +412,11 @@ def fanclubs():
 
     where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
 
-    artist_query = f'''
+    artist_query = '''
     SELECT Artist_Name 
     FROM Artist
     ORDER BY Artist_Name
     '''
-
-    artists = execute_select_query(artist_query)
 
     fanclub_query = f'''
     SELECT fm.Fan_Id AS is_member_fan_id, f.Fanclub_ID, f.Fanclub_Name, a.Artist_Name, 
@@ -430,6 +432,8 @@ def fanclubs():
     '''
 
     query_parameters.insert(0, current_fan_id)
+    
+    artists = execute_select_query(artist_query)
     fanclubs = execute_select_query(fanclub_query, tuple(query_parameters))
 
     return render_template(
@@ -444,8 +448,50 @@ def fanclubs():
 
 @main_routes.route('/reports', methods=['GET'])
 def reports():
+
+    report_filter = request.args.get('filter', '') 
+
+    ticket_sales_data = ''
+    merchandise_sales_data = ''
+    artist_engagement_data = ''
+    fanclub_contribution_data = ''
+
+    # ----------------------------------------------------
+    # TICKET SALES REPORT
+    # ----------------------------------------------------
+    if report_filter == 'ticket-sales-report':
+        ticket_sales_data = ''
+
+
+    # ----------------------------------------------------
+    # MERCHANDISE SALES REPORT
+    # ----------------------------------------------------
+    if report_filter == 'merchandise-sales-report':
+        merchandise_sales_data = ''
+
+
+    # ----------------------------------------------------
+    # ARTIST ENGAGEMENT INDEX
+    # ----------------------------------------------------
+    if report_filter == 'artist-engagement-index':
+        artist_engagement_data = ''
+
+
+    # ----------------------------------------------------
+    # FANCLUB CONTRIBUTION REPORT
+    # ----------------------------------------------------
+    if report_filter == 'fanclub-contribution-report':
+        fanclub_contribution_data = ''
+
     
-    return render_template('reports.html')
+    return render_template(
+        'reports.html',
+        report_filter=report_filter, 
+        ticket_sales_data=ticket_sales_data, 
+        merchandise_sales_data=merchandise_sales_data, 
+        artist_engagement_data=artist_engagement_data,
+        fanclub_contribution_data=fanclub_contribution_data
+    )
 
 
 # ============================================
@@ -615,7 +661,7 @@ def buy_ticket(event_id):
     FROM (
         SELECT 
             e.*,
-            v.Venue_Name, v.City, v.Country, v.Is_Seated,
+            v.Venue_Name, v.Location, lc.Country, v.Is_Seated,
             DATEDIFF(e.Start_Date, CURDATE()) AS Days_Left,
             CASE
                 WHEN e.End_Time >= e.Start_Time 
@@ -624,7 +670,9 @@ def buy_ticket(event_id):
                 ELSE 
                     TIME_TO_SEC(TIMEDIFF(ADDTIME(e.End_Time, '24:00:00'), e.Start_Time)) / 60
             END AS Total_Duration_In_Minutes
-        FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+        FROM Event AS e 
+            JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+            JOIN Location_Country AS lc ON lc.Location = v.Location
         WHERE e.Event_ID = %s
     ) AS Event_Record
     '''
@@ -672,7 +720,8 @@ def buy_ticket(event_id):
     # Get purchase details
     if request.method == "POST":
         tier_id = request.form["ticket_tier"]
-        seats_chosen = request.form.getlist("seat")
+        seats_chosen = request.form.getlist("seat")  # Reserved seats
+        quantity = 0
         values = []
 
         # Get non form values
@@ -688,13 +737,19 @@ def buy_ticket(event_id):
                 Seat_ID = seat_id  
                 values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID))  
         else:
-            values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID)) 
+            try:
+                quantity = int(request.form.get('ticket-quantity', 0))
+            except ValueError:
+                quantity = 0
+                
+            for i in range(quantity):
+                values.append((Fan_ID, Event_ID, Tier_ID, Seat_ID)) 
 
         insert_ticket_purchase = f'''
         INSERT INTO Ticket_Purchase (Fan_ID, Event_ID, Tier_ID, Seat_ID)
         VALUES (%s, %s, %s, %s)
         '''
-
+        
         success = False
         for value in values:
             if execute_insert_query(insert_ticket_purchase, value):
@@ -788,7 +843,7 @@ def get_seats(event_id, section_id):
 def view_ticket(ticket_id):
     ticket_query = '''
     SELECT tp.*, e.Event_Name, YEAR(e.Start_Date) AS Year, e.Start_Date, e.End_Date, 
-           e.Start_Time, e.End_Time, v.Venue_Name,
+           e.Start_Time, e.End_Time, v.Venue_Name, v.Location,
            tt.Tier_Name, tt.Price, s.Seat_Row, s.Seat_Number, se.Section_Name
     FROM Ticket_Purchase tp
         JOIN Event e ON e.Event_ID = tp.Event_ID
