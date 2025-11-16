@@ -66,9 +66,8 @@
     }
 
     .btn-unfollow {
-        background-color: white;
-        color: #dc3545; 
-        border: 1px solid #dc3545;
+        background-color: #dc3545;
+        color: white; 
     }
     
     .btn-outline {
@@ -91,7 +90,7 @@
         min-height: unset;
     }
 
-        .fanclub-list-group {
+    .fanclub-list-group {
         list-style: none;
         padding: 0;
         margin: 0;
@@ -247,11 +246,12 @@
 <div style="text-align: right; margin-bottom: 20px;">
     {% if g.current_user %}
         <form method="POST" action="{{ url_for('main_routes.toggle_follow', artist_id=artist.Artist_ID) }}" style="display: inline-block;">
-            {% if Is_Followed %}
+            {% if Follow.Is_Followed %}
                 <input type="hidden" name="action" value="unfollow">
                 <button type="submit" class="btn btn-unfollow"> 
                 <i class="fa fa-times" style="margin-right: 5px;"></i> Unfollow Artist
                 </button>
+                <p>Follower since <span class="date">{{ Follow.Followed_Date }}</span></p>
             {% else %}
                 <input type="hidden" name="action" value="follow">
                 <button type="submit" class="btn btn-follow">

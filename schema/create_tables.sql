@@ -387,6 +387,7 @@ DROP TABLE IF EXISTS `Artist_Follower`;
 CREATE TABLE `Artist_Follower` (
 	`Artist_ID` INT(11) NOT NULL,
     `Fan_ID` INT(11) NOT NULL, 
+    `Followed_Date` DATE NOT NULL,
     
     PRIMARY KEY (`Artist_ID`, `Fan_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

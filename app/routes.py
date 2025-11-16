@@ -1181,7 +1181,7 @@ def artist_details(artist_id):
         '''
     
     follow_query = '''
-        SELECT IF(COUNT(*) > 0, 1, 0) AS Is_Followed
+        SELECT IF(COUNT(*) > 0, 1, 0) AS Is_Followed, Followed_Date
         FROM Artist_Follower
         WHERE Artist_ID = %s AND Fan_ID = %s
         '''
@@ -1240,17 +1240,16 @@ def artist_details(artist_id):
     artist['member'] = structured_members
     
     current_fan_id = g.current_user.Fan_ID
-    Is_Followed = 0
     
     followed_result = execute_select_query(follow_query, (artist_id, current_fan_id))
-    Is_Followed = followed_result[0]['Is_Followed']
+    Follow = followed_result[0] if followed_result else {'Is_Followed': 0, 'Followed_Date': None}
     Count = execute_select_query(event_fanclub_merch_count_query, (artist_id, artist_id, artist_id, artist_id))
     Count = Count[0] if Count else {'Event': 0, 'Merch': 0, 'Fanclub': 0, 'Member': 0}
     
     return render_template(
         'artist_details.html', 
         artist=artist,
-        Is_Followed=Is_Followed,
+        Follow=Follow,
         Count=Count
     )
 
@@ -1265,8 +1264,8 @@ def toggle_follow(artist_id):
         '''
 
     insert_artist_follower = '''
-        INSERT INTO Artist_Follower (Fan_ID, Artist_ID)
-        VALUES (%s, %s)
+        INSERT INTO Artist_Follower (Fan_ID, Artist_ID, Followed_Date)
+        VALUES (%s, %s, CURDATE())
         '''
     
     delete_artist_follower = '''

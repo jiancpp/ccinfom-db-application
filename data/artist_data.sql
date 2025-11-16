@@ -176,17 +176,17 @@ INSERT INTO Artist_Event (Artist_ID, Event_ID) VALUES
 
 -- 9. ARTIST_FOLLOWER TABLE (Junction, references Artist and Fan)
 -- NOTE: Assuming 'Fan' records are already inserted or the table is not required to be inserted first.
-INSERT INTO Artist_Follower (Artist_ID, Fan_ID) VALUES
-(5, 1),
-(7, 1),
-(6, 2),
-(1, 3),
-(10, 3),
-(2, 4),
-(1, 5),
-(5, 6),
-(10, 7),
-(11, 8);
+INSERT INTO Artist_Follower (Artist_ID, Fan_ID, Followed_Date) VALUES
+(5, 1, '2025-11-17'),
+(7, 1, '2025-11-17'),
+(6, 2, '2025-11-17'),
+(1, 3, '2025-11-17'),
+(10, 3, '2025-11-17'),
+(2, 4, '2025-11-17'),
+(1, 5, '2025-11-17'),
+(5, 6, '2025-11-17'),
+(10, 7, '2025-11-17'),
+(11, 8, '2025-11-17');
 
 -- 10. SETLIST TABLE (Junction, references Artist and Event)
 INSERT INTO Setlist (Artist_ID, Event_ID, Song_Name, Play_Order) VALUES

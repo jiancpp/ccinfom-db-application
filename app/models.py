@@ -397,6 +397,7 @@ class Artist_Follower(db.Model):
         db.ForeignKey("Fan.Fan_ID", ondelete="CASCADE", onupdate="CASCADE"), 
         primary_key=True
     )
+    Followed_Date = db.Column(db.Date, nullable=False, default=func.now())
 
 class Artist_Event(db.Model):
     __tablename__ = "Artist_Event"
