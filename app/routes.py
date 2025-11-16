@@ -447,8 +447,50 @@ def fanclubs():
 
 @main_routes.route('/reports', methods=['GET'])
 def reports():
+
+    report_filter = request.args.get('filter', '') 
+
+    ticket_sales_data = ''
+    merchandise_sales_data = ''
+    artist_engagement_data = ''
+    fanclub_contribution_data = ''
+
+    # ----------------------------------------------------
+    # TICKET SALES REPORT
+    # ----------------------------------------------------
+    if report_filter == 'ticket-sales-report':
+        ticket_sales_data = ''
+
+
+    # ----------------------------------------------------
+    # MERCHANDISE SALES REPORT
+    # ----------------------------------------------------
+    if report_filter == 'merchandise-sales-report':
+        merchandise_sales_data = ''
+
+
+    # ----------------------------------------------------
+    # ARTIST ENGAGEMENT INDEX
+    # ----------------------------------------------------
+    if report_filter == 'artist-engagement-index':
+        artist_engagement_data = ''
+
+
+    # ----------------------------------------------------
+    # FANCLUB CONTRIBUTION REPORT
+    # ----------------------------------------------------
+    if report_filter == 'fanclub-contribution-report':
+        fanclub_contribution_data = ''
+
     
-    return render_template('reports.html')
+    return render_template(
+        'reports.html',
+        report_filter=report_filter, 
+        ticket_sales_data=ticket_sales_data, 
+        merchandise_sales_data=merchandise_sales_data, 
+        artist_engagement_data=artist_engagement_data,
+        fanclub_contribution_data=fanclub_contribution_data
+    )
 
 
 # ============================================
