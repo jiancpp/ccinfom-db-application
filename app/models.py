@@ -299,8 +299,8 @@ class Member(db.Model):
 
     # Relationships
     artist = db.relationship("Artist", back_populates="member")
-    nationality = db.relationship("Nationality", back_populates="member")
-    role = db.relationship("Role", back_populates="member")
+    nationality = db.relationship("Member_Nationality", back_populates="member")
+    role = db.relationship("Member_Role", back_populates="member")
 
 class Nationality(db.Model):
     __tablename__ = "Nationality"
@@ -309,7 +309,7 @@ class Nationality(db.Model):
     Nationality_Name = db.Column(db.String(100), nullable=False)
 
     # Relationships
-    member = db.relationship("Member", back_populates="nationality")
+    member_nationality = db.relationship("Member_Nationality", back_populates="nationality")
 
 class Member_Nationality(db.Model):
     __tablename__ = "Member_Nationality"
@@ -325,6 +325,9 @@ class Member_Nationality(db.Model):
         primary_key=True
     )
 
+    member = db.relationship("Member", back_populates="nationality")
+    nationality = db.relationship("Nationality", back_populates="member_nationality")
+
 class Role(db.Model):
     __tablename__ = "Role"
 
@@ -332,7 +335,7 @@ class Role(db.Model):
     Role_Name = db.Column(db.String(100), nullable=False)
 
     # Relationships
-    member = db.relationship("Member", back_populates="role")
+    member_role = db.relationship("Member_Role", back_populates="role")
 
 class Member_Role(db.Model):
     __tablename__ = "Member_Role"
@@ -348,6 +351,8 @@ class Member_Role(db.Model):
         primary_key=True
     )
 
+    member = db.relationship("Member", back_populates="role")
+    role = db.relationship("Role", back_populates="member_role")
 
 class Manager(db.Model):
     __tablename__ = "Manager"
