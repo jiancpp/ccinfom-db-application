@@ -143,44 +143,56 @@ def index():
 @main_routes.route('/artists', methods=['GET'])
 def artists():
     
-    current_filter = request.args.get('filter', 'all') 
-    current_search = request.args.get('artist-name', '').strip()
-
-    artists_query = Artist.query.options(
-        joinedload(Artist.manager), 
-        joinedload(Artist.followers) 
-    )
-    
-    # 1. Apply search filter
-    if current_search:
-        artists_query = artists_query.filter(Artist.Artist_Name.ilike(f'%{current_search}%'))
-
-    artists_list = []
-    followed_artist_ids = set() # Use a set for fast lookup
-
-    # 2. Check if a user is logged in
     if g.get('current_user'):
         current_fan_id = g.current_user.Fan_ID
+
+    search_term = request.args.get("artist-name", "").strip()
+    filter_val = request.args.get("filter", "all") # Renamed from 'filter' to 'filter_val' to avoid shadowing built-in
+
+    query_parameters = []
+    where_clauses = []
+
+    artists_query_template = f'''
+        SELECT 
+            a.*,
+            TIMESTAMPDIFF(DAY, a.Debut_Date, NOW()) AS Debut_Days,
+            COUNT(DISTINCT af_all.Fan_ID) AS Num_Followers,
+            MAX(CASE WHEN af_current.Fan_ID = %s THEN 1 ELSE 0 END) AS Is_Followed
+        FROM 
+            Artist AS a
+        LEFT JOIN Artist_Follower AS af_all ON a.Artist_ID = af_all.Artist_ID
+        LEFT JOIN Artist_Follower AS af_current ON a.Artist_ID = af_current.Artist_ID AND af_current.Fan_ID = %s
+    '''
+
+    query_parameters.append(current_fan_id)
+    query_parameters.append(current_fan_id)
+
+    if search_term:
+        where_clauses.append("a.Artist_Name LIKE %s")
+        query_parameters.append(f"%{search_term}%")
+
+    if filter_val == 'followed':
+        where_clauses.append("af_current.Fan_ID IS NOT NULL")
         
-        # Optimize: Fetch ALL followed Artist IDs for the user in ONE query
-        followed_artist_ids_tuples = db.session.query(Artist_Follower.Artist_ID).filter(
-            Artist_Follower.Fan_ID == current_fan_id
-        ).all()
-        
-        followed_artist_ids = {artist_id for (artist_id,) in followed_artist_ids_tuples}
-        
-        # 3. Apply Follow/Not-Follow filter BEFORE executing the query
-        if current_filter == 'followed':
-            artists_query = artists_query.filter(Artist.Artist_ID.in_(followed_artist_ids))
-        
-        elif current_filter == 'not-followed':
-            artists_query = artists_query.filter(Artist.Artist_ID.notin_(followed_artist_ids))
+    elif filter_val == 'other':
+        where_clauses.append("af_current.Fan_ID IS NULL")
+    
+    where_clause = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+    
+    final_query = f'''
+        {artists_query_template}
+        {where_clause}
+        GROUP BY a.Artist_ID, a.Artist_Name
+        ORDER BY a.Artist_Name ASC
+    '''
+
+    artists = execute_select_query(final_query, tuple(query_parameters))
 
     return render_template(
         'artists.html', 
-        artists=artists_list,
-        current_filter=current_filter,
-        current_search=current_search
+        artists=artists,
+        current_filter=filter_val,
+        current_search=search_term
     )
 
 @main_routes.route('/events', methods=["GET", "POST"])
@@ -431,6 +443,12 @@ def fanclubs():
     )
 
 
+@main_routes.route('/reports', methods=['GET'])
+def reports():
+    
+    return render_template('reports.html')
+
+
 # ============================================
 #           USER MANAGEMENT (PLACEHOLDERS)
 # ============================================
@@ -522,7 +540,7 @@ def profile():
     current_fan_id = g.current_user.Fan_ID
     
     fan_query = '''
-        SELECT Fan_ID, First_Name, Last_Name, Username, Email, Date_Joined
+        SELECT *, DATEDIFF(CURDATE(), Date_Joined) AS Days_Since
         FROM Fan
         WHERE Fan_ID = %s
         '''
@@ -1063,7 +1081,7 @@ def artist_details(artist_id):
         ).one_or_none()
         
         # Assign the boolean result to the new attribute
-        artist.is_followed = is_following_query is not None
+        artist.is_followed = is_following_query is not None     
         
     return render_template(
         'artist_details.html', 
@@ -1072,37 +1090,34 @@ def artist_details(artist_id):
 
 @main_routes.route('/artists/toggle_follow/<int:artist_id>', methods=['POST'])
 def toggle_follow(artist_id):
-    if not g.get('current_user'):
-        flash("You must be logged in to follow an artist.", 'error')
-        # Redirect to login, but store 'next' URL (not shown, but good practice)
-        return redirect(url_for('main_routes.login'))
 
-    artist = Artist.query.get_or_404(artist_id)
     current_fan_id = g.current_user.Fan_ID
-    
-    # Get the action from the hidden input field in the POST request
     action = request.form.get('action') 
 
-    # Check for existing follow relationship
-    follow_entry = db.session.query(Artist_Follower).filter(
-        Artist_Follower.Fan_ID == current_fan_id,
-        Artist_Follower.Artist_ID == artist_id
-    ).one_or_none()
+    artist_query = '''
+        SELECT * FROM Artist WHERE Artist_ID = %s
+        '''
+
+    insert_artist_follower = '''
+        INSERT INTO Artist_Follower (Fan_ID, Artist_ID)
+        VALUES (%s, %s)
+        '''
     
-    if action == 'follow' and not follow_entry:
-        # User requested to follow and isn't following yet
-        new_follow = Artist_Follower(Fan_ID=current_fan_id, Artist_ID=artist_id)
-        db.session.add(new_follow)
-        db.session.commit()
-        flash(f"🎉 You are now following {artist.Artist_Name}! ", 'success')
+    delete_artist_follower = '''
+        DELETE FROM Artist_Follower
+        WHERE Fan_ID = %s AND Artist_ID = %s
+        '''
+
+    artist = execute_select_query(artist_query, (artist_id,))
+    
+    if action == 'follow':
+        execute_insert_query(insert_artist_follower, (current_fan_id, artist_id))
+        flash(f"🎉 You are now following {artist[0]['Artist_Name']}! ", 'success')
         
-    elif action == 'unfollow' and follow_entry:
-        # User requested to unfollow and is currently following
-        db.session.delete(follow_entry)
-        db.session.commit()
-        flash(f"💔 You have unfollowed {artist.Artist_Name}.", 'info')
-        
-    # Redirect back to the page the user came from (artists list or details page)
+    elif action == 'unfollow':
+        execute_insert_query(delete_artist_follower, (current_fan_id, artist_id))
+        flash(f"💔 You have unfollowed {artist[0]['Artist_Name']}.", 'error')
+
     return redirect(request.referrer or url_for('main_routes.artists'))
 
 # =========================================================================

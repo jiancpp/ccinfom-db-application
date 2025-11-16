@@ -180,16 +180,8 @@ ADD CONSTRAINT fk_artist_manager
 -- Constraints for `Member`
 -- 
 ALTER TABLE Member
-ADD CONSTRAINT fk_artist_Member
+ADD CONSTRAINT fk_artist_member
     FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
-    ON DELETE CASCADE ON UPDATE CASCADE;
-    
--- 
--- Constraints for `Nationality`
--- 
-ALTER TABLE Nationality
-ADD CONSTRAINT fk_member_nationality
-    FOREIGN KEY (`Member_ID`) REFERENCES Member(`Member_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
     
 -- 
@@ -201,14 +193,6 @@ ADD CONSTRAINT fk_member_member_nationality
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_nationality_member_nationality
     FOREIGN KEY (`Nationality_ID`) REFERENCES Nationality(`Nationality_ID`)
-    ON DELETE CASCADE ON UPDATE CASCADE;
-    
--- 
--- Constraints for `Role`
--- 
-ALTER TABLE Role
-ADD CONSTRAINT fk_member_role
-    FOREIGN KEY (`Member_ID`) REFERENCES Member(`Member_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
     
 -- 

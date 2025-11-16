@@ -24,7 +24,6 @@ CREATE TABLE `Fan` (
     `Last_Name` VARCHAR(255) NOT NULL,
     `Email` VARCHAR(255) NOT NULL,
     `Date_Joined` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `Days_Since` INT(11),
     
     PRIMARY KEY (`Fan_ID`),
     UNIQUE (`Username`),
@@ -111,7 +110,7 @@ DROP TABLE IF EXISTS `Fanclub`;
 CREATE TABLE `Fanclub` (
     `Fanclub_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Fanclub_Name` VARCHAR(255) NOT NULL,
-    `Artist_ID` INT NOT NULL,
+    `Artist_ID` INT(11) NOT NULL,
     
     PRIMARY KEY (`Fanclub_ID`),
     UNIQUE (`Fanclub_Name`)     -- Ensures that no two fanclubs of the same artist share a name
@@ -375,13 +374,11 @@ DROP TABLE IF EXISTS `Fanclub_Membership`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Fanclub_Membership` (
-    `Membership_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Fan_ID` INT NOT NULL,
-    `Fanclub_ID` INT NOT NULL,
+    `Fan_ID` INT(11) NOT NULL,
+    `Fanclub_ID` INT(11) NOT NULL,
     `Date_Joined` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
-    PRIMARY KEY (`Membership_ID`),
-    UNIQUE (`Fan_ID`, `Fanclub_ID`)
+    PRIMARY KEY (`Fan_ID`, `Fanclub_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
