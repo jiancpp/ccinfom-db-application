@@ -2,9 +2,223 @@
 {% block title %}Buy Event Ticket - KSync{% endblock %}
 {% block content %}
 <style>
+    .ticket-container{
+        display: flex;
+        margin: 0 auto; /* Center container*/
+        align-items: center;
+        justify-content: center;
+        width: 60%;
+        height: 50vh;
+        border: solid 1px rgb(119, 119, 119);
+    }
 
+    .ticket-container .column {
+        padding: 15px;
+        height: inherit;
+    }
+
+    .ticket-stub {
+        width: 40%;
+        border-right: dashed 1px gray;
+    }
+
+    .ticket-stub .logo-container {
+        padding: 15px;
+        background-color: #667eea;
+    }
+
+    .ticket-stub .logo {
+        font-weight: bold;
+        color: white;
+        background: white;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .ticket-stub .purchase-details span {
+        font-size: 12px;
+        color: grey;
+    }
+
+    .ticket-stub .purchase-details p {
+        font-weight: bold;
+        font-size: 18px;
+        color: black;
+    }
+
+    .ticket-stub h1 {
+        margin: 0;
+        color: black;
+        font-size: 1.5rem;
+    }
+
+    .ticket-details {
+        text-align: center;
+        width: 60%;
+    }
+
+    /* Print button styling */
+    .print-btn {
+        background-color: #667eea;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        transition: background-color 0.3s;
+    }
+
+    .print-btn:hover {
+        background-color: #5568d3;
+    }
+
+    /* Print-specific styles */
+    @media print {
+        /* Hide everything except printable area */
+        body * {
+            visibility: hidden;
+        }
+        
+        #printableArea,
+        #printableArea * {
+            visibility: visible;
+        }
+        
+        #printableArea {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+
+        /* Ensure colors are printed */
+        .ticket-container {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            page-break-inside: avoid;
+            border: solid 1px rgb(119, 119, 119) !important;
+        }
+
+        .ticket-stub .logo-container {
+            background-color: #667eea !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .ticket-stub .logo {
+            color: white !important;
+        }
+
+        .ticket-stub .purchase-details span {
+            color: grey !important;
+        }
+
+        .ticket-stub .purchase-details p {
+            color: black !important;
+        }
+
+        .ticket-stub {
+            border-right: dashed 1px gray !important;
+        }
+
+        /* Hide print button and back link when printing */
+        .no-print {
+            display: none !important;
+        }
+
+        /* Optimize page breaks */
+        .ticket-container {
+            page-break-after: always;
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        .ticket-container:last-child {
+            page-break-after: auto;
+        }
+    }
 </style>
+<div style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('main_routes.profile') }}" 
+       class="btn btn-small" 
+       style="text-decoration: none; padding: 5px 12px; font-size: 0.85rem; color: white;">
+        &larr; Back to Profile
+    </a>
+</div>
 
+<div id="printableArea">
+{% for ticket in tickets %}
+    <div class="ticket-container">
+        <div class="column ticket-stub">
+            <div class="logo-container">
+                <div class="logo">🎵 KSync Tickets </div>
+            </div>
+            <div class="purchase-details">
+                <span>Event Code</span>
+                <p>{{ticket.Year}}-KSYNC-{{ "%04d" | format(ticket.Event_ID) }}</p>
+            </div>
+            <div class="purchase-details">
+                <span>Ticket Tier</span>
+                <p>{{ticket.Tier_Name}}</p>
+            </div>
+            {% if ticket.Seat_Number is not none %}
+            <div class="purchase-details">
+                <span>Venue Section</span>
+                <p>{{ticket.Section_Name}}</p>
+            </div>
+            <div class="purchase-details">
+                <span>Seat</span>
+                <p>{{ticket.Seat_Row}}{{ticket.Seat_Number}}</p>
+            </div>
+            {% endif %}
+            <span style="display: flex;">
+                <div class="purchase-details">
+                    <span>Price</span>
+                    <p>Php**{{ticket.Price}}**</p>
+                </div>
+                <div class="purchase-details" style="margin-left: 10px;">
+                    <span>Ticket Code.</span>
+                    <p>{{ticket.Event_ID}}-{{ "%04d" | format(ticket.Ticket_ID) }}</p>
+                </div>
+            </span>
+        </div>
+        <div class="ticket-details">
+            <div style="width: 70%; margin: auto;">
+                <h1>{{ticket.Event_Name}}</h1>
+                <p>in {{ticket.Venue_Name}}</p><br>
+                <p>Event Dates:
+                    {% if ticket.Start_Date != ticket.End_Date %}
+                        <span>
+                            <span class="date">{{ ticket.Start_Date }}</span> to 
+                            <span class="date">{{ ticket.End_Date }}</span>
+                        </span>
+                    {% else %}
+                        <span>
+                            <span class="date">{{ ticket.Start_Date }}</span>
+                        </span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+</div>
 
+<div class="no-print" style="text-align: center; margin-top: 1rem;">
+    <button onclick="window.print()" class="print-btn">
+        Print Ticket
+    </button>
+</div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function printTickets() {
+        window.print();
+    }
+</script>
 {% endblock %}

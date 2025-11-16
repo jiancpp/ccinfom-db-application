@@ -75,6 +75,7 @@ def index():
    
     title = ""
     artist_query = ""
+    event_label = ""
     
     if g.get('current_user'):
             title = "Artists You Follow"
@@ -97,6 +98,16 @@ def index():
             else :
                 total_artists = 0
 
+            event_label = "Attending Events"
+            event_query = '''
+            SELECT DISTINCT e.* FROM Event AS e
+            LEFT JOIN Ticket_Purchase tp ON e.Event_ID = tp.Event_ID
+            WHERE e.Start_Date >= CURDATE() AND tp.Fan_ID = %s
+            ORDER BY e.Start_Date ASC
+            LIMIT 5;
+            '''
+            events = execute_select_query(event_query, (fan_ID,))
+
     else:
         title = "Popular Artists"
         artist_query = '''
@@ -110,14 +121,22 @@ def index():
         artists = execute_select_query(artist_query)
         total_artists = 5
 
-    event_query = '''
-        SELECT * FROM Event AS e
-        WHERE e.Start_Date >= CURDATE()
-        ORDER BY e.Start_Date ASC
-        '''
-    events = execute_select_query(event_query)
+        event_label = "Upcoming Events"
+        event_query = '''
+            SELECT * FROM Event AS e
+            WHERE e.Start_Date >= CURDATE() 
+            AND e.Start_Date < DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 MONTH)
+            ORDER BY e.Start_Date ASC
+            '''
+        events = execute_select_query(event_query)
 
-    return render_template('index.html', artists=artists, events=events, total_artists=total_artists, title=title)
+    return render_template(
+        'index.html', 
+        artists=artists, 
+        events=events, 
+        total_artists=total_artists, 
+        title=title,
+        event_label=event_label)
 
 @main_routes.route('/artists', methods=['GET'])
 def artists():
@@ -525,11 +544,14 @@ def profile():
     '''
 
     purchases_query = f'''
-    SELECT e.Event_Id, e.Event_Name, t.Tier_Name, tp.Purchase_Date, s.Seat_Row, s.Seat_Number
+    SELECT e.Event_ID, e.Event_Name, t.Tier_Name, 
+           tp.Fan_ID, tp.Ticket_ID, tp.Purchase_Date, 
+           s.Seat_Row, s.Seat_Number, se.Section_Name
     FROM Event AS e
         JOIN Ticket_Purchase AS tp ON e.Event_Id = tp.Event_Id AND tp.Fan_Id = %s
         JOIN Ticket_Tier AS t ON t.Tier_Id = tp.Tier_Id 
         LEFT JOIN Seat AS s ON tp.Seat_Id = s.Seat_Id
+        LEFT JOIN Section AS se ON s.Section_ID = se.Section_ID
     '''
 
     fan = execute_select_query(fan_query, (current_fan_id,))
@@ -752,6 +774,28 @@ def get_seats(event_id, section_id):
         "total": total,
         "seats": seat_list
     })
+
+@main_routes.route('/ticket/<int:ticket_id>')
+def view_ticket(ticket_id):
+    ticket_query = '''
+    SELECT tp.*, e.Event_Name, YEAR(e.Start_Date) AS Year, e.Start_Date, e.End_Date, 
+           e.Start_Time, e.End_Time, v.Venue_Name,
+           tt.Tier_Name, tt.Price, s.Seat_Row, s.Seat_Number, se.Section_Name
+    FROM Ticket_Purchase tp
+        JOIN Event e ON e.Event_ID = tp.Event_ID
+        JOIN Ticket_Tier tt ON tt.Tier_ID = tp.Tier_ID
+        JOIN Venue v ON v.Venue_ID = e.Venue_ID
+        LEFT JOIN Seat s ON s.Seat_ID = tp.Seat_ID
+        LEFT JOIN Section se ON se.Section_ID = s.Section_ID
+    WHERE tp.Ticket_ID = %s
+    '''
+
+    tickets = execute_select_query(ticket_query, (ticket_id,))
+
+    return render_template(
+        "event_ticket.html",
+        tickets=tickets
+    )
 
 # ============================================
 #           Fanclub Subpages
