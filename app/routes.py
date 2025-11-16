@@ -383,6 +383,7 @@ def fanclubs():
     if current_search:
         search_condition = "f.Fanclub_Name LIKE %s"
         search_pattern = f"%{current_search}%"
+        conditions.append(search_condition)
         query_parameters.append(search_pattern)
 
     # ----------------------------------------------------
@@ -398,8 +399,9 @@ def fanclubs():
     # APPLY ARTIST FANCLUBS FILTER 
     # ----------------------------------------------------     
     if current_artist != "all":
-        artist_condition = "AND a.Artist_Name LIKE %s"
+        artist_condition = "a.Artist_Name LIKE %s"
         artist_pattern = f"%{current_artist}%"
+        conditions.append(artist_condition)
         query_parameters.append(artist_pattern)
 
 
@@ -409,13 +411,11 @@ def fanclubs():
 
     where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
 
-    artist_query = f'''
+    artist_query = '''
     SELECT Artist_Name 
     FROM Artist
     ORDER BY Artist_Name
     '''
-
-    artists = execute_select_query(artist_query)
 
     fanclub_query = f'''
     SELECT fm.Fan_Id AS is_member_fan_id, f.Fanclub_ID, f.Fanclub_Name, a.Artist_Name, 
@@ -431,6 +431,8 @@ def fanclubs():
     '''
 
     query_parameters.insert(0, current_fan_id)
+    
+    artists = execute_select_query(artist_query)
     fanclubs = execute_select_query(fanclub_query, tuple(query_parameters))
 
     return render_template(
