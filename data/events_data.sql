@@ -1,23 +1,48 @@
 USE dbApp;
 
-INSERT INTO Venue (Venue_Name,City,Country,Capacity,Is_Seated)
-VALUES  ("Philippine Arena","Bocaue, Bulacan","Philippines",55000,1),
-		("SM Mall of Asia Arena","Pasay, Metro Manila","Philippines",20000,1),
-		("Smart Araneta Coliseum","Quezon City, Metro Manila","Philippines",16500,1),
-		("New Frontier Theater","Quezon City, Metro Manila","Philippines",2385,1),
-		("Huimang Café","Muntinlupa City (South), Metro Manila","Philippines",NULL,0),
-		("Chingu Dachi Cafe+","Manila (Sampaloc Area), Metro Manila","Philippines",NULL,0),
-		("Coffee Chapters","Taft Ave., Pasay City, Metro Manila","Philippines",NULL,0),
-		("Café Janggeum - SM North Edsa","Quezon City, Metro Manila","Philippines",NULL,0),
-		("Café Janggeum - SM City Dasma","Dasmariñas, Cavite","Philippines",NULL,0),
-		("Nineteen Degress - MOA","Pasay, Metro Manila","Philippines",NULL,0),
-		("Coffee Grind Calamba City","Calamba, Laguna","Philippines",NULL,0);
+-- REFERENCE TABLES ===============================
 
-INSERT INTO REF_Event_Type (Type_Name)
-VALUES	('Concert'),
-		('Fanmeet'),
-		('Hi-Touch'),
-		('Cupsleeve');
+INSERT INTO REF_Event_Type (Type_ID, Type_Name)
+VALUES	(1, 'Concert'),
+		(2, 'Fanmeet'),
+		(3, 'Hi-Touch'),
+		(4, 'Cupsleeve'),
+		(5, 'Music Festival'),
+		(6, 'Birthday Event'),
+		(7, 'Anniversary Event'),
+		(8, 'Viewing Party'),
+		(9, 'KPOP Exhibit'),
+		(10, 'Photo Zone'),
+		(11, 'Showcase');
+
+INSERT INTO Location_Country (Location, Country)
+VALUES	("Bocaue, Bulacan", "Philippines"),
+		("Pasay City, Metro Manila", "Philippines"),
+		("Taft Ave., Pasay City, Metro Manila", "Philippines"),
+		("Quezon City, Metro Manila", "Philippines"),
+		("Muntinlupa City, Metro Manila", "Philippines"),
+		("Manila City, Metro Manila", "Philippines"),
+		("Dasmariñas, Cavite", "Philippines"),
+		("Bacoor, Cavite", "Philippines"),
+		("Calamba, Laguna", "Philippines"),
+		("Cebu City, Cebu", "Philippines");
+
+-- ===============================================
+
+INSERT INTO Venue (Venue_Name,Location,Capacity,Is_Seated)
+VALUES  ("Philippine Arena","Bocaue, Bulacan",55000,1),
+		("SM Mall of Asia Arena","Pasay City, Metro Manila",20000,1),
+		("Smart Araneta Coliseum","Quezon City, Metro Manila",16500,1),
+		("New Frontier Theater","Quezon City, Metro Manila",2385,1),
+		("Huimang Café","Muntinlupa City, Metro Manila",NULL,0),
+		("Chingu Dachi Cafe+","Manila City, Metro Manila",NULL,0),
+		("Coffee Chapters","Taft Ave., Pasay City, Metro Manila",NULL,0),
+		("Café Janggeum - SM North Edsa","Quezon City, Metro Manila",NULL,0),
+		("Café Janggeum - SM City Dasma","Dasmariñas, Cavite",NULL,0),
+		("Nineteen Degress - MOA","Pasay City, Metro Manila",NULL,0),
+		("Coffee Grind Calamba City","Calamba, Laguna",NULL,0),
+		("Villa Function Hall","Bacoor, Cavite",NULL,0),
+		("SM Mall of Asia", "Pasay City, Metro Manila",NULL,0);
 
 INSERT INTO Event (Event_ID, Event_Name, Venue_ID, Start_Date, End_Date, Start_Time, End_Time)
 VALUES  (1,"BLACKPINK Comeback Tour",1,"2026-08-10","2026-08-10","20:00:00","0:00:00"),
@@ -25,8 +50,8 @@ VALUES  (1,"BLACKPINK Comeback Tour",1,"2026-08-10","2026-08-10","20:00:00","0:0
 		(3,"ZB1 Hi-Five Session",4,"2026-10-18","2026-10-18","11:00:00","13:00:00"),
 		(4,"AKMU Birthday Cupsleeve Cafe",5,"2026-11-25","2026-11-25","10:00:00","17:00:00"),
 		(5,"AESPA Artist Showcase",2,"2026-12-07","2026-12-07","18:30:00","22:30:00"),
-		(6,"BLINKS United Rosé Birthday Cupsleeve",6,"2026-02-11","2026-02-11","9:00:00","20:00:00"),
-		(7,"Zerose Squad Anniversary Cupsleeve",8,"2026-07-10","2026-07-10","10:00:00","19:00:00"),
+		(6,"BLINKS United Rosé Birthday Event",6,"2026-02-11","2026-02-11","9:00:00","20:00:00"),
+		(7,"Zerose Squad Anniversary Exhibit",12,"2026-07-10","2026-07-10","10:00:00","19:00:00"),
 		(8,"WinRina 4ever Winter Cupsleeve Cafe",9,"2026-01-15","2026-01-15","9:30:00","18:30:00"),
 		(9,"ENGENE-ers Sunghoon Birthday Cupsleeve",10,"2026-12-08","2026-12-08","10:00:00","20:00:00"),
 		(10,"Pink Venom Club Jisoo Cupsleeve",11,"2026-01-03","2026-01-03","9:00:00","19:00:00"),
@@ -38,8 +63,8 @@ VALUES  (1,"BLACKPINK Comeback Tour",1,"2026-08-10","2026-08-10","20:00:00","0:0
 		(16,"Zero Days Hanbin Birthday Cupsleeve",5,"2026-01-16","2026-01-18","9:30:00","20:00:00"),
 		(17,"BP World Lisa Birthday Cupsleeve",8,"2026-03-27","2026-03-27","10:00:00","19:00:00"),
 		(18,"Next Level Fans Winter Cupsleeve",9,"2026-02-14","2026-02-20","9:00:00","18:00:00"),
-		(19,"WIZONE Forever Sakura Cupsleeve",10,"2026-03-19","2026-03-19","10:00:00","19:00:00"),
-		(20,"Bunny Camp Minji Birthday Cupsleeve",5,"2026-05-07","2026-05-07","9:30:00","19:30:00"),
+		(19,"WIZONE Forever Sakura Photozone",10,"2026-03-19","2026-03-19","10:00:00","19:00:00"),
+		(20,"Bunny Camp Minji Birthday Exhbit",13,"2026-05-07","2026-05-07","9:30:00","19:30:00"),
 		(21,"BLINK Paradise Jennie Cupsleeve",6,"2026-01-16","2026-01-16","10:00:00","20:00:00"),
 		(22,"Vampire Lovers Heeseung Cupsleeve",8,"2026-10-15","2026-10-15","9:00:00","18:00:00"),
 		(23,"ZB1 United Jiwoong Birthday Cupsleeve",9,"2026-12-14","2026-12-14","10:00:00","19:00:00"),
@@ -426,43 +451,82 @@ VALUES
 (1, 1),
 
 -- Event 2: "ENHYPEN Dunkin Donut Collab x Fanmeet" -> "Fanmeet" (ID 2), "Hi-Touch" (ID 3)
-(2, 2),
-(2, 3),
+(2, 2), (2, 3),
 
 -- Event 3: "ZB1 Hi-Five Session" -> "Hi-Touch" (ID 3)
 (3, 3),
 
--- Event 4 to 25 are all single "Cupsleeve" events (ID 4)
-(4, 4),
-(5, 1),  -- AESPA Artist Showcase -> Concert
-(6, 4),
-(7, 4),
+-- Event 4: AKMU Birthday Cupsleeve Cafe
+(4, 4), (4, 6),
+
+-- Event 5: AESPA Artist Showcase
+(5, 11),
+
+-- Event 6: BLINKS United Rosé Birthday Event
+(6, 6), (6, 10),
+
+-- Event: Zerose Squad Anniversary Exhibit
+(7, 7), (7, 9),
+
+-- WinRina 4ever Winter Cupsleeve Cafe
 (8, 4),
-(9, 4),
+
+-- ENGENE-ers Sunghoon Birthday Cupsleeve
+(9, 6), (9, 4),
+
+-- Pink Venom Club Jisoo Cupsleeve
 (10, 4),
-(11, 4),
+
+-- MY Dreams Karina Birthday Cupsleeve
+(11, 6), (11, 4),
+
+-- Tokki Squad Hanni Cupsleeve Event
 (12, 4),
-(13, 4),
-(14, 4),
+
+-- AKKADEMY Chanhyuk Birthday Cupsleeve
+(13, 6), (13, 4),
+
+-- Bunnies Forever Hyein Cupsleeve
+(14, 4), 
+
+-- ENGENE Nation Jungwon Cupsleeve
 (15, 4),
-(16, 4),
-(17, 4),
-(18, 4),
-(19, 4),
-(20, 4),
+
+-- Zero Days Hanbin Birthday Cupsleeve
+(16, 6), (16, 4),
+
+-- BP World Lisa Birthday Cupsleeve
+(17, 6), (17, 4),
+
+-- Next Level Fans Winter Cupsleeve
+(18, 6), (18, 4),
+
+-- WIZONE Forever Sakura Photozone
+(19, 10), 
+
+-- Bunny Camp Minji Birthday Exhibit
+(20, 6), (20, 9),
+
+-- BLINK Paradise Jennie Cupsleeve
 (21, 4),
+
+-- Vampire Lovers Heeseung Cupsleeve
 (22, 4),
-(23, 4),
+
+-- ZB1 United Jiwoong Birthday Cupsleeve
+(23, 6), (23, 4),
+
+-- Aespa Synk Ningning Cupsleeve
 (24, 4),
-(25, 4),
+
+-- Suhyun & Chanhyuk Fans Anniversary Cupsleeve
+(25, 6), (25, 4),
 
 -- Event 26: "IU Concert: Blooming in Blue" -> "Concert" (ID 1), "Hi-Touch" (ID 3)
-(26, 1),
-(26, 3),
+(26, 1), (26, 3),
 
 -- Event 27: "IZNA Anniversary Fanmeet" -> "Fanmeet" (ID 2), "Hi-Touch" (ID 3)
-(27, 2),
-(27, 3),
+(27, 2), (27, 3),
 
 -- Event 28: "LISA: Lovesick Concert" -> "Concert" (ID 1)
 (28, 1),

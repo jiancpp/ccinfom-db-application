@@ -188,7 +188,7 @@
         <div class="ticket-details">
             <div style="width: 70%; margin: auto;">
                 <h1>{{ticket.Event_Name}}</h1>
-                <p>in {{ticket.Venue_Name}}</p><br>
+                <p>in {{ticket.Venue_Name}}, {{ticket.Location}}</p><br>
                 <p>Event Dates:
                     {% if ticket.Start_Date != ticket.End_Date %}
                         <span>

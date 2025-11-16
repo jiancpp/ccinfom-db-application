@@ -1,14 +1,16 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, g
-from flask import render_template, request, redirect, url_for, jsonify
-
-from app.models import *
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
-from sqlalchemy import func, desc
+from flask import request, jsonify
 
 import datetime
 import mysql.connector
 from app.config import DB_HOST, DB_USER, DB_PASS, DB_NAME
+
+# =========== REMOVE LATER ===================
+from app.models import *
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
+from sqlalchemy import func, desc
+# ============================================
 
 
 main_routes = Blueprint('main_routes', __name__)
@@ -596,7 +598,7 @@ def buy_ticket(event_id):
     FROM (
         SELECT 
             e.*,
-            v.Venue_Name, v.City, v.Country, v.Is_Seated,
+            v.Venue_Name, v.Location, lc.Country, v.Is_Seated,
             DATEDIFF(e.Start_Date, CURDATE()) AS Days_Left,
             CASE
                 WHEN e.End_Time >= e.Start_Time 
@@ -605,7 +607,9 @@ def buy_ticket(event_id):
                 ELSE 
                     TIME_TO_SEC(TIMEDIFF(ADDTIME(e.End_Time, '24:00:00'), e.Start_Time)) / 60
             END AS Total_Duration_In_Minutes
-        FROM Event AS e JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+        FROM Event AS e 
+            JOIN Venue AS v ON e.Venue_ID = v.Venue_ID
+            JOIN Location_Country AS lc ON lc.Location = v.Location
         WHERE e.Event_ID = %s
     ) AS Event_Record
     '''
@@ -769,7 +773,7 @@ def get_seats(event_id, section_id):
 def view_ticket(ticket_id):
     ticket_query = '''
     SELECT tp.*, e.Event_Name, YEAR(e.Start_Date) AS Year, e.Start_Date, e.End_Date, 
-           e.Start_Time, e.End_Time, v.Venue_Name,
+           e.Start_Time, e.End_Time, v.Venue_Name, v.Location
            tt.Tier_Name, tt.Price, s.Seat_Row, s.Seat_Number, se.Section_Name
     FROM Ticket_Purchase tp
         JOIN Event e ON e.Event_ID = tp.Event_ID
