@@ -58,7 +58,7 @@ DROP TABLE IF EXISTS `Merchandise`;
 CREATE TABLE `Merchandise` (
     `Merchandise_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Merchandise_Name` VARCHAR(100) NOT NULL,
-    `Artist_ID` INT(11) NOT NULL,
+    `Artist_ID` INT(11),
     `Event_ID` INT(11),
     `Fanclub_ID` INT(11),
     `Merchandise_Description` VARCHAR(500) DEFAULT NULL,
