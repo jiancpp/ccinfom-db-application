@@ -158,12 +158,8 @@ def artists():
             MAX(CASE WHEN af_current.Fan_ID = %s THEN 1 ELSE 0 END) AS Is_Followed
         FROM 
             Artist AS a
-        -- af_all for total follower count
-        LEFT JOIN 
-            Artist_Follower AS af_all ON a.Artist_ID = af_all.Artist_ID
-        -- af_current to check if the CURRENT FAN follows this artist
-        LEFT JOIN 
-            Artist_Follower AS af_current ON a.Artist_ID = af_current.Artist_ID AND af_current.Fan_ID = %s
+        LEFT JOIN Artist_Follower AS af_all ON a.Artist_ID = af_all.Artist_ID
+        LEFT JOIN Artist_Follower AS af_current ON a.Artist_ID = af_current.Artist_ID AND af_current.Fan_ID = %s
     '''
 
     query_parameters.append(current_fan_id)

@@ -209,7 +209,7 @@
             {% if filter_val == 'followed' %} checked {% endif %}>
         <label for="followed-artists"><i class="fa fa-heart"></i> Followed</label>
 
-        <input type="radio" id="other-artists" name="filter" value="not-followed"
+        <input type="radio" id="other-artists" name="filter" value="other"
             {% if filter_val == 'other' %} checked {% endif %}>
         <label for="other-artists">Other</label>
     </div>
@@ -226,13 +226,16 @@
                         {{ artist.Activity_Status }}
                     </span>
                     <div class="artist-details">
+                        <p>
+                            <i class="fa fa-users"></i> {{ artist.Num_Followers }} {% if artist.Num_Followers != 1 %} Followers {% else %} Follower {% endif %}
+                        </p>
                         {% if artist.Debut_Date %}
                             <p data-label="Debut">
                                 <i class="fa fa-calendar"></i> <span class="date">{{ artist.Debut_Date }}</span>
                             </p>
                         {% endif %}
                         <p>
-                            <i class="fa fa-users"></i> {{ artist.Num_Followers }} {% if artist.Num_Followers != 1 %} Followers {% else %} Follower {% endif %}
+                            <i class="fa fa-music"></i> {{ artist.Debut_Days }} Days Since Debut
                         </p>
                     </div>
                 </div>
