@@ -1,136 +1,447 @@
 {% extends "base.html" %}
 
-{% block title %}Merchandise Shop | K-Sync{% endblock %}
+{% block head %}
+    {{ super() }}
+    
+{% endblock %}
 
 {% block content %}
+<style>
+    /* --- MERCHANDISE CARD STYLES --- */
+    .merch-item-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    .merch-item-card h3 {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        color: #333;
+        text-align: left;
+    }
+
+    .merch-item-card {
+        display: flex; /* CRITICAL: Enables Flexbox */
+        flex-direction: column; /* Stacks children vertically */
+        justify-content: space-between; /* Pushes content and footer apart */
+        height: 100%; /* CRITICAL: Ensures all cards take full available height */
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    .merch-item-card .badge {
+        font-size: 1em;
+        padding: 4px 10px;
+        border-radius: 17px;
+        font-weight: 600;
+    }
+
+    .merch-group-heading {
+        color: #764ba2;
+        margin: 2.5rem 0 1.5rem 0;
+        font-size: 1.8rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+
+    .merch-card-footer {
+        /* Critical for pushing the footer to the bottom of the card */
+        margin-top: auto; 
+        
+        /* NEW: Ensures event name and button are stacked vertically */
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        gap: 10px; 
+    }
+
+    .search-filter-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: .5rem;
+        margin-bottom: .5rem;
+        flex-wrap: nowrap !important; 
+        
+        /* This adds a scrollbar if the content overflows the screen width */
+        overflow-x: auto; 
+        overflow-y: hidden;
+        width: 100%;
+    }
+    
+    /* FILTER SHOWN EVENTS */
+    .search-input-group {
+        display: flex;
+        align-items: center;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        padding: 0 10px;
+        flex-grow: 1;
+        max-width: 400px;
+    }
+    
+    .search-input-group button {
+        background: none;
+        border: none;
+        font-size: 18px;
+        color: #667eea;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .search-input-group input {
+        border: none;
+        width: 100%;
+        padding: 8px 10px;
+    }
+
+    .search-input-group input:focus {
+        border-color: transparent; 
+    }
+
+    
+    .merch-details-group {
+        padding: 1rem 0;
+        border-top: 1px dashed #eee;
+        margin-top: 1rem;
+        text-align: left;
+    }
+
+    .merch-details-group p {
+        font-size: 0.9em;
+        margin: 0.5rem 0;
+    }
+
+    /* --- FILTER STYLES --- */
+    .filter-group input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 3px;
+        height: 3px;
+    }
+
+    .filter-group label {
+        display: block;
+        padding: 5px 20px;
+        margin: 3px 3px;
+        border-radius: 50px;
+        max-height: 2rem;
+        border: solid 1px #a1a1a1;
+        font-size: 11px;
+        color: #1f1d1e;
+        transition: 0.3s;
+    }
+
+    .filter-group label:hover {
+        cursor: pointer;
+        background-color: #a1a1a1;
+    }
+
+    .filter-group input[type="radio"]:checked + label {
+        border: solid 1px #a5a8e9;
+        background-color: #a5a8e9;
+        color: #1f1327;
+    }
+
+    .filter-group select {
+        display: block;
+        padding: 5px 20px;
+        margin: 0 3px;
+        border-radius: 50px;
+        max-height: 3rem;
+        font-size: 11px;
+        color: #1f1d1e;
+        transition: 0.3s;
+    }
+    /* --- END FILTER STYLES --- */
+    
+    .search-filter-container {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+
+    .search-input-group {
+        display: flex;
+        align-items: center;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        padding: 0 10px;
+        flex-grow: 1;
+        max-width: 400px;
+    }
+    
+    .search-input-group button {
+        background: none;
+        border: none;
+        font-size: 18px;
+        color: #667eea;
+        cursor: pointer;
+        padding: 5px;
+        font-size: 11px;
+    }
+
+    .search-input-group input {
+        border: none;
+        width: 100%;
+        padding: 8px 10px;
+    }
+
+    .search-input-group input:focus {
+        border-color: transparent; 
+    }
+</style>
     <header>
         <h1>🛒 K-Pop Merchandise Shop</h1>
         <p style="color: #666;">Official albums, light sticks, and exclusive photocards. Select a group or fanclub to filter!</p>
-        <a href="{{ url_for('main_routes.cart') }}" class="btn btn-outline" style="margin-top: 1rem;">
-            View Cart 
+        <a href="{{ url_for('main_routes.cart') }}" class="btn btn-outline" style="margin-top: 1rem; margin-bottom: 1rem;">
+            <i class="fa fa-shopping-cart"></i> View Cart 
         </a>
     </header>
 
-    {# Filtering #}
+
+    {# Filtering Section: Uses the provided CSS styles and Flask route logic #}
     <section>
-    <div style="background-color: #f7f9fc; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="background-color: #f7f9fc; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            
+            <form action="{{ url_for('main_routes.merchandise') }}" method="GET" style="display: flex; gap: 10px; flex-wrap: wrap;" id="merch-filter-form" class="search-filter-container">
+                
+                {# 1. CLEAR FILTERS BUTTON #}
+                <a href="{{ url_for('main_routes.merchandise') }}" class="btn btn-secondary" style="flex-shrink: 0; align-items: center;">
+                    <span style="font-size: 1.2em;">&times;</span> Clear Filters
+                </a>
+    
+                {# 2. ARTIST FILTER (Dropdown)#}
+                <div class="filter-group" style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+                    <select name="artist_id" id="artist-select">
+                        <option value="" {% if request.args.get('artist_id', '') == '' %}selected{% endif %}>🎤 All Artists</option>
+                        {% for artist in all_artists %}
+                            <option value="{{ artist.id }}" 
+                                {% if artist.id|string == request.args.get('artist_id', '') %}selected{% endif %}>
+                                {{ artist.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                {# 3. FANCLUB FILTER (Dropdown) #}
+                <div class="filter-group" style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+                    <select name="fanclub_id" id="fanclub-select">
+                        {% set current_fanclub_id = request.args.get('fanclub_id', '') %}
+                        <option value="" {% if current_fanclub_id == '' %}selected{% endif %}>✨ All Fanclubs</option>
+                        {% for fanclub in all_fanclubs %}
+                            <option value="{{ fanclub.id }}"
+                                {% if fanclub.id|string == current_fanclub_id %} selected {% endif %}>
+                                {{ fanclub.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+    
+                {# 4. DISPLAY MODE CHIPS #}
+                <div class="filter-group" style="align-self: center;">
+                    <input type="radio" id="all" name="filter" value="all" 
+                        onchange="this.form.submit()" 
+                        {% if filter == 'all' %}checked{% endif %}>
+                    <label for="all">Show All Merch</label>
+                    
+                    <input type="radio" id="artists" name="filter" value="artists" 
+                        onchange="this.form.submit()" 
+                        {% if filter == 'artists' %}checked{% endif %}>
+                    <label for="artists">Group by Artist</label>
+                    
+                    <input type="radio" id="fanclubs" name="filter" value="fanclubs" 
+                        onchange="this.form.submit()" 
+                        {% if filter == 'fanclubs' %}checked{% endif %}>
+                    <label for="fanclubs">Group by Fanclub</label>
+                </div>
+                
+                {# 5. SEARCH INPUT GROUP (Requires manual submit or pressing Enter) #}
+                <div class="search-input-group" style="flex-grow: 1;">
+                    <button type="submit">
+                        <i class="fa fa-search"></i>
+                    </button>
+                    <input type="text" 
+                        id="merchandise-search" 
+                        name="search_query" 
+                        placeholder="Search Merch..."
+                        value="{{ request.args.get('search_query', '') }}">
+                </div>
+                
+            </form>
+        </div>
+    </section>
+
+    {# Merch Cards Section: Dynamically display based on the 'filter' variable passed from the route #}
+    <section>
+
+        {# 1. SELECT THE CORRECT DATA SOURCE #}
+        {% set data_to_display = [] %}
+        {% set group_type = 'Merchandise' %}
+        {% set header_text = 'All Merchandise' %}
+
+        {% if filter == 'artists' %}
+            {% set data_to_display = artists_merch %}
+            {% set group_type = 'Artist' %}
+            {% set header_text = 'Merchandise Grouped by Artist' %}
         
-        <form method="GET" action="{{ url_for('main_routes.merchandise') }}" id="filter_form">
-            
-            <a href="{{ url_for('main_routes.merchandise') }}" class="btn btn-secondary" style="margin-right: 1rem;">
-                <span style="font-size: 1.2em;">&times;</span> Clear Filters
-            </a>
+        {% elif filter == 'fanclubs' %}
+            {% set data_to_display = fanclubs_merch %}
+            {% set group_type = 'Fanclub' %}
+            {% set header_text = 'Merchandise Grouped by Fanclub' %}
+        
+        {% else %} 
+            {# This handles 'all' and any default state #}
+            {% set data_to_display = artists_merch or fanclubs_merch %}
+            {% set header_text = 'All Merchandise' %}
+        
+        {% endif %}
+        
+        {# Display the main section title #}
+        <h2 style="margin: 2.5rem 0 0; color: #333;">{{ header_text }}</h2>
+        <hr style="margin-bottom: 2rem;">
 
-            <input type="hidden" name="fanclub_id" value="{{ request.args.get('fanclub_id', '') }}">
-
-            <h4 style="display: inline-block; margin-right: 0.5rem; color: var(--primary-color);">Artist:</h4>
-            
-            {% set current_artist_id = request.args.get('artist_id', '') %}
-
-            {% for artist in all_artists %}
-                <button type="submit" name="artist_id" value="{{ artist.id }}" 
-                    class="btn {% if artist.id|string == current_artist_id %}btn-primary{% else %}btn-outline-secondary{% endif %}"
-                    style="margin-right: 0.5rem; margin-bottom: 1.2rem;">
-                    {{ artist.name }}
-                </button>
-            {% endfor %}
-        </section>
-
-    {# Merch Cards #}
-    <section class="container">
-        {% if artists_merch %}
-            {% for artist in artists_merch %}
+        {# 2. LOOP THROUGH THE SELECTED DATA #}
+        {% if data_to_display %}
+            {% for group in data_to_display %}
                 
-                <h2>✨ {{ artist.name }}'s Official Merch</h2>
-                
-                {% if artist.merchandise %}
+                {# CUSTOM GROUPING TITLE - ONLY SHOWS FOR GROUPED MODES #}
+                {% if filter == 'artists' or filter == 'fanclubs' %}
+                    <h3 class="merch-group-heading">
+                        {% if group_type == 'Artist' %}
+                            🎤 {{ group.name }}'s Official Merch
+                        {% elif group_type == 'Fanclub' %}
+                            ✨ {{ group.name }} Exclusive Merch
+                        {% endif %}
+                    </h3>
+                {% endif %}
+
+                {% if group.merchandise %}
                     <div class="grid">
-                        {% for item in artist.merchandise %}
-                            <div class="card">
-                                <h3 style="display: flex; justify-content: space-between; align-items: center;">
-                                    {{ item.name }}
-                                    <span class="badge" style="background: #e0f7fa; color: #00bcd4;">
-                                        {{ item.type }}
-                                    </span>
-                                </h3>
-                                <p style="margin-bottom: 0.5rem;"><strong>Price:</strong> P{{ "%.2f"|format(item.price) }}</p>
-                                <p style="color: #999; font-size: 0.9em; margin-bottom: 1rem;">
-                                    SKU: {{ item.sku }} | Stock: {{ item.stock }}
-                                </p>
+                        {% for item in group.merchandise %}
+                            <div class="card merch-item-card">
+                                <div>
+                                    {# MERCH CARD TITLE #}
+                                    <h3 style="display: flex; justify-content: space-between; align-items: center;">
+                                        {{ item.name }}
+                                        <span class="badge" style="background: #e0f7fa; color: #00bcd4; font-size: 11px;">
+                                            {{ item.description }}
+                                        </span>
+                                    </h3>
+
+                                    {# CORE DETAILS #}
+                                    <p style="text-align: left; margin-bottom: 0.5rem;"><strong>Price:</strong> P{{ "%.2f"|format(item.price) }}</p>
+                                    <p style="color: #999; font-size: 0.9em; text-align: left;">
+                                        SKU: {{ item.id }} | Stock: {{ item.stock }}
+                                    </p>
+                                    
+                                    {# Fanclub and Event Details #}
+                                    <div class="merch-details-group">
+                                        {% if item.event_name %}
+                                        <span class="badge" style="background:rgb(255, 235, 211); color:rgb(119, 62, 1); font-size: 11px;">
+                                            {{ item.event_name }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
                                 
-                                {% if item.stock > 0 %}
-                                    <a href="{{ url_for('main_routes.add_to_cart', item_id=item.id) }}" class="btn" style="width: 100%;">
-                                        Add to Cart
-                                    </a>
-                                {% else %}
-                                    <button class="btn btn-secondary" disabled style="width: 100%;">
-                                        Sold Out
-                                    </button>
-                                {% endif %}
+                                {# ADD TO CART BUTTON #}
+                                <div class="merch-card-footer">
+                                    {% if item.stock > 0 %}
+                                        <a href="{{ url_for('main_routes.add_to_cart', merchandise_id=item.id) }}" class="btn merch-card-footer" style="width: 100%;">
+                                            Add to Cart 🛍️
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-secondary" disabled style="width: 100%;">
+                                            Sold Out 🚫
+                                        </button>
+                                    {% endif %}
+                                </div>
                             </div>
                         {% endfor %}
                     </div>
                 {% else %}
                     <div class="alert alert-info">
-                        No merchandise found for {{ artist.name }} matching the current filters.
+                        No merchandise found for {{ group.name }} matching the current filters.
                     </div>
                 {% endif %}
                 
-
-
-                <hr style="margin: 3rem 0; border: 0; border-top: 1px dashed #e0e0e0;">
+                {% if filter == 'artists' or filter == 'fanclubs' %}
+                    <hr style="margin: 3rem 0; border: 0; border-top: 1px dashed #e0e0e0;">
+                {% endif %}
 
             {% endfor %}
 
         {% else %}
             <div class="empty-state">
-                <p>😭 We searched everywhere, but found no merchandise matching your filters. Try clearing them!</p>
+                <p>😭</p>
+                <h3>No Merchandise Found</h3>
+                <p>We searched everywhere, but found no merchandise matching your filters. Try clearing them!</p>
             </div>
         {% endif %}
     </section>
-
-    <section>
-    {% if fanclub_merch %}
-    {% for fanclub in fanclub_merch %}
-        <h2>✨ {{ fanclub.name }}'s Official Merch</h2>
-        
-        {% if fanclub.merchandise %}
-            <div class="grid">
-                {% for item in fanclub.merchandise %}
-                    <div class="card">
-                        <h3 style="display: flex; justify-content: space-between; align-items: center;">
-                            {{ item.name }}
-                            <span class="badge" style="background: #e0f7fa; color: #00bcd4;">
-                                {{ item.type }}
-                            </span>
-                        </h3>
-                        <p style="margin-bottom: 0.5rem;"><strong>Price:</strong> P{{ "%.2f"|format(item.price) }}</p>
-                        <p style="color: #999; font-size: 0.9em; margin-bottom: 1rem;">
-                            SKU: {{ item.sku }} | Stock: {{ item.stock }}
-                        </p>
-                        
-                        {% if item.stock > 0 %}
-                            <a href="{{ url_for('main_routes.add_to_cart', item_id=item.id) }}" class="btn" style="width: 100%;">
-                                Add to Cart
-                            </a>
-                        {% else %}
-                            <button class="btn btn-secondary" disabled style="width: 100%;">
-                                Sold Out
-                            </button>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="alert alert-info">
-                No merchandise found for {{ fanclub.name }} matching the current filters.
-            </div>
-        {% endif %}
-
-        <hr style="margin: 3rem 0; border: 0; border-top: 1px dashed #e0e0e0;">
-
-    {% endfor %}
-{% endif %}
-        </section>
-
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterForm = document.getElementById('merch-filter-form');
+            const artistSelect = document.getElementById('artist-select');
+            const fanclubSelect = document.getElementById('fanclub-select');
+            const filterRadios = filterForm.querySelectorAll('input[name="filter"]');
+    
+            function getCurrentFilterValue() {
+                const checkedRadio = document.querySelector('input[name="filter"]:checked');
+                // Default to 'all' if no radio is checked (shouldn't happen with your HTML)
+                return checkedRadio ? checkedRadio.value : 'all'; 
+            }
+    
+            function applyFilterRestrictions(targetValue) {
+                // Function to disable/enable and reset filters based on the selected radio chip value
+                if (targetValue === 'artists') {
+                    fanclubSelect.disabled = true;
+                    fanclubSelect.value = ""; 
+                    artistSelect.disabled = false;
+                    
+                } else if (targetValue === 'fanclubs') {
+                    artistSelect.disabled = true;
+                    artistSelect.value = ""; 
+                    fanclubSelect.disabled = false;
+                    
+                } else {
+                    // 'all' mode: Enable both specific filters
+                    artistSelect.disabled = false;
+                    fanclubSelect.disabled = false;
+                }
+            }
+    
+            // --- 1. Event Listener for Radio Button Changes ---
+            // Radio buttons still use the HTML onchange to submit, but we ensure the restriction runs first.
+            filterRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    applyFilterRestrictions(this.value);
+                });
+            });
+            
+            // --- 2. Event Listener for Dropdown Changes (NEW) ---
+            // This takes over form submission from the HTML onchange we removed.
+            function handleDropdownChange() {
+                const currentFilter = getCurrentFilterValue();
+                
+                // Re-apply restrictions just in case, ensuring the conflicting dropdown is cleared/disabled
+                applyFilterRestrictions(currentFilter);
+                
+                // Now that conflicts are handled, submit the form.
+                filterForm.submit();
+            }
+            
+            artistSelect.addEventListener('change', handleDropdownChange);
+            fanclubSelect.addEventListener('change', handleDropdownChange);
+    
+    
+            // --- 3. Initial State Setup (on page load) ---
+            applyFilterRestrictions(getCurrentFilterValue());
+        });
+    </script>
 {% endblock %}
