@@ -122,44 +122,49 @@ def index():
 @main_routes.route('/artists', methods=['GET'])
 def artists():
     
-    current_filter = request.args.get('filter', 'all') 
-    current_search = request.args.get('artist-name', '').strip()
+    # # 1. Apply search filter
+    # if current_search:
+    #     artists_query = artists_query.filter(Artist.Artist_Name.ilike(f'%{current_search}%'))
 
-    artists_query = Artist.query.options(
-        joinedload(Artist.manager), 
-        joinedload(Artist.followers) 
-    )
-    
-    # 1. Apply search filter
-    if current_search:
-        artists_query = artists_query.filter(Artist.Artist_Name.ilike(f'%{current_search}%'))
-
-    artists_list = []
-    followed_artist_ids = set() # Use a set for fast lookup
-
-    # 2. Check if a user is logged in
     if g.get('current_user'):
         current_fan_id = g.current_user.Fan_ID
-        
-        # Optimize: Fetch ALL followed Artist IDs for the user in ONE query
-        followed_artist_ids_tuples = db.session.query(Artist_Follower.Artist_ID).filter(
-            Artist_Follower.Fan_ID == current_fan_id
-        ).all()
-        
-        followed_artist_ids = {artist_id for (artist_id,) in followed_artist_ids_tuples}
-        
-        # 3. Apply Follow/Not-Follow filter BEFORE executing the query
-        if current_filter == 'followed':
-            artists_query = artists_query.filter(Artist.Artist_ID.in_(followed_artist_ids))
-        
-        elif current_filter == 'not-followed':
-            artists_query = artists_query.filter(Artist.Artist_ID.notin_(followed_artist_ids))
+
+    search_term = request.form.get("artist-name", "").strip()
+    filter = request.form.get("filter", "all-artists")
+
+    search_pattern = f"%{search_term}%"
+    search_condition = ""
+
+    if search_term:
+        search_condition = f'''
+            AND a.Artist_Name LIKE {search_pattern}
+            ''' 
+
+    if filter == 'followed':
+        followed_condition = "WHERE af.Fan_ID == %s" % current_fan_id
+    if filter == 'other':
+        followed_condition = "WHERE af.Fan_ID != %s OR af.Fan_ID IS NULL" % current_fan_id
+    else:
+        followed_condition = ""
+
+    artists_query = f'''
+        SELECT a.*,
+            TIMESTAMPDIFF(DAY, a.Debut_Date, NOW()) AS Debut_Days,
+            COUNT(af.Fan_ID) AS Num_Followers
+        LEFT JOIN Artist_Follower AS af ON a.Artist_ID = af.Artist_ID
+        {followed_condition}
+        {search_condition}
+        GROUP BY a.Artist_ID, a.Artist_Name
+        ORDER BY a.Artist_Name ASC;
+        '''
+
+    artists = execute_select_query(artists_query)
 
     return render_template(
         'artists.html', 
-        artists=artists_list,
-        current_filter=current_filter,
-        current_search=current_search
+        artists=artists,
+        filter=filter,
+        search_term=search_term
     )
 
 @main_routes.route('/events', methods=["GET", "POST"])
