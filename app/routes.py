@@ -536,7 +536,7 @@ def profile():
     current_fan_id = g.current_user.Fan_ID
     
     fan_query = '''
-        SELECT *, DATEDIFF(DAY, Date_Joined, CURDATE()) AS Days_Since
+        SELECT *, DATEDIFF(CURDATE(), Date_Joined) AS Days_Since
         FROM Fan
         WHERE Fan_ID = %s
         '''
