@@ -210,7 +210,7 @@
         <label for="followed-artists"><i class="fa fa-heart"></i> Followed</label>
 
         <input type="radio" id="other-artists" name="filter" value="not-followed"
-            {% if filter_val == 'not-followed' %} checked {% endif %}>
+            {% if filter_val == 'other' %} checked {% endif %}>
         <label for="other-artists">Other</label>
     </div>
 </form>
@@ -222,8 +222,8 @@
             <li class="artist-card card">
                 <div>
                     <h3>{{ artist.Artist_Name }}</h3>
-                    <span class="artist-status status-{{ (artist.Activity_Status | first)}}">
-                        {{ artist.Activity_Status | first }}
+                    <span class="artist-status status-{{ (artist.Activity_Status) }}">
+                        {{ artist.Activity_Status }}
                     </span>
                     <div class="artist-details">
                         {% if artist.Debut_Date %}
@@ -232,7 +232,7 @@
                             </p>
                         {% endif %}
                         <p>
-                            <i class="fa fa-users"></i> {{ artist.followers|length }} {% if artist.followers|length > 1 %} Followers {% else %} Follower {% endif %}
+                            <i class="fa fa-users"></i> {{ artist.Num_Followers }} {% if artist.Num_Followers != 1 %} Followers {% else %} Follower {% endif %}
                         </p>
                     </div>
                 </div>
@@ -244,7 +244,7 @@
                     {% if g.current_user %}
                         <form method="POST" action="{{ url_for('main_routes.toggle_follow', artist_id=artist.Artist_ID) }}" class="btn-group-form">
                             
-                            {% if artist.is_followed %}
+                            {% if artist.Is_Followed %}
                                 <input type="hidden" name="action" value="unfollow">
                                 <button type="submit" class="artist-btn btn-unfollow"> 
                                     <i class="fa fa-times"></i>  Unfollow Artist
