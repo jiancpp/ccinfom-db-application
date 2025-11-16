@@ -22,7 +22,7 @@
                         <th style="padding: 1rem 0.5rem; text-align: center;">Artist/Club</th>
                         <th style="padding: 1rem 0.5rem; text-align: center;">Price</th>
                         <th style="padding: 1rem 0.5rem; text-align: center;">Qty</th>
-                        <th style="padding: 1rem 0.5rem; text-align: right;">Subtotal</th>
+                        <th style="padding: 1rem 0.5rem; text-align: center;">Subtotal</th>
                         <th style="padding: 1rem 0.5rem; text-align: center;">Action</th>
                     </tr>
                 </thead>
@@ -32,14 +32,14 @@
                             <td style="padding: 1rem 0.5rem;"><strong>{{ item.name }}</strong></td>
                             <td style="padding: 1rem 0.5rem; text-align: center;">{{ item.artist }}</td>
                             <td style="padding: 1rem 0.5rem; text-align: center;">P{{ "%.2f"|format(item.price) }}</td>
-                            <td style="padding: 1rem 0.5rem; text-align: center;">
-                                {1}
+                            <td style="padding: 1rem 0.5rem; text-align: center; font-weight: bold;">
+                                {{ item.quantity }}
                             </td>
-                            <td style="padding: 1rem 0.5rem; text-align: right;"><strong>P{{ "%.2f"|format(item.subtotal) }}</strong></td>
+                            <td style="padding: 1rem 0.5rem; text-align: center;"><strong>P{{ "%.2f"|format(item.subtotal) }}</strong></td>
                             <td style="padding: 1rem 0.5rem; text-align: center;">
-                                <a href="{{ url_for('main_routes.remove_from_cart', item_id=item.id) }}" 
-                                   class="btn-action" 
-                                   style="color: red; text-decoration: none;">❌ Remove</a>
+                                <a href="{{ url_for('main_routes.remove_from_cart', item_id=item.id) }}" class="btn btn-danger btn-sm" style="background:rgb(230, 22, 22);">
+                                    Remove One
+                                </a>
                             </td>
                         </tr>
                     {% endfor %}
