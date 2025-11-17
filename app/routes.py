@@ -505,6 +505,7 @@ def reports():
     selected_ticket_sales_year = request.args.get('year', type=int)
     selected_fanclub_contribution_year = request.args.get('year', type=int)
     selected_merch_sales_year = request.args.get('year', 2025, type=int)
+    selected_artist_contribution_year = request.args.get('year', type=int)
 
     ticket_sales_data = ''
     sales_per_item = ''
@@ -580,9 +581,72 @@ def reports():
     # ARTIST ENGAGEMENT INDEX
     # ----------------------------------------------------
     if report_filter == 'artist-engagement-index':
-        artist_engagement_data = ''
+        artist_engagement_data = '''
+            SELECT
+                Metrics.Artist_Name AS Artist_Name,
+                DENSE_RANK() OVER (ORDER BY Metrics.AEI_Score DESC) AS AEI_Rank,
+                Metrics.AEI_Score AS AEI_Score,
+                Metrics.New_Followers_Count AS New_Followers_Count,
+                Metrics.New_Members_Count AS New_Members_Count,
+                Metrics.Ticket_Revenue_Amount AS Ticket_Revenue_Amount,
+                Metrics.Merchandise_Revenue_Amount AS Merchandise_Revenue_Amount
+            FROM (
+                SELECT
+                    A.Artist_Name,
+                    A.Artist_ID,
+                    COALESCE(AF_Year.New_Followers, 0) AS New_Followers_Count,
+                    COALESCE(FM_Year.New_Members, 0) AS New_Members_Count,
+                    COALESCE(TP_Year.Ticket_Revenue, 0) AS Ticket_Revenue_Amount,
+                    COALESCE(MR_Year.Merchandise_Revenue, 0) AS Merchandise_Revenue_Amount,
+                    -- Calculate the raw AEI Score
+                    (
+                        COALESCE(AF_Year.New_Followers, 0) * 0.15
+                        + COALESCE(FM_Year.New_Members, 0) * 0.25
+                        + COALESCE(TP_Year.Ticket_Revenue, 0) * 0.30
+                        + COALESCE(MR_Year.Merchandise_Revenue, 0) * 0.30
+                    ) AS AEI_Score
+                    
+                FROM Artist A
+                        
+                LEFT JOIN (
+                    SELECT Artist_ID, COUNT(Fan_ID) AS New_Followers
+                    FROM Artist_Follower
+                    WHERE YEAR(Followed_Date) = %s
+                    GROUP BY Artist_ID
+                ) AS AF_Year ON A.Artist_ID = AF_Year.Artist_ID
+                        
+                LEFT JOIN (
+                    SELECT FC.Artist_ID, COUNT(FM.Fan_ID) AS New_Members
+                    FROM Fanclub_Membership FM
+                    JOIN Fanclub FC ON FM.Fanclub_ID = FC.Fanclub_ID
+                    WHERE YEAR(FM.Date_Joined) = %s 
+                    GROUP BY FC.Artist_ID
+                ) AS FM_Year ON A.Artist_ID = FM_Year.Artist_ID
 
+                LEFT JOIN (
+                    SELECT AE.Artist_ID, SUM(TT.Price) AS Ticket_Revenue
+                    FROM Ticket_Purchase TP
+                    JOIN Ticket_Tier TT ON TP.Tier_ID = TT.Tier_ID
+                    JOIN Artist_Event AE ON TP.Event_ID = AE.Event_ID
+                    WHERE YEAR(TP.Purchase_Date) = %s 
+                    GROUP BY AE.Artist_ID
+                ) AS TP_Year ON A.Artist_ID = TP_Year.Artist_ID
 
+                LEFT JOIN (
+                    SELECT M.Artist_ID, SUM(PL.Quantity_Purchased * M.Merchandise_Price) AS Merchandise_Revenue
+                    FROM Purchase_List PL
+                    JOIN Merchandise M ON PL.Merchandise_ID = M.Merchandise_ID
+                    JOIN `Order` O ON PL.Order_ID = O.Order_ID
+                    WHERE O.Order_Status = 'Paid'
+                    AND YEAR(O.Order_Date) = %s 
+                    AND M.Artist_ID IS NOT NULL 
+                    GROUP BY M.Artist_ID
+                ) AS MR_Year ON A.Artist_ID = MR_Year.Artist_ID
+            ) AS Metrics
+        ORDER BY
+            AEI_Rank ASC;
+        '''
+        artist_engagement_data = execute_select_query(artist_engagement_data, (selected_artist_contribution_year, selected_artist_contribution_year, selected_artist_contribution_year, selected_artist_contribution_year))
     # ----------------------------------------------------
     # FANCLUB CONTRIBUTION REPORT
     # ----------------------------------------------------

@@ -170,37 +170,56 @@
         </div>
     {% endif %}
 
-{% elif report_filter == 'merchandise-sales-report' %}
-    <h2>Merchandise Sales Report</h2>
-    
-    {% if merchandise_sales_data %}
-        <table>
-            <thead>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    {% else %}
-        <div class="empty-state">
-            <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
-            <p>No merchandise sales data available for this report.</p>
-        </div>
-    {% endif %}
-
 {% elif report_filter == 'artist-engagement-index' %}
     <h2>Artist Engagement Index</h2>
-    
+    <p style="margin-top: 1rem; margin-bottom: 2rem; color: #999;">
+        Tracks contributions through ticket sales, merchandise sales, and fan-driven events.
+    </p>
+    <form id="artist-year-filter" method="GET" action="{{ url_for('main_routes.reports') }}">
+        <label for="year">Generate Yearly Report</label>
+        <input type="hidden" name="filter" value="artist-engagement-index">
+        <input type="number" 
+            name="year" 
+            id="artist-engagement-year" 
+            value="{{ selected_artist_contribution_year or 2024 }}" 
+            style="max-width:200px;" 
+            placeholder="Enter Year" 
+            min="2025" 
+            step="1" 
+            required>
+    </form>
+
     {% if artist_engagement_data %}
         <table>
             <thead>
+                <tr>
+                    <td>Rank</td>
+                    <td>AEI Score</td>
+                    <td>Artist Name</td>
+                    <td>New Followers</td>
+                    <td>New Fanclub Members</td>
+                    <td>Total Ticket Sales</td>
+                    <td>Total Merchandise Sales</td>
+                </tr>
             </thead>
             <tbody>
+                {% for record in artist_engagement_data %}
+                <tr>
+                    <td>{{ record.AEI_Rank }}</td>
+                    <td>{{ record.AEI_Score | round(2)}}</td>
+                    <td>{{ record.Artist_Name }}</td>
+                    <td>{{ record.New_Followers_Count }}</td>
+                    <td>{{ record.New_Members_Count }}</td>
+                    <td>₱<span class="money">{{ record.Ticket_Revenue_Amount }}</span></td>
+                    <td>₱<span class="money"></span>{{ record.Merchandise_Revenue_Amount }}</span></td>
+                </tr>
+                {% endfor %}                
             </tbody>
         </table>
     {% else %}
         <div class="empty-state">
             <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
-            <p>No artist engagement data available for this report.</p>
+            <p>No fanclub contribution data available for this report.</p>
         </div>
     {% endif %}
 
@@ -266,7 +285,7 @@
 <script>
     const urlParams = new URLSearchParams(window.location.search);
     const selectedReport = urlParams.get('filter') || '';
-    const reportSelect = document.getElementById('report-select');
+    const reportSelect = document.getElementById('report-options');
 
     if (reportSelect) {
         reportSelect.value = selectedReport;
@@ -278,6 +297,10 @@
 
     document.getElementById('fanclub-contribution-year').addEventListener("change", function() {
         document.getElementById('fanclub-year-filter').submit()
+    })
+
+    document.getElementById('artist-engagement-year').addEventListener("change", function() {
+        document.getElementById('artist-year-filter').submit()
     })
 </script>
 {% endblock %}
