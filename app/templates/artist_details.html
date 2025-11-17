@@ -343,8 +343,8 @@
                         <li class="merch-item">
                             <i class="fa fa-tags" style="color: #667eea;"></i>
                             <p style="margin-top: 5px; font-size: 14px; font-weight: 600;">{{ item.Merchandise_Name }}</p>
-                            <p style="font-size: 12px; color: #dc3545;">${{ item.Merchandise_Price }}</p>
-                            <a href="{{ url_for('main_routes.add_to_cart', item_id=item.Merchandise_ID) }}" class="btn btn-sm btn-outline" style="margin-top: 5px;">Buy Now</a>
+                            <p style="font-size: 12px; color: #dc3545;">₱<span class="money">{{ item.Merchandise_Price }}</span></p>
+                            <a href="{{ url_for('main_routes.add_to_cart', merchandise_id=item.Merchandise_ID) }}" class="btn btn-sm btn-outline" style="margin-top: 5px;">Buy Now</a>
                         </li>
                     {% endfor %}
                 </ul>
