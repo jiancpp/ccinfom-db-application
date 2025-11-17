@@ -506,6 +506,7 @@ def fanclubs():
 def reports():
 
     report_filter = request.args.get('filter', '') 
+    selected_ticket_sales_year = request.args.get('year', type=int)
 
     ticket_sales_data = ''
     merchandise_sales_data = ''
@@ -529,10 +530,10 @@ def reports():
                     JOIN Ticket_Tier tt ON tt.Tier_ID = tp.Tier_ID
                 GROUP BY tp.Event_ID
             ) tp ON e.Event_ID = tp.Event_ID
-        WHERE YEAR(e.Start_Date) >= 2025
+        WHERE YEAR(e.Start_Date) = %s
         ORDER BY tp.Ticket_Sales DESC, tp.Earned_Revenue DESC;
         '''
-        ticket_sales_data = execute_select_query(ticket_purchase_query)
+        ticket_sales_data = execute_select_query(ticket_purchase_query, (selected_ticket_sales_year,))
     
 
     # ----------------------------------------------------
@@ -586,7 +587,9 @@ def reports():
         ticket_sales_data=ticket_sales_data, 
         merchandise_sales_data=merchandise_sales_data, 
         artist_engagement_data=artist_engagement_data,
-        fanclub_contribution_data=fanclub_contribution_data
+        fanclub_contribution_data=fanclub_contribution_data,
+
+        selected_ticket_sales_year=selected_ticket_sales_year,
     )
 
 
