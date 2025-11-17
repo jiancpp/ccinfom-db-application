@@ -80,7 +80,19 @@
 
 {% if report_filter == 'ticket-sales-report' %}
     <h2>Ticket Sales Report: </h2>
-
+    <form id="ticket-year-filter" method="GET" action="{{ url_for('main_routes.reports') }}">
+        <label for="year">Generate Yearly Report</label>
+        <input type="hidden" name="filter" value="ticket-sales-report">
+        <input type="number" 
+            name="year" 
+            id="ticket-sales-year" 
+            value="{{ selected_ticket_sales_year or 2025 }}" 
+            style="max-width:200px;" 
+            placeholder="Enter Year" 
+            min="2025" 
+            step="1" 
+            required>
+    </form>
     {% if ticket_sales_data %}
         <table>
             <thead>
@@ -182,5 +194,9 @@
     if (reportSelect) {
         reportSelect.value = selectedReport;
     }
+
+    document.getElementById('ticket-sales-year').addEventListener("change", function() {
+        document.getElementById('ticket-year-filter').submit()
+    })
 </script>
 {% endblock %}
