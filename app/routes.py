@@ -508,9 +508,10 @@ def reports():
     report_filter = request.args.get('filter', '') 
     selected_ticket_sales_year = request.args.get('year', type=int)
     selected_fanclub_contribution_year = request.args.get('year', type=int)
+    selected_merch_sales_year = request.args.get('year', 2025, type=int)
 
     ticket_sales_data = ''
-    merchandise_sales_data = ''
+    sales_per_item = ''
     artist_engagement_data = ''
     fanclub_contribution_data = ''
 
@@ -541,7 +542,42 @@ def reports():
     # MERCHANDISE SALES REPORT
     # ----------------------------------------------------
     if report_filter == 'merchandise-sales-report':
-        merchandise_sales_data = ''
+        
+        # 1. Detailed Sales Ranking (Per Item, Per Creator)
+    # Includes detailed metrics: Unsold Value, Merch Price, and is filtered by Year.
+        sales_per_item_query = '''
+            SELECT
+                RANK() OVER (ORDER BY SUM(pl.Quantity_Purchased * m.Merchandise_Price) DESC) AS Ranking, 
+                COALESCE(a.Artist_Name, f.Fanclub_Name) AS Creator_Name,
+                m.Merchandise_Name AS Merchandise_Name,
+                m.Merchandise_Price AS Merchandise_Price,
+                m.Quantity_Stock AS Remaining_Stock,
+                (m.Quantity_Stock * m.Merchandise_Price) AS Unsold_Merchandise_Value, -- ADDED METRIC
+                SUM(pl.Quantity_Purchased) AS Total_Quantity_Sold,
+                SUM(pl.Quantity_Purchased * m.Merchandise_Price) AS Total_Sales_Revenue
+            FROM
+                Purchase_List pl
+            JOIN
+                `Order` o ON pl.Order_ID = o.Order_ID -- FIXED: Using backticks for the 'Order' table
+            JOIN
+                Merchandise m ON pl.Merchandise_ID = m.Merchandise_ID
+            LEFT JOIN
+                Artist a ON m.Artist_ID = a.Artist_ID
+            LEFT JOIN
+                Fanclub f ON m.Fanclub_ID = f.Fanclub_ID
+            WHERE
+                o.Order_Status IN ('Paid') 
+                AND YEAR(o.Order_Date) = %s 
+            GROUP BY
+                m.Merchandise_ID, 
+                m.Merchandise_Name,
+                Creator_Name, 
+                m.Quantity_Stock,
+                m.Merchandise_Price
+            ORDER BY
+                Total_Sales_Revenue DESC;
+        '''
+        sales_per_item = execute_select_query(sales_per_item_query,(selected_merch_sales_year,))
 
 
     # ----------------------------------------------------
@@ -588,7 +624,10 @@ def reports():
         'reports.html',
         report_filter=report_filter, 
         ticket_sales_data=ticket_sales_data, 
-        merchandise_sales_data=merchandise_sales_data, 
+
+        sales_per_item=sales_per_item,
+        selected_merch_sales_year =selected_merch_sales_year,
+        
         artist_engagement_data=artist_engagement_data,
         fanclub_contribution_data=fanclub_contribution_data,
 
