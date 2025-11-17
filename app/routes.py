@@ -309,10 +309,9 @@ def merchandise():
     fanclub_filter_id = request.args.get('fanclub_id', type=int)
     search_query = request.args.get('search_query', '').strip()
     
-    # FIX: Default to 'all' to ensure data is always shown on load
+
     display_mode = request.args.get('filter', 'all') 
     
-    # --- 2. Construct Main Merchandise SQL Query and Parameters ---
     raw_query = """
     SELECT
         M.Merchandise_ID, M.Merchandise_Name, M.Merchandise_Description, M.Merchandise_Price,
@@ -339,16 +338,13 @@ def merchandise():
         parameters.append(fanclub_filter_id)
         
     if search_query:
-        # 1. Use the correct case-insensitive SQL: LOWER()
         raw_query += """ AND (
             LOWER(M.Merchandise_Name) LIKE %s 
             OR LOWER(M.Merchandise_Description) LIKE %s
         )"""
         
-        # 2. Prepare the parameter: convert to lowercase and add wildcards
         search_param = f'%{search_query.lower()}%' 
         
-        # 3. Append the parameter TWICE to match the two '%s' placeholders
         parameters.append(search_param)
         parameters.append(search_param)
 
@@ -1480,7 +1476,6 @@ def cart():
     db_conn = None
     
     if not current_fan_id:
-        # Should ideally redirect to login, but here we just show an empty cart
         cart_display_data = []
         cart_total = 0.0
         item_count = 0
@@ -1491,9 +1486,8 @@ def cart():
         
         try:
             db_conn = get_conn()
-            cursor = db_conn.cursor(dictionary=True) # Use dictionary=True for easy column access
+            cursor = db_conn.cursor(dictionary=True)
             
-            # The SQL query uses standard JOINs and COALESCE
             sql_query = """
             SELECT
                 M.Merchandise_ID AS id,
@@ -1557,8 +1551,7 @@ def remove_from_cart(item_id):
         db_conn = get_conn()
         cursor = db_conn.cursor()
         
-        # 1. Get the active Order_ID and the current quantity for the item.
-        #    NOTE: Using Quantity_Purchased as defined in your schema.
+        
         cursor.execute(
             """
             SELECT O.Order_ID, PL.Quantity_Purchased 
@@ -1576,7 +1569,6 @@ def remove_from_cart(item_id):
             flash("That item isn't in your cart.", 'warning')
             return redirect(url_for('main_routes.cart'))
 
-        # Safely assign and convert the quantity
         active_order_id = item_in_cart[0]
         try:
             current_quantity = int(item_in_cart[1])
@@ -1585,7 +1577,6 @@ def remove_from_cart(item_id):
             return redirect(url_for('main_routes.cart'))
 
         
-        # 2. DECREMENT OR DELETE LOGIC
         if current_quantity > 1:
             # If quantity is > 1, decrement by 1
             cursor.execute(
@@ -1599,7 +1590,6 @@ def remove_from_cart(item_id):
             flash("One unit of the item was removed from your cart.", 'success')
             
         else:
-            # If quantity is 1, delete the entire line item
             cursor.execute(
                 "DELETE FROM Purchase_List WHERE Order_ID = %s AND Merchandise_ID = %s;",
                 (active_order_id, item_id)
@@ -1612,7 +1602,6 @@ def remove_from_cart(item_id):
     except mysql.connector.Error as err:
         if db_conn:
             db_conn.rollback()
-        # IMPORTANT: Keep this print statement to see the exact SQL error
         print(f"Database error on remove: {err}") 
         flash("An error occurred while removing the item.", 'danger')
         
@@ -1660,24 +1649,25 @@ def clear_cart():
             db_conn.close()
 
     return redirect(url_for('main_routes.merchandise'))
-    
+
+
 @main_routes.route('/cart/add/<int:merchandise_id>')
 def add_to_cart(merchandise_id):
     current_fan_id = session.get('fan_id')
     db_conn = None
-    quantity_to_add = 1 # We'll assume adding 1 unit by default
+    quantity_to_add = 1
+    
+    MAX_PURCHASE_LIMIT = 5 
 
     if not current_fan_id:
         flash("Please log in to add items to your cart.", 'warning')
-        return redirect(url_for('main_routes.login')) # Redirect to login if not logged in
+        return redirect(url_for('main_routes.login'))
 
     try:
         db_conn = get_conn()
         cursor = db_conn.cursor()
-        
-        # --- 1. FIND or CREATE Pending Order ID ---
-        
-        # Try to find the existing pending order
+
+
         cursor.execute(
             "SELECT Order_ID FROM `Order` WHERE Fan_ID = %s AND Order_Status = 'Pending';",
             (current_fan_id,)
@@ -1687,47 +1677,54 @@ def add_to_cart(merchandise_id):
         if active_order:
             order_id = active_order[0]
         else:
-            # If no pending order, create a new one
             cursor.execute(
                 "INSERT INTO `Order` (Fan_ID, Order_Status) VALUES (%s, 'Pending');",
                 (current_fan_id,)
             )
-            # Retrieve the ID of the newly inserted order
-            order_id = cursor.lastrowid 
-
-        # --- 2. UPSERT (Update OR Insert) Logic ---
-
-        # Check if the item is already a line item in Purchase_List
+            order_id = cursor.lastrowid
+            
         cursor.execute(
             """
-            SELECT Purchase_List_ID 
-            FROM Purchase_List 
-            WHERE Order_ID = %s AND Merchandise_ID = %s;
+            SELECT SUM(PL.Quantity_Purchased) 
+            FROM `Order` O
+            JOIN Purchase_List PL ON O.Order_ID = PL.Order_ID
+            WHERE O.Fan_ID = %s AND PL.Merchandise_ID = %s 
+              AND O.Order_Status IN ('Paid', 'Shipped', 'Completed');
             """,
+            (current_fan_id, merchandise_id)
+        )
+        
+        existing_paid_qty = cursor.fetchone()[0] or 0 
+
+        cursor.execute(
+            "SELECT Quantity_Purchased FROM Purchase_List WHERE Order_ID = %s AND Merchandise_ID = %s;",
             (order_id, merchandise_id)
         )
-        existing_item = cursor.fetchone()
+        existing_cart_item = cursor.fetchone()
+        current_cart_qty = existing_cart_item[0] if existing_cart_item else 0
         
-        if existing_item:
-            # Item exists: UPDATE the quantity
-            purchase_list_id = existing_item[0]
+        new_total_qty = existing_paid_qty + current_cart_qty + quantity_to_add
+        
+        if new_total_qty > MAX_PURCHASE_LIMIT:
+            flash(
+                f"🚫 Purchase limit reached! You have already bought {existing_paid_qty} units and have {current_cart_qty} in your cart. The maximum is {MAX_PURCHASE_LIMIT} per person.", 
+                'danger'
+            )
+           
+            db_conn.rollback() 
+            cursor.close()
+            return redirect(url_for('main_routes.merchandise'))
+            
+        
+        if existing_cart_item:
             cursor.execute(
-                """
-                UPDATE Purchase_List 
-                SET Quantity_Purchased = Quantity_Purchased + %s 
-                WHERE Purchase_List_ID = %s;
-                """,
-                (quantity_to_add, purchase_list_id)
+                "UPDATE Purchase_List SET Quantity_Purchased = Quantity_Purchased + %s WHERE Order_ID = %s AND Merchandise_ID = %s;",
+                (quantity_to_add, order_id, merchandise_id)
             )
             flash("Item quantity updated in cart.", 'success')
-            
         else:
-            # Item does NOT exist: INSERT a new row
             cursor.execute(
-                """
-                INSERT INTO Purchase_List (Order_ID, Merchandise_ID, Quantity_Purchased) 
-                VALUES (%s, %s, %s);
-                """,
+                "INSERT INTO Purchase_List (Order_ID, Merchandise_ID, Quantity_Purchased) VALUES (%s, %s, %s);",
                 (order_id, merchandise_id, quantity_to_add)
             )
             flash("Item added to cart.", 'success')
@@ -1741,6 +1738,8 @@ def add_to_cart(merchandise_id):
         flash("Could not add item to cart due to a database error.", 'danger')
         
     finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
         if db_conn and db_conn.is_connected():
             db_conn.close()
 
@@ -1756,11 +1755,9 @@ def place_order():
     
     try:
         db_conn = get_conn()
-        # Start a transaction (implicit with autocommit=False, but good practice to ensure)
         db_conn.autocommit = False 
         cursor = db_conn.cursor()
         
-        # 1. Fetch Cart Items and Stock Info
         cursor.execute(
             """
             SELECT
@@ -1790,8 +1787,6 @@ def place_order():
 
         active_order_id = cart_details[0][0] # Order_ID is the first column
 
-        # 2. Loop, Check Stock, and Update Merchandise
-        # Indices: [0:Order_ID, 1:Merchandise_ID, 2:Qty_Purchased, 3:Qty_Stock, 4:Name]
         for row in cart_details:
             merch_id = row[1]
             qty_purchased = row[2]
@@ -1828,7 +1823,6 @@ def place_order():
             (active_order_id,)
         )
         
-        # Commit the transaction (all stock updates and status change)
         db_conn.commit()
         
         flash(f"🎉 Order #{active_order_id} placed successfully! Thank you!", 'success')
