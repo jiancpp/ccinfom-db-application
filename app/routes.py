@@ -509,6 +509,7 @@ def reports():
 
     ticket_sales_data = ''
     sales_per_item = ''
+    total_sales_data = ''
     artist_engagement_data = ''
     fanclub_contribution_data = ''
 
@@ -549,9 +550,10 @@ def reports():
                 m.Merchandise_Name AS Merchandise_Name,
                 m.Merchandise_Price AS Merchandise_Price,
                 m.Quantity_Stock AS Remaining_Stock,
-                (m.Quantity_Stock * m.Merchandise_Price) AS Unsold_Merchandise_Value, -- ADDED METRIC
                 SUM(pl.Quantity_Purchased) AS Total_Quantity_Sold,
-                SUM(pl.Quantity_Purchased * m.Merchandise_Price) AS Total_Sales_Revenue
+                SUM(pl.Quantity_Purchased * m.Merchandise_Price) AS Total_Sales_Revenue,
+                
+                COALESCE(AVG(M.Merchandise_Price), 0) AS Average_Sales_per_Item
             FROM
                 Purchase_List pl
             JOIN
@@ -575,6 +577,38 @@ def reports():
                 Total_Sales_Revenue DESC;
         '''
         sales_per_item = execute_select_query(sales_per_item_query,(selected_merch_sales_year,))
+        
+        total_sales_sql = '''
+            SELECT
+                COALESCE(SUM(PL.Quantity_Purchased * M.Merchandise_Price), 0) AS Total_Sales_Revenue,
+                COALESCE(SUM(PL.Quantity_Purchased), 0) AS Total_Quantity_Sold,
+                
+                -- Top Selling Item Subquery
+                (
+                    SELECT M_Top.Merchandise_Name
+                    FROM Purchase_List PL_Top
+                    JOIN Merchandise M_Top ON PL_Top.Merchandise_ID = M_Top.Merchandise_ID
+                    JOIN `Order` O_Top ON PL_Top.Order_ID = O_Top.Order_ID
+                    WHERE 
+                        O_Top.Order_Status IN ('Paid') 
+                        AND YEAR(O_Top.Order_Date) = %s -- Filter by Year only
+                    GROUP BY M_Top.Merchandise_Name
+                    ORDER BY SUM(PL_Top.Quantity_Purchased) DESC
+                    LIMIT 1
+                ) AS Top_Selling_Item
+            
+            FROM
+                Purchase_List PL
+            JOIN
+                `Order` O ON PL.Order_ID = O.Order_ID
+            JOIN
+                Merchandise M ON PL.Merchandise_ID = M.Merchandise_ID
+            WHERE
+                O.Order_Status IN ('Paid') 
+                AND YEAR(O.Order_Date) = %s; -- Filter by Year only
+        '''
+        # Pass YEAR TWICE (1 for the subquery, 1 for the main query)
+        total_sales_data = execute_select_query( total_sales_sql, (selected_merch_sales_year, selected_merch_sales_year,))
 
 
     # ----------------------------------------------------
@@ -686,6 +720,7 @@ def reports():
         ticket_sales_data=ticket_sales_data, 
 
         sales_per_item=sales_per_item,
+        total_sales_data=total_sales_data,
         selected_merch_sales_year =selected_merch_sales_year,
         
         artist_engagement_data=artist_engagement_data,
