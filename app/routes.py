@@ -553,7 +553,31 @@ def reports():
     # FANCLUB CONTRIBUTION REPORT
     # ----------------------------------------------------
     if report_filter == 'fanclub-contribution-report':
-        fanclub_contribution_data = ''
+        fanclub_contribution_query = '''
+        SELECT
+            RANK() OVER (ORDER BY (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0)) DESC) AS Ranking,
+            f.Fanclub_Name,
+            COALESCE(list1.Ticket_Sales, 0) AS Total_Tickets,
+            COALESCE(list2.Merch_Sales, 0) AS Total_Merchandise,
+            (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0)) AS Total_Sales
+        FROM Fanclub AS f
+        LEFT JOIN (
+            SELECT fe.Fanclub_ID, SUM(t.Price) AS Ticket_Sales
+            FROM Fanclub_Event AS fe
+            LEFT JOIN Ticket_Purchase AS tp ON fe.Event_ID = tp.Event_ID
+            LEFT JOIN Ticket_Tier AS t ON tp.Tier_ID = t.Tier_ID
+            GROUP BY fe.Fanclub_ID
+        ) AS list1 ON f.Fanclub_ID = list1.Fanclub_ID
+        LEFT JOIN (
+            SELECT m.Fanclub_ID, SUM(m.Merchandise_Price * pl.Quantity_Purchased) AS Merch_Sales
+            FROM Merchandise AS m
+            LEFT JOIN Purchase_List AS pl ON m.Merchandise_ID = pl.Merchandise_ID
+            LEFT JOIN `Order` AS o ON pl.Order_ID = o.Order_ID 
+            GROUP BY m.Fanclub_ID
+        ) AS list2 ON f.Fanclub_ID = list2.Fanclub_ID
+        ORDER BY Total_Sales DESC;
+        '''
+        fanclub_contribution_data = execute_select_query(fanclub_contribution_query)
 
     
     return render_template(

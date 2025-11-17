@@ -79,7 +79,7 @@
 </form>
 
 {% if report_filter == 'ticket-sales-report' %}
-    <h2>Ticket Sales Report: </h2>
+    <h2>Ticket Sales Report</h2>
 
     {% if ticket_sales_data %}
         <table>
@@ -110,7 +110,7 @@
     {% endif %}
 
 {% elif report_filter == 'merchandise-sales-report' %}
-    <h2>Merchandise Sales Report:</h2>
+    <h2>Merchandise Sales Report</h2>
     
     {% if merchandise_sales_data %}
         <table>
@@ -144,17 +144,32 @@
     {% endif %}
 
 {% elif report_filter == 'fanclub-contribution-report' %}
-    <h2>Fanclub Contribution Report:</h2>
+    <h2>Fanclub Contribution Report</h2>
     <p style="margin-top: 1rem; margin-bottom: 2rem; color: #999;">
         Tracks contributions through ticket sales, merchandise sales, and fan-driven events.
     </p>
 
     {% if fanclub_contribution_data %}
-        <h3 style="margin-top: 2rem;">Contribution Breakdown by Fanclub</h3>
         <table>
             <thead>
+                <tr>
+                    <td>Rank</td>
+                    <td>Fanclub Name</td>
+                    <td>Total Ticket Sales</td>
+                    <td>Total Merchandise Sales</td>
+                    <td>Total Sales</td>
+                </tr>
             </thead>
             <tbody>
+                {% for record in fanclub_contribution_data %}
+                <tr>
+                    <td>{{ record.Ranking }}</td>
+                    <td>{{ record.Fanclub_Name }}</td>
+                    <td>₱<span class="money"></span>{{ record.Total_Tickets }}</span></td>
+                    <td>₱<span class="money"></span>{{ record.Total_Merchandise }}</span></td>
+                    <td>₱<span class="money">{{ record.Total_Sales }}</span></td>
+                </tr>
+                {% endfor %}                
             </tbody>
         </table>
     {% else %}
