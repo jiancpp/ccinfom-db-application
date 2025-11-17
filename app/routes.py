@@ -719,6 +719,11 @@ def profile():
     return render_template('profile.html', fan=fan, memberships=memberships, purchases=purchases)
 
 
+@main_routes.route('/manager_portal')
+def manager_portal():
+    return render_template('manager_portal.html')
+
+
 @main_routes.route('/test_db')
 def test_db():
     import mysql.connector
