@@ -135,6 +135,27 @@
             step="1" 
             required>
     </form>
+    {% if total_sales_data %}
+    <table> 
+        <thead>
+        <tr>
+            <th>Total Sales Revenue</th>
+            <th>Total Quantity Sold</th>
+            <th>Top Selling Item</th> 
+        </tr>
+        </thead>
+        <tbody>
+            {% for record in total_sales_data %}
+            <tr>
+                <td>₱<span class="money">{{ record.Total_Sales_Revenue }}</span></td>
+                <td>{{ record.Total_Quantity_Sold }}</td>
+                <td>{{ record.Top_Selling_Item }}</td> 
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
     {% if sales_per_item %}
     <table> 
         <thead>
@@ -146,6 +167,7 @@
             <th>Remaining Stock</th> 
             <th>Units Sold</th> 
             <th>Total Revenue</th>
+            <th>Average Sales per Item</th>
         </tr>
         </thead>
         <tbody>
@@ -158,33 +180,18 @@
                 <td>{{ record.Remaining_Stock | int }}</td> 
                 <td>{{ record.Total_Quantity_Sold | int }}</td> 
                 <td>₱<span class="money">{{ record.Total_Sales_Revenue }}</span></td>
+                <td>₱<span class="money">{{ record.Average_Sales_per_Item }}</span></td>
             </tr>
-            {% endfor %} 
+            {% endfor %}
         </tbody>
     </table>
-
-    {% else %}
-        <div class="empty-state">
-            <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
-            <p>No merchandise sales data available for this report.</p>
-        </div>
     {% endif %}
 
-{% elif report_filter == 'merchandise-sales-report' %}
-    <h2>Merchandise Sales Report</h2>
-    
-    {% if merchandise_sales_data %}
-        <table>
-            <thead>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    {% else %}
-        <div class="empty-state">
-            <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
-            <p>No merchandise sales data available for this report.</p>
-        </div>
+    {% if not total_sales_data and not sales_per_item %}
+    <div class="empty-state">
+        <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
+        <p>No merchandise sales data available for this report.</p>
+    </div>
     {% endif %}
 
 {% elif report_filter == 'artist-engagement-index' %}
