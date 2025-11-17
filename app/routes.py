@@ -4,71 +4,10 @@ from collections import defaultdict
 
 import datetime
 import mysql.connector
-from app.config import DB_HOST, DB_USER, DB_PASS, DB_NAME
 
-# =========== REMOVE LATER ===================
-from app.models import *
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
-from sqlalchemy import func, desc
-# ============================================
-
+from .db_utils import execute_select_query, execute_insert_query, get_conn
 
 main_routes = Blueprint('main_routes', __name__)
-
-# ============================================
-#           DATABASE CONNECTION
-# ============================================
-def get_conn():
-    try:
-        # The connect function now takes the essential credentials
-        return mysql.connector.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASS
-        )
-    except Exception as e:
-        print(f"Connection failed: {e}")
-        raise
-
-def execute_select_query(sql, params=()):
-    # Pass dictionary=True to the cursor method
-    try:
-        conn = get_conn()
-        cursor = conn.cursor(dictionary=True) 
-        cursor.execute(sql, params)
-        
-        # Results will be a list of dictionaries
-        results = cursor.fetchall()
-        cursor.close()
-        return results
-        
-    except Exception as e:
-        print(f"Error fetching user: {e}")
-        return []
-    
-def execute_insert_query(sql, params=()):
-    # Pass dictionary=True to the cursor method
-    is_successful = False
-
-    try:
-        conn = get_conn()
-        cursor = conn.cursor(dictionary=True) 
-        cursor.execute(sql, params)
-        conn.commit()
-        is_successful = True
-        
-    except Exception as e:
-        print(f"Error fetching user: {e}")
-
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
-    return is_successful
 
 # ============================================
 #           CORE PAGES
@@ -82,7 +21,7 @@ def index():
     
     if g.get('current_user'):
             title = "Artists You Follow"
-            fan_ID = g.current_user.Fan_ID
+            fan_ID = g.current_user['Fan_ID'] if g.current_user else None 
             artist_query = '''
                 SELECT * FROM Artist AS a
                 JOIN Artist_Follower AS af ON a.Artist_ID = af.Artist_ID
@@ -145,7 +84,7 @@ def index():
 def artists():
     
     if g.get('current_user'):
-        current_fan_id = g.current_user.Fan_ID
+        current_fan_id = g.current_user['Fan_ID'] if g.current_user else None
 
     search_term = request.args.get("artist-name", "").strip()
     filter_val = request.args.get("filter", "all") 
@@ -419,13 +358,17 @@ def merchandise():
 
 @main_routes.route('/fanclubs', methods=['GET'])
 def fanclubs():
+    if not g.get('current_user'):
+        flash("You must be logged in to view fan clubs", "error")
+        return redirect(url_for('main_routes.login'))
+
     # ----------------------------------------------------
     # SETUP & INPUTS
     # ---------------------------------------------------- 
     conditions = []
     query_parameters = []
 
-    current_fan_id = g.current_user.Fan_ID
+    current_fan_id = g.current_user['Fan_ID'] if g.current_user else None
     current_search = request.args.get('fanclub-name', '').strip()
     current_filter = request.args.get('filter', 'all') 
     current_artist = request.args.get('artist', 'all').strip()
@@ -823,7 +766,7 @@ def register():
 
 @main_routes.route('/profile')
 def profile():
-    current_fan_id = g.current_user.Fan_ID
+    current_fan_id = g.current_user['Fan_ID'] if g.current_user else None
     
     fan_query = '''
         SELECT *, DATEDIFF(CURDATE(), Date_Joined) AS Days_Since
@@ -890,23 +833,6 @@ def manage_events():
 def manage_merchandise():
     # edit
     return render_template('manager_portal.html')
-
-
-@main_routes.route('/test_db')
-def test_db():
-    import mysql.connector
-    from app.config import DB_CONFIG
-
-    conn = mysql.connector.connect(**DB_CONFIG)
-    cursor = conn.cursor()
-    cursor.execute("SELECT DATABASE();")
-    current_db = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM Event;")
-    event_count = cursor.fetchone()[0]
-    cursor.close()
-    conn.close()
-    return f"Connected to: {current_db}, found {event_count} events."
-
 
 # ============================================
 #           Event Subpages
@@ -1154,7 +1080,7 @@ def view_ticket(ticket_id):
 @main_routes.route('/fanclubs/<int:fanclub_id>')
 def fanclub_details(fanclub_id):
 
-    current_fan_id = g.current_user.Fan_ID
+    current_fan_id = g.current_user['Fan_ID'] if g.current_user else None
 
     fanclub_query = '''
     SELECT f.*, a.Artist_Name, COUNT(fm.Fan_ID) AS Member_Count
@@ -1216,7 +1142,7 @@ def fanclub_details(fanclub_id):
 # @login_required # Ensure only logged-in users can view the list
 def fanclub_members(fanclub_id):
 
-    current_fan_id = g.current_user.Fan_ID
+    current_fan_id = g.current_user['Fan_ID'] if g.current_user else None
 
     is_member_query = '''
     SELECT Fan_Id
@@ -1256,7 +1182,7 @@ def fanclub_members(fanclub_id):
 @main_routes.route('/fanclubs/<int:fanclub_id>/join', methods=['POST'])
 def join_fanclub(fanclub_id):
 
-    current_fan_id = g.current_user.Fan_ID
+    current_fan_id = g.current_user['Fan_ID'] if g.current_user else None
 
     insert_fanclub_membership_record = '''
     INSERT INTO Fanclub_Membership (Fan_ID, Fanclub_ID)
@@ -1271,7 +1197,7 @@ def join_fanclub(fanclub_id):
 @main_routes.route('/fanclubs/<int:fanclub_id>/leave', methods=['POST'])
 def leave_fanclub(fanclub_id):
 
-    current_fan_id = g.current_user.Fan_ID
+    current_fan_id = g.current_user['Fan_ID'] if g.current_user else None
 
     delete_fanclub_membership_record = '''
     DELETE FROM Fanclub_Membership
@@ -1525,7 +1451,7 @@ def artist_details(artist_id):
 
     artist['member'] = structured_members
     
-    current_fan_id = g.current_user.Fan_ID
+    current_fan_id = g.current_user['Fan_ID'] if g.current_user else None
     
     followed_result = execute_select_query(follow_query, (artist_id, current_fan_id))
     Follow = followed_result[0] if followed_result else {'Is_Followed': 0, 'Followed_Date': None}
@@ -1542,7 +1468,7 @@ def artist_details(artist_id):
 @main_routes.route('/artists/toggle_follow/<int:artist_id>', methods=['POST'])
 def toggle_follow(artist_id):
 
-    current_fan_id = g.current_user.Fan_ID
+    current_fan_id = g.current_user['Fan_ID'] if g.current_user else None
     action = request.form.get('action') 
 
     artist_query = '''

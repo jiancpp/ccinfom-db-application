@@ -1,9 +1,0 @@
-Copy this to your own config.py
-
-# ============================================
-#           DATABASE CONFIGURATION
-# ============================================
-
-DB_USER = "root"
-DB_PASS = "YourPassword"
-DB_NAME = "dbApp"
