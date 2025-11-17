@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, g
-from flask import request, jsonify
+from flask import render_template, request, redirect, url_for, jsonify
+from collections import defaultdict
 
 import datetime
 import mysql.connector
@@ -147,7 +148,7 @@ def artists():
         current_fan_id = g.current_user.Fan_ID
 
     search_term = request.args.get("artist-name", "").strip()
-    filter_val = request.args.get("filter", "all") # Renamed from 'filter' to 'filter_val' to avoid shadowing built-in
+    filter_val = request.args.get("filter", "all") 
 
     query_parameters = []
     where_clauses = []
@@ -278,89 +279,145 @@ def events():
 # =========================================================================
 # MERCH MAIN
 # =========================================================================
-@main_routes.route('/merchandise')
+def format_merch_row(row):
+    """
+    Converts a single SQL row (dictionary) into a readable dictionary 
+    for the Jinja template, using column names as keys.
+    """
+    if not row:
+        return {} 
+
+    return {
+        'id': row['Merchandise_ID'],
+        'name': row['Merchandise_Name'],
+        'description': row['Merchandise_Description'],
+        'price': row['Merchandise_Price'],
+        'stock': row['Quantity_Stock'],
+        'artist_id': row['Artist_ID'],
+        'fanclub_id': row['Fanclub_ID'],
+        'event_id': row['Event_ID'],
+        'artist_name': row['Artist_Name'],
+        'fanclub_name': row['Fanclub_Name'],
+        'event_name': row['Event_Name'] 
+    }
+
+
+@main_routes.route('/merchandise', methods=['GET'])
 def merchandise():
+    # --- 1. Get Filters and Display Mode ---
     artist_filter_id = request.args.get('artist_id', type=int)
     fanclub_filter_id = request.args.get('fanclub_id', type=int)
-
-    merch_query = Merchandise.query.order_by(Merchandise.Merchandise_Name)
+    search_query = request.args.get('search_query', '').strip()
     
-    # Artist Filter
+    # FIX: Default to 'all' to ensure data is always shown on load
+    display_mode = request.args.get('filter', 'all') 
+    
+    # --- 2. Construct Main Merchandise SQL Query and Parameters ---
+    raw_query = """
+    SELECT
+        M.Merchandise_ID, M.Merchandise_Name, M.Merchandise_Description, M.Merchandise_Price,
+        M.Quantity_Stock, M.Artist_ID, M.Fanclub_ID, M.Event_ID,
+        A.Artist_Name,
+        F.Fanclub_Name,
+        E.Event_Name
+    FROM
+        Merchandise M
+    LEFT JOIN Artist A ON M.Artist_ID = A.Artist_ID
+    LEFT JOIN Fanclub F ON M.Fanclub_ID = F.Fanclub_ID
+    LEFT JOIN Event E ON M.Event_ID = E.Event_ID
+    WHERE 1=1
+    """
+    
+    parameters = []
+    
     if artist_filter_id:
-        merch_query = merch_query.filter(Merchandise.Artist_ID == artist_filter_id)
+        raw_query += " AND M.Artist_ID = %s"
+        parameters.append(artist_filter_id)
 
-    # Fanclub Filter 
     if fanclub_filter_id:
-        merch_query = merch_query.filter(Merchandise.Fanclub_ID == fanclub_filter_id)
-
-    # Execute Query and Group by Artist    
-    if artist_filter_id:
-        artists = Artist.query.filter(Artist.Artist_ID == artist_filter_id).order_by(Artist.Artist_Name).all()
-    else:
-        artists = Artist.query.order_by(Artist.Artist_Name).all()
-    
-    
-    artists_merch_data = []
-    
-    filtered_merchandise = merch_query.all()
-    
-    
-    for artist in artists:
-        merch_for_artist = [item for item in filtered_merchandise if item.artist == artist]
-        if merch_for_artist or not (artist_filter_id or fanclub_filter_id):
-            
-            merch_list_data = []
-            for merch_item in merch_for_artist:
-                merch_list_data.append({
-                    'id': merch_item.Merchandise_ID,
-                    'name': merch_item.Merchandise_Name,
-                    'type': merch_item.Merchandise_Description, 
-                    'price': float(merch_item.Merchandise_Price),
-                    'sku': f"SKU-{merch_item.Merchandise_ID}",
-                    'stock': merch_item.Quantity_Stock
-                })
-                
-            if merch_list_data:
-                artists_merch_data.append({
-                    'name': artist.Artist_Name,
-                    'merchandise': merch_list_data
-                })
-                
-    if fanclub_filter_id:
-        fanclubs = Fanclub.query.filter(Fanclub.Fanclub_ID == fanclub_filter_id).order_by(Fanclub.Fanclub_Name).all()
-    else:
-        fanclubs = Fanclub.query.order_by(Fanclub.Fanclub_Name).all()
+        raw_query += " AND M.Fanclub_ID = %s"
+        parameters.append(fanclub_filter_id)
         
-    for fanclub in fanclubs:
-        merch_for_fanclub = [item for item in filtered_merchandise if item.fanclub == fanclub]
+    if search_query:
+        # 1. Use the correct case-insensitive SQL: LOWER()
+        raw_query += """ AND (
+            LOWER(M.Merchandise_Name) LIKE %s 
+            OR LOWER(M.Merchandise_Description) LIKE %s
+        )"""
+        
+        # 2. Prepare the parameter: convert to lowercase and add wildcards
+        search_param = f'%{search_query.lower()}%' 
+        
+        # 3. Append the parameter TWICE to match the two '%s' placeholders
+        parameters.append(search_param)
+        parameters.append(search_param)
 
-        if merch_for_fanclub or not (artist_filter_id or fanclub_filter_id):            
-            merch_list_data = []
-            for merch_item in merch_for_fanclub:
-                merch_list_data.append({
-                    'id': merch_item.Merchandise_ID,
-                    'name': merch_item.Merchandise_Name,
-                    'type': merch_item.Merchandise_Description, 
-                    'price': float(merch_item.Merchandise_Price),
-                    'sku': f"SKU-{merch_item.Merchandise_ID}",
-                    'stock': merch_item.Quantity_Stock
-                })
-                
-            if merch_list_data:
-                artists_merch_data.append({
-                    'name': fanclub.Fanclub_Name,
-                    'merchandise': merch_list_data
-                })
+    raw_query += " ORDER BY M.Merchandise_Name"
+
     
-    all_artists_data = [{'id': a.Artist_ID, 'name': a.Artist_Name} for a in Artist.query.order_by(Artist.Artist_Name).all()]
-    all_fanclubs_data = [{'id': f.Fanclub_ID, 'name': f.Fanclub_Name} for f in Fanclub.query.order_by(Fanclub.Fanclub_Name).all()]
+    if parameters:
+        filtered_merch_rows = execute_select_query(raw_query, tuple(parameters))
+    else:
+        filtered_merch_rows = execute_select_query(raw_query)
+        
+    if filtered_merch_rows is not None:
+        formatted_merchandise = [format_merch_row(row) for row in filtered_merch_rows]
+    else:
+        formatted_merchandise = []
+        
+    merch_by_artist = {}
+    artist_names_map = {}
+    artists_merch_data = [] 
+    
+    for item in formatted_merchandise:
+        artist_id = item['artist_id'] 
+        if artist_id is not None:
+            merch_by_artist.setdefault(artist_id, []).append(item)
+            artist_names_map[artist_id] = item['artist_name'] 
+    
+    for artist_id, merch_list in merch_by_artist.items():
+        artists_merch_data.append({
+            'name': artist_names_map[artist_id],
+            'merchandise': merch_list
+        })
 
+    merch_by_fanclub = {}
+    fanclub_names_map = {}
+    fanclubs_merch_data = []
+    
+    for item in formatted_merchandise:
+        fanclub_id = item['fanclub_id'] 
+        if fanclub_id is not None:
+            merch_by_fanclub.setdefault(fanclub_id, []).append(item)
+            fanclub_names_map[fanclub_id] = item['fanclub_name']
+            
+    for fanclub_id, merch_list in merch_by_fanclub.items():
+        fanclubs_merch_data.append({
+            'name': fanclub_names_map[fanclub_id],
+            'merchandise': merch_list
+        })
+    
+    # single list for the 'All Merchandise' view
+    all_merch_data = [{'name': 'All Merchandise', 'merchandise': formatted_merchandise}]
+    
+    # Query for All Artists/Fanclubs for Dropdowns
+    raw_artists_data = execute_select_query("SELECT Artist_ID, Artist_Name FROM Artist ORDER BY Artist_Name") 
+    all_artists_data = [{'id': row['Artist_ID'], 'name': row['Artist_Name']} for row in raw_artists_data]
+
+    raw_fanclubs_data = execute_select_query("SELECT Fanclub_ID, Fanclub_Name FROM Fanclub ORDER BY Fanclub_Name")
+    all_fanclubs_data = [{'id': row['Fanclub_ID'], 'name': row['Fanclub_Name']} for row in raw_fanclubs_data]
+    
     return render_template(
         'merchandise.html', 
         artists_merch=artists_merch_data,
+        fanclubs_merch=fanclubs_merch_data,
         all_artists=all_artists_data,
         all_fanclubs=all_fanclubs_data,
-        cart_item_count=0 
+        search_query=search_query,
+        artist_id=artist_filter_id,
+        fanclub_id=fanclub_filter_id,
+        filter=display_mode,
+        all_merch=all_merch_data,
     )
 
 
@@ -1141,28 +1198,141 @@ def create_fanclub_event(fanclub_id):
 # ============================================
 @main_routes.route('/artists/<int:artist_id>')
 def artist_details(artist_id):
-    artist = Artist.query.options(
-        joinedload(Artist.manager),          
-        joinedload(Artist.member_detail),      
-        joinedload(Artist.events).joinedload(Event.venue),
-        joinedload(Artist.fanclubs).joinedload(Fanclub.fanclub_memberships),
-        joinedload(Artist.merchandise)
-    ).get_or_404(artist_id)
-    
-    artist.is_followed = False
-    
-    if g.get('current_user'):
-        is_following_query = db.session.query(Artist_Follower).filter(
-            Artist_Follower.Fan_ID == g.current_user.Fan_ID,
-            Artist_Follower.Artist_ID == artist_id
-        ).one_or_none()
+    artist_query = '''
+        SELECT a.*,
+               COUNT(af.Fan_ID) AS Num_Followers,
+               TIMESTAMPDIFF(DAY, a.Debut_Date, CURDATE()) AS Debut_Days
+        FROM Artist AS a
+        LEFT JOIN Artist_Follower AS af ON a.Artist_ID = af.Artist_ID
+        WHERE a.Artist_ID = %s
+        GROUP BY a.Artist_ID
+        '''
         
-        # Assign the boolean result to the new attribute
-        artist.is_followed = is_following_query is not None     
+    manager_query = '''
+        SELECT m.*
+        FROM Manager AS m
+        JOIN Artist AS a ON m.Manager_ID = a.Manager_ID
+        WHERE a.Artist_ID = %s
+        '''
+
+    member_query = '''
+        SELECT me.*,
+            TIMESTAMPDIFF(YEAR, me.Birth_Date, CURDATE()) AS Age,
+            me.Member_ID
+        FROM Member AS me
+        WHERE me.Artist_ID = %s
+        ORDER BY me.Member_Name
+        '''
+    member_roles_query = '''
+        SELECT mr.Member_ID, 
+            r.Role_Name 
+        FROM Member_Role AS mr
+        JOIN Role AS r ON mr.Role_ID = r.Role_ID
+        JOIN Member AS me ON mr.Member_ID = me.Member_ID
+        WHERE me.Artist_ID = %s
+        '''
+    
+    member_nationality_query = '''
+        SELECT mn.Member_ID, 
+            n.Nationality_Name 
+        FROM Member_Nationality AS mn
+        JOIN Nationality AS n ON mn.Nationality_ID = n.Nationality_ID
+        JOIN Member AS me ON mn.Member_ID = me.Member_ID
+        WHERE me.Artist_ID = %s
+        '''
+
+    artist_event_query = '''
+        SELECT e.*
+        FROM Event AS e
+        JOIN Artist_Event AS ae ON e.Event_ID = ae.Event_ID
+        WHERE ae.Artist_ID = %s AND e.Start_Date >= CURDATE()
+        ORDER BY e.Start_Date ASC
+        '''
+    
+    fanclub_query = '''
+        SELECT f.*, 
+               COUNT(m.Fan_ID) AS Member_Count
+        FROM Fanclub AS f
+        LEFT JOIN Fanclub_Membership AS m ON f.Fanclub_ID = m.Fanclub_ID
+        WHERE f.Artist_ID = %s
+        GROUP BY f.Fanclub_ID
+        '''
+
+    merch_query = '''
+        SELECT * FROM Merchandise WHERE Artist_ID = %s
+        '''
+    
+    follow_query = '''
+        SELECT IF(COUNT(*) > 0, 1, 0) AS Is_Followed, Followed_Date
+        FROM Artist_Follower
+        WHERE Artist_ID = %s AND Fan_ID = %s
+        '''
+    
+    event_fanclub_merch_count_query = '''
+        SELECT list1.Event_Count AS Event, list2.Merch_Count AS Merch, list3.Fanclub_Count AS Fanclub, list4.Member_Count AS Member
+        FROM (SELECT COUNT(*) AS Event_Count FROM Artist_Event AS ae
+              WHERE ae.Artist_ID = %s) AS list1,
+             (SELECT COUNT(*) AS Merch_Count FROM Merchandise AS m
+              WHERE m.Artist_ID = %s) AS list2,
+             (SELECT COUNT(*) AS Fanclub_Count FROM Fanclub AS f
+              WHERE f.Artist_ID = %s) AS list3,
+             (SELECT COUNT(*) AS Member_Count FROM Member AS me
+              WHERE me.Artist_ID = %s) AS list4
+    '''
+
+    artist_result = execute_select_query(artist_query, (artist_id,))
+    
+    artist = artist_result[0]
+
+    # artist['member'] = execute_select_query(member_query, (artist_id,))
+    
+    artist['events'] = execute_select_query(artist_event_query, (artist_id,))
+    
+    artist['merch'] = execute_select_query(merch_query, (artist_id,))
+
+    artist['fanclub'] = execute_select_query(fanclub_query, (artist_id,))
+    
+    manager_list = execute_select_query(manager_query, (artist_id,))
+    artist['manager'] = manager_list[0] if manager_list else None
+
+    base_members_list = execute_select_query(member_query, (artist_id,))
+    role_results = execute_select_query(member_roles_query, (artist_id,))
+    nationality_results = execute_select_query(member_nationality_query, (artist_id,))
+
+    member_roles_map = defaultdict(set) 
+    for row in role_results:
+        member_roles_map[row['Member_ID']].add(row['Role_Name'])
+
+    member_nationality_map = defaultdict(set)
+    for row in nationality_results:
+        member_nationality_map[row['Member_ID']].add(row['Nationality_Name'])
         
+    structured_members = []
+    for member_data in base_members_list:
+        member_id = member_data['Member_ID']
+        
+        roles_set = member_roles_map[member_id]
+        member_data['Roles'] = sorted(list(roles_set))
+        
+        nationality_set = member_nationality_map[member_id]
+        member_data['Nationalities'] = sorted(list(nationality_set))
+        
+        structured_members.append(member_data)
+
+    artist['member'] = structured_members
+    
+    current_fan_id = g.current_user.Fan_ID
+    
+    followed_result = execute_select_query(follow_query, (artist_id, current_fan_id))
+    Follow = followed_result[0] if followed_result else {'Is_Followed': 0, 'Followed_Date': None}
+    Count = execute_select_query(event_fanclub_merch_count_query, (artist_id, artist_id, artist_id, artist_id))
+    Count = Count[0] if Count else {'Event': 0, 'Merch': 0, 'Fanclub': 0, 'Member': 0}
+    
     return render_template(
         'artist_details.html', 
         artist=artist,
+        Follow=Follow,
+        Count=Count
     )
 
 @main_routes.route('/artists/toggle_follow/<int:artist_id>', methods=['POST'])
@@ -1176,8 +1346,8 @@ def toggle_follow(artist_id):
         '''
 
     insert_artist_follower = '''
-        INSERT INTO Artist_Follower (Fan_ID, Artist_ID)
-        VALUES (%s, %s)
+        INSERT INTO Artist_Follower (Fan_ID, Artist_ID, Followed_Date)
+        VALUES (%s, %s, CURDATE())
         '''
     
     delete_artist_follower = '''
@@ -1196,184 +1366,380 @@ def toggle_follow(artist_id):
         flash(f"💔 You have unfollowed {artist[0]['Artist_Name']}.", 'error')
 
     return redirect(request.referrer or url_for('main_routes.artists'))
-
 # =========================================================================
 # MERCH SUBPAGES
 # =========================================================================
 @main_routes.route('/cart')
 def cart():
+    current_fan_id = session.get('fan_id')
+    db_conn = None
     
-    current_fan_id = session.get('fan_id')    
-
-    active_cart_order = Order.query.filter_by(
-            Fan_ID=current_fan_id, 
-            Order_Status='Pending'
-        ).first()
-
-    cart_display_data = []
-    cart_total = 0.0
-
-    if active_cart_order:
-        purchase_list = Purchase_List.query.filter_by(Order_ID=active_cart_order.Order_ID).all()
+    if not current_fan_id:
+        # Should ideally redirect to login, but here we just show an empty cart
+        cart_display_data = []
+        cart_total = 0.0
+        item_count = 0
+    else:
+        cart_display_data = []
+        cart_total = 0.0
+        total_units = 0
+        
+        try:
+            db_conn = get_conn()
+            cursor = db_conn.cursor(dictionary=True) # Use dictionary=True for easy column access
             
-        for item in purchase_list:
-            merch = item.merchandise 
-            if merch:
-                item_subtotal = float(merch.Merchandise_Price) * item.Quantity_Purchased
-                cart_total += item_subtotal
-                artist_name = merch.artist.Artist_Name if merch.artist else merch.fanclub.Fanclub_Name
+            # The SQL query uses standard JOINs and COALESCE
+            sql_query = """
+            SELECT
+                M.Merchandise_ID AS id,
+                M.Merchandise_Name AS name,
+                COALESCE(A.Artist_Name, F.Fanclub_Name) AS artist,
+                M.Merchandise_Price AS price,
+                PL.Quantity_Purchased AS quantity,
+                (M.Merchandise_Price * PL.Quantity_Purchased) AS subtotal
+            FROM
+                `Order` O
+            JOIN
+                Purchase_List PL ON O.Order_ID = PL.Order_ID
+            JOIN
+                Merchandise M ON PL.Merchandise_ID = M.Merchandise_ID
+            LEFT JOIN
+                Artist A ON M.Artist_ID = A.Artist_ID
+            LEFT JOIN
+                Fanclub F ON M.Fanclub_ID = F.Fanclub_ID
+            WHERE
+                O.Fan_ID = %s
+                AND O.Order_Status = 'Pending';
+            """
+            
+            cursor.execute(sql_query, (current_fan_id,))
+            
+            for item in cursor.fetchall():
+                cart_display_data.append(item)
+                cart_total += float(item['subtotal']) # Sum the calculated subtotal
+                try:
+                    total_units += int(item['quantity'])
+                except (ValueError, TypeError):
+                    total_units += 0
 
-                cart_display_data.append({
-                    'id': merch.Merchandise_ID,
-                    'name': merch.Merchandise_Name,
-                    'artist' : artist_name,
-                    'price': float(merch.Merchandise_Price),
-                    'subtotal': item_subtotal,
-                })
+            cursor.close()
+
+        except mysql.connector.Error as err:
+            print(f"Database error in cart: {err}")
+            flash("Error loading cart details.", 'danger')
+        finally:
+            if db_conn and db_conn.is_connected():
+                db_conn.close()
 
     context = {
         'cart_items': cart_display_data, 
         'cart_total': cart_total, 
-        'item_count': len(cart_display_data) 
+        'item_count': total_units
     }
-        
     return render_template('cart.html', **context)
 
 
 @main_routes.route('/cart/remove/<int:item_id>')
 def remove_from_cart(item_id):
-    
     current_fan_id = session.get('fan_id')
+    db_conn = None
     
-    active_cart_order = Order.query.filter_by(
-        Fan_ID=current_fan_id, 
-        Order_Status='Pending'
-    ).first()
-    
-    if not active_cart_order:
-        flash("Your cart is already empty.", 'info')
-        return redirect(url_for('main_routes.cart'))
+    if not current_fan_id:
+        flash("Please log in to manage your cart.", 'warning')
+        return redirect(url_for('main_routes.login'))
 
-    item_to_remove = Purchase_List.query.filter_by(
-        Order_ID=active_cart_order.Order_ID, 
-        Merchandise_ID=item_id
-    ).first()
-    
-    if item_to_remove:
-        db.session.delete(item_to_remove)
-        db.session.commit()
-        flash("Item successfully removed from cart.", 'success')
-    else:
-        flash("That item wasn't in your cart.", 'warning')
+    try:
+        db_conn = get_conn()
+        cursor = db_conn.cursor()
+        
+        # 1. Get the active Order_ID and the current quantity for the item.
+        #    NOTE: Using Quantity_Purchased as defined in your schema.
+        cursor.execute(
+            """
+            SELECT O.Order_ID, PL.Quantity_Purchased 
+            FROM `Order` O
+            JOIN Purchase_List PL ON O.Order_ID = PL.Order_ID
+            WHERE O.Fan_ID = %s 
+              AND O.Order_Status = 'Pending'
+              AND PL.Merchandise_ID = %s;
+            """, 
+            (current_fan_id, item_id)
+        )
+        item_in_cart = cursor.fetchone()
+        
+        if not item_in_cart:
+            flash("That item isn't in your cart.", 'warning')
+            return redirect(url_for('main_routes.cart'))
+
+        # Safely assign and convert the quantity
+        active_order_id = item_in_cart[0]
+        try:
+            current_quantity = int(item_in_cart[1])
+        except (TypeError, ValueError):
+            flash("Error processing item quantity.", 'danger')
+            return redirect(url_for('main_routes.cart'))
+
+        
+        # 2. DECREMENT OR DELETE LOGIC
+        if current_quantity > 1:
+            # If quantity is > 1, decrement by 1
+            cursor.execute(
+                """
+                UPDATE Purchase_List 
+                SET Quantity_Purchased = Quantity_Purchased - 1 
+                WHERE Order_ID = %s AND Merchandise_ID = %s;
+                """,
+                (active_order_id, item_id)
+            )
+            flash("One unit of the item was removed from your cart.", 'success')
+            
+        else:
+            # If quantity is 1, delete the entire line item
+            cursor.execute(
+                "DELETE FROM Purchase_List WHERE Order_ID = %s AND Merchandise_ID = %s;",
+                (active_order_id, item_id)
+            )
+            flash("Item successfully removed from cart.", 'success')
+            
+        db_conn.commit()
+        cursor.close()
+            
+    except mysql.connector.Error as err:
+        if db_conn:
+            db_conn.rollback()
+        # IMPORTANT: Keep this print statement to see the exact SQL error
+        print(f"Database error on remove: {err}") 
+        flash("An error occurred while removing the item.", 'danger')
+        
+    finally:
+        if db_conn and db_conn.is_connected():
+            db_conn.close()
 
     return redirect(url_for('main_routes.cart'))
 
 
 @main_routes.route('/cart/clear')
 def clear_cart():
-    
     current_fan_id = session.get('fan_id')
-    active_cart_order = Order.query.filter_by(
-        Fan_ID=current_fan_id, 
-        Order_Status='Pending'
-    ).first()
+    db_conn = None
 
-    if active_cart_order:
-        db.session.delete(active_cart_order)
-        db.session.commit()
-        flash("Your shopping cart has been completely emptied.", 'success')
-    
+    try:
+        db_conn = get_conn()
+        cursor = db_conn.cursor()
+        
+        cursor.execute(
+            """
+            UPDATE `Order` 
+            SET Order_Status = 'Cancelled' 
+            WHERE Fan_ID = %s AND Order_Status = 'Pending';
+            """,
+            (current_fan_id,)
+        )
+
+        if cursor.rowcount > 0:
+            db_conn.commit()
+            flash("Your current order has been cancelled, and the cart is emptied.", 'success')
+        else:
+            flash("No active order was found to cancel.", 'info')
+
+        cursor.close()
+            
+    except mysql.connector.Error as err:
+        if db_conn:
+            db_conn.rollback()
+        print(f"Database error on clear cart: {err}")
+        flash("An error occurred while clearing the cart. Please try again.", 'danger')
+        
+    finally:
+        if db_conn and db_conn.is_connected():
+            db_conn.close()
+
     return redirect(url_for('main_routes.merchandise'))
     
-
-@main_routes.route('/cart/add/<int:item_id>')
-def add_to_cart(item_id):
-    
+@main_routes.route('/cart/add/<int:merchandise_id>')
+def add_to_cart(merchandise_id):
     current_fan_id = session.get('fan_id')
+    db_conn = None
+    quantity_to_add = 1 # We'll assume adding 1 unit by default
 
-    merchandise = Merchandise.query.filter_by(Merchandise_ID=item_id).first()
-    if not merchandise or merchandise.Quantity_Stock <= 0:
-        flash("🚫 Item is out of stock or not found!", 'danger')
-        return redirect(url_for('main_routes.merchandise'))
-    
+    if not current_fan_id:
+        flash("Please log in to add items to your cart.", 'warning')
+        return redirect(url_for('main_routes.login')) # Redirect to login if not logged in
 
-    active_cart_order = Order.query.filter_by(
-        Fan_ID=current_fan_id, 
-        Order_Status='Pending'
-    ).first()
-    
-    if not active_cart_order:
-        active_cart_order = Order(Fan_ID=current_fan_id, Order_Status='Pending')
-        db.session.add(active_cart_order)
-        db.session.flush() 
-
-    purchase_list_item = Purchase_List.query.filter_by(
-        Order_ID=active_cart_order.Order_ID, 
-        Merchandise_ID=item_id
-    ).first()
-
-    
-    if purchase_list_item:
-        purchase_list_item.Quantity_Purchased += 1
-    else:
-        purchase_list_item = Purchase_List(
-            Order_ID=active_cart_order.Order_ID, 
-            Merchandise_ID=item_id, 
-            Quantity_Purchased=1
-        )
-        db.session.add(purchase_list_item)
+    try:
+        db_conn = get_conn()
+        cursor = db_conn.cursor()
         
-    db.session.commit()
-    
-    flash(f"✅ '{merchandise.Merchandise_Name}' added to your cart!", 'success')
-    return redirect(url_for('main_routes.cart'))
+        # --- 1. FIND or CREATE Pending Order ID ---
+        
+        # Try to find the existing pending order
+        cursor.execute(
+            "SELECT Order_ID FROM `Order` WHERE Fan_ID = %s AND Order_Status = 'Pending';",
+            (current_fan_id,)
+        )
+        active_order = cursor.fetchone()
+        
+        if active_order:
+            order_id = active_order[0]
+        else:
+            # If no pending order, create a new one
+            cursor.execute(
+                "INSERT INTO `Order` (Fan_ID, Order_Status) VALUES (%s, 'Pending');",
+                (current_fan_id,)
+            )
+            # Retrieve the ID of the newly inserted order
+            order_id = cursor.lastrowid 
+
+        # --- 2. UPSERT (Update OR Insert) Logic ---
+
+        # Check if the item is already a line item in Purchase_List
+        cursor.execute(
+            """
+            SELECT Purchase_List_ID 
+            FROM Purchase_List 
+            WHERE Order_ID = %s AND Merchandise_ID = %s;
+            """,
+            (order_id, merchandise_id)
+        )
+        existing_item = cursor.fetchone()
+        
+        if existing_item:
+            # Item exists: UPDATE the quantity
+            purchase_list_id = existing_item[0]
+            cursor.execute(
+                """
+                UPDATE Purchase_List 
+                SET Quantity_Purchased = Quantity_Purchased + %s 
+                WHERE Purchase_List_ID = %s;
+                """,
+                (quantity_to_add, purchase_list_id)
+            )
+            flash("Item quantity updated in cart.", 'success')
+            
+        else:
+            # Item does NOT exist: INSERT a new row
+            cursor.execute(
+                """
+                INSERT INTO Purchase_List (Order_ID, Merchandise_ID, Quantity_Purchased) 
+                VALUES (%s, %s, %s);
+                """,
+                (order_id, merchandise_id, quantity_to_add)
+            )
+            flash("Item added to cart.", 'success')
+
+        db_conn.commit()
+        
+    except mysql.connector.Error as err:
+        if db_conn:
+            db_conn.rollback()
+        print(f"Database error while adding to cart: {err}")
+        flash("Could not add item to cart due to a database error.", 'danger')
+        
+    finally:
+        if db_conn and db_conn.is_connected():
+            db_conn.close()
+
+    return redirect(url_for('main_routes.merchandise'))
+
+
 
 @main_routes.route('/checkout/place_order', methods=['POST']) 
 def place_order():
-    """
-    Finalizes the order: Deducts stock, changes status to 'Paid'.
-    This version uses the relationship attribute 'purchase_list'.
-    """
     current_fan_id = session.get('fan_id')
 
-    if not current_fan_id:
-        flash("🚫 You must be logged in to place an order.", 'warning')
-        return redirect(url_for('main_routes.login')) 
-
-
-    active_cart_order = Order.query.filter_by(
-        Fan_ID=current_fan_id, 
-        Order_Status='Pending'
-    ).first()
-
-
-    if not active_cart_order or not active_cart_order.purchase_list:
-        flash("🚫 Cart is empty or invalid.", 'danger')
-        return redirect(url_for('main_routes.cart')) 
-
+    db_conn = None
+    
     try:
-        for item in active_cart_order.purchase_list:
-            merch = item.merchandise 
-            
-            if merch.Quantity_Stock >= item.Quantity_Purchased:
-                merch.Quantity_Stock -= item.Quantity_Purchased
-                db.session.add(merch)
-            else:
-                db.session.rollback()   
-                flash(f"⚠️ Stock Error: '{merch.Merchandise_Name}' is sold out. Please update your cart.", 'danger')
+        db_conn = get_conn()
+        # Start a transaction (implicit with autocommit=False, but good practice to ensure)
+        db_conn.autocommit = False 
+        cursor = db_conn.cursor()
+        
+        # 1. Fetch Cart Items and Stock Info
+        cursor.execute(
+            """
+            SELECT
+                O.Order_ID,
+                PL.Merchandise_ID,
+                PL.Quantity_Purchased,
+                M.Quantity_Stock,
+                M.Merchandise_Name
+            FROM
+                `Order` O
+            JOIN
+                Purchase_List PL ON O.Order_ID = PL.Order_ID
+            JOIN
+                Merchandise M ON PL.Merchandise_ID = M.Merchandise_ID
+            WHERE
+                O.Fan_ID = %s AND O.Order_Status = 'Pending';
+            """, 
+            (current_fan_id,)
+        )
+        
+        cart_details = cursor.fetchall()
+        
+        if not cart_details:
+            flash("🚫 Cart is empty or invalid.", 'danger')
+            cursor.close()
+            return redirect(url_for('main_routes.cart')) 
+
+        active_order_id = cart_details[0][0] # Order_ID is the first column
+
+        # 2. Loop, Check Stock, and Update Merchandise
+        # Indices: [0:Order_ID, 1:Merchandise_ID, 2:Qty_Purchased, 3:Qty_Stock, 4:Name]
+        for row in cart_details:
+            merch_id = row[1]
+            qty_purchased = row[2]
+            qty_stock = row[3]
+            merch_name = row[4]
+
+            if qty_stock < qty_purchased:
+                # Stock check failed, ROLLBACK and redirect
+                db_conn.rollback() 
+                flash(f"⚠️ Stock Error: '{merch_name}' is sold out. Please update your cart.", 'danger')
+                cursor.close()
                 return redirect(url_for('main_routes.cart'))
 
+            # Deduct stock
+            cursor.execute(
+                """
+                UPDATE Merchandise
+                SET Quantity_Stock = Quantity_Stock - %s
+                WHERE Merchandise_ID = %s;
+                """,
+                (qty_purchased, merch_id)
+            )
 
-        active_cart_order.Order_Status = 'Paid'
-        active_cart_order.Order_Date = db.func.now() 
-        db.session.add(active_cart_order)
-        db.session.commit()
+        # 3. Finalize Order Status and Date
+        cursor.execute(
+            """
+            UPDATE `Order`
+            SET
+                Order_Status = 'Paid',
+                Order_Date = NOW() 
+            WHERE
+                Order_ID = %s;
+            """,
+            (active_order_id,)
+        )
         
-        flash(f"🎉 Order #{active_cart_order.Order_ID} placed successfully! Thank you!", 'success')
+        # Commit the transaction (all stock updates and status change)
+        db_conn.commit()
+        
+        flash(f"🎉 Order #{active_order_id} placed successfully! Thank you!", 'success')
         
         return redirect(url_for('main_routes.merchandise'))
     
-    except Exception as e:
-        db.session.rollback()
-        flash(f"❌ An internal error occurred. Order failed: {e}", 'danger')
+    except mysql.connector.Error as err:
+        # Rollback on ANY database error
+        if db_conn:
+            db_conn.rollback()
+        
+        flash(f"❌ An internal database error occurred. Order failed. Error: {err}", 'danger')
         return redirect(url_for('main_routes.cart'))
+        
+    finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if db_conn and db_conn.is_connected():
+            db_conn.close()

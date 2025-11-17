@@ -1,17 +1,17 @@
 -- 1. MANAGER TABLE (Parent)
-INSERT INTO Manager (Manager_ID, Manager_Name, Contact_Num, Contact_Email, Agency_Address) VALUES
-(1, 'Kim Min-jun', '01012345678', 'm.kim@ygmail.com', 'YG Building, 12, Hapjeong-ro, Mapo-gu, Seoul, South Korea'),
-(2, 'Sejin', '01098765432', 's.jin@gmail.com', 'Belift Lab, 42, Hangang-daero, Yongsan-gu, Seoul, South Korea'),
-(3, 'Park Seo-joon', '01022446688', 's.park@wakeone.com', 'WakeOne Tower, 7, World Cup buk-ro 58-gil, Mapo-gu, Seoul, South Korea'),
-(4, 'Choi Eun-woo', '01013572468', 'e.choi@ygmail.com', 'YG Building, 12, Hapjeong-ro, Mapo-gu, Seoul, South Korea'),
-(5, 'Jung Ha-yoon', '01055117733', 'h.jung@smtown.com', 'SM Entertainment, 83-21, Wangsimni-ro, Seongdong-gu, Seoul, South Korea'),
-(6, 'Kang Ji-hyun', '01086420975', 'j.kang@ador.world', '10F, ADOR, 42, Hangang-daero, Yongsan-gu, Seoul, South Korea'),
-(7, 'Han Sung-min', '01031415926', 's.han@offtherecord.co.kr', 'OTR Entertainment, 22, Dosan-daero 16-gil, Gangnam-gu, Seoul, South Korea');
+INSERT INTO Manager (Manager_ID, Manager_Name, Contact_Num, Contact_Email, Agency) VALUES
+(1, 'Kim Min-jun', '01012345678', 'm.kim@ygmail.com', 'YG'),
+(2, 'Sejin', '01098765432', 's.jin@gmail.com', 'Belift Lab'),
+(3, 'Park Seo-joon', '01022446688', 's.park@wakeone.com', 'WakeOne'),
+(4, 'Choi Eun-woo', '01013572468', 'e.choi@ygmail.com', 'YG'),
+(5, 'Jung Ha-yoon', '01055117733', 'h.jung@smtown.com', 'SM Entertainment'),
+(6, 'Kang Ji-hyun', '01086420975', 'j.kang@ador.world', 'ADOR'),
+(7, 'Han Sung-min', '01031415926', 's.han@offtherecord.co.kr', 'OTR Entertainment');
 
 -- 2. ARTIST TABLE (Parent, references Manager)
 INSERT INTO Artist (Artist_ID, Manager_ID, Artist_Name, Activity_Status, Debut_Date) VALUES
 (1, 1, 'BlackPink', 'Active', '2016-08-08'),
-(2, 2, 'Enhyphen', 'Active', '2020-11-30'),
+(2, 2, 'Enhypen', 'Active', '2020-11-30'),
 (3, 3, 'Zerobaseone', 'Active', '2023-07-10'),
 (4, 4, 'AKMU', 'Active', '2014-04-07'),
 (5, 5, 'Aespa', 'Active', '2020-11-27'),
@@ -176,17 +176,17 @@ INSERT INTO Artist_Event (Artist_ID, Event_ID) VALUES
 
 -- 9. ARTIST_FOLLOWER TABLE (Junction, references Artist and Fan)
 -- NOTE: Assuming 'Fan' records are already inserted or the table is not required to be inserted first.
-INSERT INTO Artist_Follower (Artist_ID, Fan_ID) VALUES
-(5, 1),
-(7, 1),
-(6, 2),
-(1, 3),
-(10, 3),
-(2, 4),
-(1, 5),
-(5, 6),
-(10, 7),
-(11, 8);
+INSERT INTO Artist_Follower (Artist_ID, Fan_ID, Followed_Date) VALUES
+(5, 1, '2025-11-17'),
+(7, 1, '2025-11-17'),
+(6, 2, '2025-11-17'),
+(1, 3, '2025-11-17'),
+(10, 3, '2025-11-17'),
+(2, 4, '2025-11-17'),
+(1, 5, '2025-11-17'),
+(5, 6, '2025-11-17'),
+(10, 7, '2025-11-17'),
+(11, 8, '2025-11-17');
 
 -- 10. SETLIST TABLE (Junction, references Artist and Event)
 INSERT INTO Setlist (Artist_ID, Event_ID, Song_Name, Play_Order) VALUES
