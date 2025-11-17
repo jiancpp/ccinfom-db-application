@@ -123,6 +123,55 @@
 
 {% elif report_filter == 'merchandise-sales-report' %}
     <h2>Merchandise Sales Report</h2>
+    <form id="merchandise-year-filter" method="GET" action="{{ url_for('main_routes.reports') }}">
+        <label for="year">Generate Yearly Report</label>
+        <input type="hidden" name="filter" value="merchandise-sales-report"> <input type="number" 
+            name="year" 
+            id="merch-sales-year" 
+            value="{{ selected_merch_sales_year or 2025 }}" 
+            style="max-width:200px;margin-bottom:5px;" 
+            placeholder="Enter Year" 
+            min="2025" 
+            step="1" 
+            required>
+    </form>
+    {% if sales_per_item %}
+    <table> 
+        <thead>
+        <tr>
+            <th>Sales Rank</th>
+            <th>Artist/Fanclub</th>
+            <th>Merchandise Item</th> 
+            <th>Merchandise Price</th> 
+            <th>Remaining Stock</th> 
+            <th>Units Sold</th> 
+            <th>Total Revenue</th>
+        </tr>
+        </thead>
+        <tbody>
+            {% for record in sales_per_item %}
+            <tr>
+                <td>{{ record.Ranking }}</td>
+                <td>{{ record.Creator_Name }}</td>
+                <td>{{ record.Merchandise_Name }}</td> 
+                <td>₱<span class="money">{{ record.Merchandise_Price }}</span></td>
+                <td>{{ record.Remaining_Stock | int }}</td> 
+                <td>{{ record.Total_Quantity_Sold | int }}</td> 
+                <td>₱<span class="money">{{ record.Total_Sales_Revenue }}</span></td>
+            </tr>
+            {% endfor %} 
+        </tbody>
+    </table>
+
+    {% else %}
+        <div class="empty-state">
+            <i class="fa fa-info-circle" style="font-size: 30px; margin-bottom: 15px;"></i>
+            <p>No merchandise sales data available for this report.</p>
+        </div>
+    {% endif %}
+
+{% elif report_filter == 'merchandise-sales-report' %}
+    <h2>Merchandise Sales Report</h2>
     
     {% if merchandise_sales_data %}
         <table>
