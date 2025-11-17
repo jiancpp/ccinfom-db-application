@@ -160,6 +160,19 @@
     <p style="margin-top: 1rem; margin-bottom: 2rem; color: #999;">
         Tracks contributions through ticket sales, merchandise sales, and fan-driven events.
     </p>
+    <form id="fanclub-year-filter" method="GET" action="{{ url_for('main_routes.reports') }}">
+        <label for="year">Generate Yearly Report</label>
+        <input type="hidden" name="filter" value="fanclub-contribution-report">
+        <input type="number" 
+            name="year" 
+            id="fanclub-contribution-year" 
+            value="{{ selected_fanclub_contribution_year or 2024 }}" 
+            style="max-width:200px;" 
+            placeholder="Enter Year" 
+            min="2025" 
+            step="1" 
+            required>
+    </form>
 
     {% if fanclub_contribution_data %}
         <table>
@@ -212,6 +225,10 @@
 
     document.getElementById('ticket-sales-year').addEventListener("change", function() {
         document.getElementById('ticket-year-filter').submit()
+    })
+
+    document.getElementById('fanclub-contribution-year').addEventListener("change", function() {
+        document.getElementById('fanclub-year-filter').submit()
     })
 </script>
 {% endblock %}

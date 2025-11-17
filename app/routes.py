@@ -507,6 +507,7 @@ def reports():
 
     report_filter = request.args.get('filter', '') 
     selected_ticket_sales_year = request.args.get('year', type=int)
+    selected_fanclub_contribution_year = request.args.get('year', type=int)
 
     ticket_sales_data = ''
     merchandise_sales_data = ''
@@ -565,20 +566,22 @@ def reports():
         LEFT JOIN (
             SELECT fe.Fanclub_ID, SUM(t.Price) AS Ticket_Sales
             FROM Fanclub_Event AS fe
-            LEFT JOIN Ticket_Purchase AS tp ON fe.Event_ID = tp.Event_ID
-            LEFT JOIN Ticket_Tier AS t ON tp.Tier_ID = t.Tier_ID
+                LEFT JOIN Ticket_Purchase AS tp ON fe.Event_ID = tp.Event_ID
+                LEFT JOIN Ticket_Tier AS t ON tp.Tier_ID = t.Tier_ID
+            WHERE YEAR(tp.Purchase_Date) = %s
             GROUP BY fe.Fanclub_ID
         ) AS list1 ON f.Fanclub_ID = list1.Fanclub_ID
         LEFT JOIN (
             SELECT m.Fanclub_ID, SUM(m.Merchandise_Price * pl.Quantity_Purchased) AS Merch_Sales
             FROM Merchandise AS m
-            LEFT JOIN Purchase_List AS pl ON m.Merchandise_ID = pl.Merchandise_ID
-            LEFT JOIN `Order` AS o ON pl.Order_ID = o.Order_ID 
+                LEFT JOIN Purchase_List AS pl ON m.Merchandise_ID = pl.Merchandise_ID
+                LEFT JOIN `Order` AS o ON pl.Order_ID = o.Order_ID 
+            WHERE YEAR(o.Order_Date) = %s
             GROUP BY m.Fanclub_ID
         ) AS list2 ON f.Fanclub_ID = list2.Fanclub_ID
-        ORDER BY Total_Sales DESC;
+        ORDER BY Total_Sales DESC
         '''
-        fanclub_contribution_data = execute_select_query(fanclub_contribution_query)
+        fanclub_contribution_data = execute_select_query(fanclub_contribution_query, (selected_fanclub_contribution_year, selected_fanclub_contribution_year))
 
     
     return render_template(
@@ -590,6 +593,7 @@ def reports():
         fanclub_contribution_data=fanclub_contribution_data,
 
         selected_ticket_sales_year=selected_ticket_sales_year,
+        selected_fanclub_contribution_year=selected_fanclub_contribution_year
     )
 
 
@@ -1065,8 +1069,8 @@ def fanclub_members(fanclub_id):
     fanclub = execute_select_query(fanclub_query, (fanclub_id,))
     members = execute_select_query(member_query, (fanclub_id,))
     
-    if not is_member[0]:
-        flash(f"You must be a member of {fanclub[0].Fanclub_Name} to view this.", 'error')
+    if not is_member:
+        flash(f"You must be a member of {fanclub[0]['Fanclub_Name']} to view this.", 'error')
         return redirect(url_for('main_routes.fanclub_details', fanclub_id=fanclub_id))
     
     return render_template(
