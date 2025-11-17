@@ -306,6 +306,19 @@
             hour12: true
           });
         }
+
+        function toFormattedFloat(floatString) {
+            const number = parseFloat(floatString)
+
+            if (isNaN(number) || !isFinite(number)) {
+                return floatString; 
+            }
+
+            return number.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
     
         // Automatically format all `.date` and `.time` spans
         document.addEventListener("DOMContentLoaded", () => {
@@ -319,6 +332,12 @@
             const raw = p.textContent.trim();
             if (raw) p.textContent = toFormattedTime(raw);
           });
+
+          document.querySelectorAll('.money').forEach(p => {
+            const raw = p.textContent.trim();
+            if (raw) p.textContent = toFormattedFloat(raw);
+          });
+
         });
       </script>
 

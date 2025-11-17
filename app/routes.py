@@ -459,8 +459,24 @@ def reports():
     # TICKET SALES REPORT
     # ----------------------------------------------------
     if report_filter == 'ticket-sales-report':
-        ticket_sales_data = ''
-
+        ticket_purchase_query = '''
+        SELECT 
+            RANK() OVER (ORDER BY COALESCE(tp.Ticket_Sales, 0) DESC) AS Ranking,
+            e.Event_Name, 
+            COALESCE(tp.Ticket_Sales, 0) AS Ticket_Sales, 
+            COALESCE(tp.Earned_Revenue, 0) AS Earned_Revenue
+        FROM Event e
+            LEFT JOIN (
+                SELECT tp.Event_ID, COUNT(tp.Ticket_ID) AS Ticket_Sales, SUM(tt.Price) AS Earned_Revenue
+                FROM Ticket_Purchase tp
+                    JOIN Ticket_Tier tt ON tt.Tier_ID = tp.Tier_ID
+                GROUP BY tp.Event_ID
+            ) tp ON e.Event_ID = tp.Event_ID
+        WHERE YEAR(e.Start_Date) >= 2025
+        ORDER BY tp.Ticket_Sales DESC, tp.Earned_Revenue DESC;
+        '''
+        ticket_sales_data = execute_select_query(ticket_purchase_query)
+    
 
     # ----------------------------------------------------
     # MERCHANDISE SALES REPORT
@@ -684,8 +700,17 @@ def buy_ticket(event_id):
         return redirect(url_for('main_routes.events'))
 
     tier_query = '''
-    SELECT tt.*, 
-           tt.Total_Quantity - COALESCE(tp.Tickets_Sold, 0) AS Tickets_Left
+    SELECT  tt.*, 
+            CASE
+                WHEN tt.Total_Quantity IS NULL
+                THEN 999999
+                ELSE tt.Total_Quantity - COALESCE(tp.Tickets_Sold, 0)
+            END AS Tickets_Left,
+            
+            CASE
+                WHEN tt.Total_Quantity IS NOT NULL
+                THEN 1 ELSE 0
+            END AS Is_Limited_Tickets
     FROM Ticket_Tier tt 
     LEFT JOIN (
         SELECT Tier_ID, COUNT(Ticket_ID) AS Tickets_Sold
@@ -756,6 +781,7 @@ def buy_ticket(event_id):
         
         if success:
             flash(f"Success! View your purchased tickets on your profile.", "success")
+            return redirect(url_for('main_routes.buy_ticket', event_id=event_id))
         else:
             flash(f"Error processing one or more purchases.", "error")
 
@@ -1333,7 +1359,7 @@ def place_order():
                 merch.Quantity_Stock -= item.Quantity_Purchased
                 db.session.add(merch)
             else:
-                db.session.rollback() 
+                db.session.rollback()   
                 flash(f"⚠️ Stock Error: '{merch.Merchandise_Name}' is sold out. Please update your cart.", 'danger')
                 return redirect(url_for('main_routes.cart'))
 

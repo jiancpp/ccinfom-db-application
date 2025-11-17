@@ -220,7 +220,6 @@
         transition: 0.3s;
     }
 
-    /* Quantity for non-seated tiers or venues */
     #quantity-label, #ticket-quantity {
         display: none;
     }
@@ -287,7 +286,6 @@
     }
 
 
-
 </style>
 
 <div id="paymentModal" class="modal">
@@ -336,7 +334,11 @@
                             data-tickets-left="{{ tier.Tickets_Left }}"
                             data-ticket-price="{{ tier.Price }}"
                             data-is-reserved="{{ tier.Is_Reserved_Seating }}"
-                        >{{ tier.Tier_Name }} - ₱{{ tier.Price }}</option>
+                            data-is-limited="{{ tier.Is_Limited_Tickets }}"
+                        >
+                            {{ tier.Tier_Name }} - ₱<span class="money">{{ tier.Price }}</span>
+                            {% if tier.Is_Limited_Tickets == 1 and tier.Tickets_Left <= 0 %}(Sold Out){% endif %}
+                        </option>
                     {% endfor %}
                 </select>
             
@@ -758,11 +760,13 @@
 
         const ticketsLeftString = selectedTier.getAttribute("data-tickets-left")
         const ticketPrice = selectedTier.getAttribute("data-ticket-price")
-        const ticketIsReservedSeating = selectedTier.getAttribute("data-is-reserved")
+        const ticketIsLimited = selectedTier.getAttribute("data-is-limited")
+        const ticketIsReserved = selectedTier.getAttribute("data-is-reserved")
 
         const ticketsLeft = parseInt(ticketsLeftString || 0, 10)
         const pricePerTicket = parseInt(ticketPrice || 0, 10)
-        const isReserved = parseInt(ticketIsReservedSeating || 0, 10)
+        const isLimited = parseInt(ticketIsLimited || 0, 10)
+        const isReserved = parseInt(ticketIsReserved || 0, 10)
 
         const maxPerPurchase = 10;
         const maxAllowed = Math.min(maxPerPurchase, ticketsLeft);
@@ -779,7 +783,8 @@
 
             // Update the Summary Display
             quantityDisplay.textContent = `Quantity: ${selectedCount}`;
-            totalPriceDisplay.textContent = `Total Price: ₱${totalPrice.toFixed(2)}`;
+            const formatted = toFormattedFloat(totalPrice.toFixed(2));
+            totalPriceDisplay.textContent = `Total Price: ₱${formatted}`;
 
              // Show error message
             if (selectedCount > maxAllowed) {
@@ -801,12 +806,18 @@
             const totalPrice = pricePerTicket * quantityTickets;
 
             // Update the Summary Display
-            quantityDisplay.textContent = `Quantity: ${quantityTickets}`;
-            totalPriceDisplay.textContent = `Total Price: ₱${totalPrice.toFixed(2)}`;
+            quantityDisplay.textContent = `Quantity: ${quantityTickets} - ${maxAllowed}`;
+            const formatted = toFormattedFloat(totalPrice.toFixed(2));
+            totalPriceDisplay.textContent = `Total Price: ₱${formatted}`;
+
+            let newAllowed = maxAllowed
+            if (isLimited === 0) {
+                newAllowed = 10
+            }
 
              // Show error message
-            if (quantityTickets > maxAllowed) {
-                maxDisplay.textContent = maxAllowed + 1;
+            if (quantityTickets > newAllowed) {
+                maxDisplay.textContent = newAllowed + 1;
                 errorMessage.style.display = 'block'; // Show the error message
                 
                 // Optional: Scroll to the error message

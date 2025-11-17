@@ -54,6 +54,12 @@
 
     .badge-success { background: #28a745; color: white; }
     .badge-warning { background: #ffc107; color: #333; }
+
+    table thead td {
+        background-color: #f8f9fa;
+        font-weight: 500;
+    }
+
 </style>
 
 <h1>📊 Reports</h1>
@@ -78,8 +84,22 @@
     {% if ticket_sales_data %}
         <table>
             <thead>
+                <tr>
+                    <td>Sales Rank</td>
+                    <td>Event Name</td>
+                    <td>Total Tickets Sold</td>
+                    <td>Total Earned Revenue</td>
+                </tr>
             </thead>
             <tbody>
+                {% for record in ticket_sales_data %}
+                <tr>
+                    <td>{{ record.Ranking }}</td>
+                    <td>{{ record.Event_Name }}</td>
+                    <td>{{ record.Ticket_Sales }}</td>
+                    <td>₱<span class="money">{{ record.Earned_Revenue }}</span></td>
+                </tr>
+                {% endfor %}                
             </tbody>
         </table>
     {% else %}
