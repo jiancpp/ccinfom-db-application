@@ -724,6 +724,36 @@ def manager_portal():
     return render_template('manager_portal.html')
 
 
+@main_routes.route('/manage_fans')
+def manage_fans():
+    # edit
+    return render_template('manager_portal.html')
+
+
+@main_routes.route('/manage_fanclubs')
+def manage_fanclubs():
+    # edit
+    return render_template('manager_portal.html')
+
+
+@main_routes.route('/manage_artists')
+def manage_artists():
+    # edit
+    return render_template('manager_portal.html')
+
+
+@main_routes.route('/manage_events')
+def manage_events():
+    # edit
+    return render_template('manager_portal.html')
+
+
+@main_routes.route('/manage_merchandise')
+def manage_merchandise():
+    # edit
+    return render_template('manager_portal.html')
+
+
 @main_routes.route('/test_db')
 def test_db():
     import mysql.connector
