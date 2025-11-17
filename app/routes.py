@@ -502,10 +502,13 @@ def fanclubs():
 def reports():
 
     report_filter = request.args.get('filter', '') 
-    selected_ticket_sales_year = request.args.get('year', type=int)
-    selected_fanclub_contribution_year = request.args.get('year', type=int)
-    selected_merch_sales_year = request.args.get('year', 2025, type=int)
-    selected_artist_contribution_year = request.args.get('year', type=int)
+    selected_year = request.args.get('year', type=int)
+    default_year = 2025 
+
+    selected_ticket_sales_year = selected_year if selected_year is not None else default_year
+    selected_fanclub_contribution_year = selected_year if selected_year is not None else default_year
+    selected_merch_sales_year = selected_year if selected_year is not None else default_year 
+    selected_artist_contribution_year = selected_year if selected_year is not None else default_year
 
     ticket_sales_data = ''
     sales_per_item = ''
@@ -721,13 +724,14 @@ def reports():
 
         sales_per_item=sales_per_item,
         total_sales_data=total_sales_data,
-        selected_merch_sales_year =selected_merch_sales_year,
         
         artist_engagement_data=artist_engagement_data,
         fanclub_contribution_data=fanclub_contribution_data,
 
         selected_ticket_sales_year=selected_ticket_sales_year,
-        selected_fanclub_contribution_year=selected_fanclub_contribution_year
+        selected_fanclub_contribution_year=selected_fanclub_contribution_year,
+        selected_artist_contribution_year=selected_artist_contribution_year,
+        selected_merch_sales_year =selected_merch_sales_year
     )
 
 
