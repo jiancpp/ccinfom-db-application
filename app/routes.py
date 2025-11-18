@@ -887,12 +887,6 @@ def manager_portal():
     return render_template('manager_portal.html')
 
 
-@main_routes.route('/manage_fans')
-def manage_fans():
-    # edit
-    return render_template('manager_portal.html')
-
-
 @main_routes.route('/manage_fanclubs')
 def manage_fanclubs():
     # edit
