@@ -187,23 +187,23 @@ ADD CONSTRAINT fk_artist_member
 -- 
 -- Constraints for `Member_Nationality`
 -- 
-ALTER TABLE Member_Nationality
+ALTER TABLE LINK_Member_Nationality
 ADD CONSTRAINT fk_member_member_nationality
     FOREIGN KEY (`Member_ID`) REFERENCES Member(`Member_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_nationality_member_nationality
-    FOREIGN KEY (`Nationality_ID`) REFERENCES Nationality(`Nationality_ID`)
+    FOREIGN KEY (`Nationality_ID`) REFERENCES REF_Nationality(`Nationality_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
     
 -- 
 -- Constraints for `Member_Role`
 -- 
-ALTER TABLE Member_Role
+ALTER TABLE LINK_Member_Role
 ADD CONSTRAINT fk_member_member_role
     FOREIGN KEY (`Member_ID`) REFERENCES Member(`Member_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_nationality_member_role
-    FOREIGN KEY (`Role_ID`) REFERENCES Role(`Role_ID`)
+    FOREIGN KEY (`Role_ID`) REFERENCES REF_Role(`Role_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 
@@ -221,8 +221,14 @@ ADD CONSTRAINT fk_event_artist
 -- Constraints for `Setlist`
 -- 
 ALTER TABLE Setlist
+ADD CONSTRAINT fk_setlist_artist
+    FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`),
+ADD CONSTRAINT fk_setlist_event
+    FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`),
 ADD CONSTRAINT fk_setlist_artist_event
-	FOREIGN KEY (`Artist_ID`, `Event_ID`) REFERENCES Artist_Event(`Artist_ID`, `Event_ID`)
+	FOREIGN KEY (`Artist_ID`, `Event_ID`) REFERENCES Artist_Event(`Artist_ID`, `Event_ID`),
+ADD CONSTRAINT fk_setlist_song
+    FOREIGN KEY (`Song_ID`) REFERENCES Song(`Song_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 
