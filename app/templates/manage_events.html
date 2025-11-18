@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Manage Events - KSync{% endblock %}
+{% block content %}
+<style>
+    table {
+        width: 100%;
+    }
+
+    .btn-smaller {
+        font-size: 12px;
+        padding: 10px;
+        margin: 0 5px;
+    }
+
+    .event-table {
+        width: 100%;
+        height: 300px;
+        padding: 5px;
+        margin-top: 1rem;
+    }
+
+    .center {
+        margin: auto;
+        text-align: center;
+    }
+
+</style>
+
+<div>
+    <button class="btn btn-outline" onclick="window.location.href='{{ url_for('main_routes.manager_portal') }}'"><i class="fa fa-arrow-left"></i> Back</button>
+    <div class="header-titles">
+        <h1 style="color: #667eea; margin-top: 0.5rem; margin-bottom: 0.1rem; font-size: 3rem; white-space: nowrap;">
+            Manage Event Records
+        </h1>
+        <p style="font-size: 1.3rem; font-weight: 300; color: #555; margin-top: 0; white-space: nowrap;">
+            View, Add, Delete, and Update Event Records
+        </p>
+    </div>
+</div>
+
+{% if events %}
+<div class="scroll-pane event-table">
+    <table>
+        <colgroup>
+            <col style="width: 50px;">    <col>                         <col style="width: 15%;">     <col style="width: 20%;">     <col style="width: 15%;">     <col style="width: 150px;">   </colgroup>
+        <thead>
+            <td>Event ID</td>
+            <td>Event Name</td>
+            <td>Venue</td>
+            <td>Date</td>
+            <td>Time</td>
+            <td></td>
+        </thead>
+            <tbody>
+                {% for event in events %}
+                    <tr>
+                        <td>{{event.Event_ID}}</td>
+                        <td>{{event.Event_Name}}</td>
+                        <td>{{event.Venue_Name}}</td>
+                        <td><span class="date">{{event.Start_Date}}</span> to <span class="date">{{event.End_Date}}</span></td>
+                        <td><span class="time"></span>{{event.Start_Time}}</span> to <span class="time">{{event.End_Time}}</span></td>
+                        <td><button class="btn btn-smaller">Edit</button><button class="btn btn-smaller">Delete</button></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+    </table>
+</div>
+<div style="padding: 10px; margin-top: 20px;">
+    <button class="btn" onclick="window.location.href='{{ url_for('main_routes.add_event') }}'">Add New Event</button>
+</div>
+{% endif %}
+
+
+{% endblock %}

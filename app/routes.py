@@ -23,9 +23,13 @@ def index():
             title = "Artists You Follow"
             fan_ID = g.current_user['Fan_ID'] if g.current_user else None 
             artist_query = '''
-                SELECT * FROM Artist AS a
+                SELECT a.*, 
+                       COUNT(af_count.Fan_ID) AS Num_Followers
+                FROM Artist AS a
                 JOIN Artist_Follower AS af ON a.Artist_ID = af.Artist_ID
+                LEFT JOIN Artist_Follower AS af_count ON a.Artist_ID = af_count.Artist_ID 
                 WHERE af.Fan_ID = %s
+                GROUP BY a.Artist_ID, a.Artist_Name
                 ORDER BY a.Artist_Name ASC;
                 '''
             total_artists_query = '''
@@ -920,15 +924,65 @@ def manage_fanclubs():
 
 @main_routes.route('/manage_artists')
 def manage_artists():
-    # edit
-    return render_template('manager_portal.html')
+    query = """
+        SELECT
+            A.Artist_ID,
+            A.Artist_Name,
+            A.Activity_Status,
+            A.Debut_Date,
+            M.Manager_Name,
+            M.Agency AS Manager_Agency,
+            COUNT(Mem.Member_ID) AS Member_Count
+        FROM
+            Artist A
+        LEFT JOIN
+            Manager M ON A.Manager_ID = M.Manager_ID
+        LEFT JOIN
+            Member Mem ON A.Artist_ID = Mem.Artist_ID
+        GROUP BY
+            A.Artist_ID, A.Artist_Name, A.Activity_Status, A.Debut_Date, M.Manager_Name, M.Agency
+        ORDER BY 
+            A.Artist_Name;
+        """
+        
+    artists = execute_select_query(query)
+        
+    return render_template('manage_artists.html', artists=artists)
 
 
 @main_routes.route('/manage_events')
 def manage_events():
-    # edit
-    return render_template('manager_portal.html')
+    query = '''
+    SELECT e.*, v.Venue_Name
+    FROM Event e
+    JOIN Venue v ON e.Venue_ID = v.Venue_ID
+    ORDER BY e.Event_ID 
+    '''
+    
+    events = execute_select_query(query)
 
+    return render_template(
+        'manage_events.html',
+        events=events
+    )
+
+@main_routes.route('/manage_events/add_event', methods=["GET","POST"])
+def add_event():
+    if request.method == 'POST':
+        print("Hello")
+
+    type_query = '''
+    SELECT et.Type_ID, et.Type_Name
+    FROM REF_Event_Type et
+    '''
+    
+    event_types = execute_select_query(type_query)
+
+
+    return render_template(
+        'add_event.html',
+        event_types=event_types
+    )
 
 @main_routes.route('/manage_merchandise')
 def manage_merchandise():
