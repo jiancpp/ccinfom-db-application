@@ -637,11 +637,15 @@ def reports():
     if report_filter == 'fanclub-contribution-report':
         fanclub_contribution_query = '''
         SELECT
-            RANK() OVER (ORDER BY (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0)) DESC) AS Ranking,
+            RANK() OVER (ORDER BY (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0) + 
+            COALESCE(list3.Member_Ticket_Purchase, 0) + COALESCE(list4.Member_Merch_Purchase, 0)) DESC) AS Ranking,
             f.Fanclub_Name,
             COALESCE(list1.Ticket_Sales, 0) AS Total_Tickets,
             COALESCE(list2.Merch_Sales, 0) AS Total_Merchandise,
-            (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0)) AS Total_Sales
+            COALESCE(list3.Member_Ticket_Purchase, 0) AS Total_Member_Tickets,
+            COALESCE(list4.Member_Merch_Purchase, 0) AS Total_Member_Merchandise,
+            (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0) + 
+            COALESCE(list3.Member_Ticket_Purchase, 0) + COALESCE(list4.Member_Merch_Purchase, 0)) AS Total_Sales
         FROM Fanclub AS f
         LEFT JOIN (
             SELECT fe.Fanclub_ID, SUM(t.Price) AS Ticket_Sales
@@ -659,9 +663,30 @@ def reports():
             WHERE YEAR(o.Order_Date) = %s
             GROUP BY m.Fanclub_ID
         ) AS list2 ON f.Fanclub_ID = list2.Fanclub_ID
-        ORDER BY Total_Sales DESC
+        LEFT JOIN (
+			SELECT fm.Fanclub_ID, SUM(t.Price) AS Member_Ticket_Purchase
+            FROM Fanclub_Membership AS fm
+				LEFT JOIN Ticket_Purchase AS tp ON fm.Fan_ID = tp.Fan_ID
+                LEFT JOIN Ticket_Tier AS t ON tp.Tier_ID = t.Tier_ID
+                LEFT JOIN Artist_Event AS ae ON t.Event_ID = ae.Event_ID
+            WHERE YEAR(tp.Purchase_Date) = %s
+            GROUP BY fm.Fanclub_ID
+		) AS list3 ON f.Fanclub_ID = list3.Fanclub_ID
+        LEFT JOIN (
+            SELECT fm.Fanclub_ID, SUM(m.Merchandise_Price * pl.Quantity_Purchased) AS Member_Merch_Purchase
+            FROM Fanclub_Membership AS fm
+                LEFT JOIN `Order` AS o ON fm.Fan_ID = o.Fan_ID
+                LEFT JOIN Purchase_List AS pl ON o.Order_ID = pl.Order_ID
+                LEFT JOIN Merchandise AS m ON pl.Merchandise_ID = m.Merchandise_ID
+            WHERE YEAR(o.Order_Date) = %s
+            GROUP BY fm.Fanclub_ID
+        ) AS list4 ON f.Fanclub_ID = list4.Fanclub_ID
+        ORDER BY Total_Sales DESC;
         '''
-        fanclub_contribution_data = execute_select_query(fanclub_contribution_query, (selected_fanclub_contribution_year, selected_fanclub_contribution_year))
+        fanclub_contribution_data = execute_select_query(fanclub_contribution_query, (selected_fanclub_contribution_year, 
+                                                                                      selected_fanclub_contribution_year,
+                                                                                      selected_fanclub_contribution_year, 
+                                                                                      selected_fanclub_contribution_year))
 
     
     return render_template(
@@ -861,7 +886,7 @@ def edit_profile():
 
         if execute_insert_query(update_fan_record, (first_name, last_name, username, email, current_fan_id)):
             session['username'] = username
-            flash('Profile updated successfully!.', 'success')
+            flash('Profile updated successfully!', 'success')
             return redirect(url_for('main_routes.profile'))
         else:
             flash('A server error occurred.', 'error')
