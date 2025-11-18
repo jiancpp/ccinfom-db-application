@@ -927,9 +927,37 @@ def manage_artists():
 
 @main_routes.route('/manage_events')
 def manage_events():
-    # edit
-    return render_template('manager_portal.html')
+    query = '''
+    SELECT e.*, v.Venue_Name
+    FROM Event e
+    JOIN Venue v ON e.Venue_ID = v.Venue_ID
+    ORDER BY e.Event_ID 
+    '''
+    
+    events = execute_select_query(query)
 
+    return render_template(
+        'manage_events.html',
+        events=events
+    )
+
+@main_routes.route('/manage_events/add_event', methods=["GET","POST"])
+def add_event():
+    if request.method == 'POST':
+        print("Hello")
+
+    type_query = '''
+    SELECT et.Type_ID, et.Type_Name
+    FROM REF_Event_Type et
+    '''
+    
+    event_types = execute_select_query(type_query)
+
+
+    return render_template(
+        'add_event.html',
+        event_types=event_types
+    )
 
 @main_routes.route('/manage_merchandise')
 def manage_merchandise():
