@@ -1,15 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Edit Fanclub - KSync{% endblock %}
 {% block content %}
-<div class="card">
-    <h1>Edit Fanclub: {{ fanclub.Fanclub_Name }}</h1>
+<div class="card" style="max-width: 50%; margin: auto; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);">
+    <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
+        <h1 style="color: #667eea; font-size: 2.5rem; margin-bottom: 5px;">
+            Edit Fanclub: {{ fanclub.Fanclub_Name }}
+        </h1>
+    </header>
     
     <form method="POST" action="{{ url_for('main_routes.edit_fanclub', fanclub_id=fanclub.Fanclub_ID) }}">
         
         <input type="hidden" name="fanclub_id" value="{{ fanclub.Fanclub_ID }}">
 
         <div class="form-group">
-            <label for="fanclub_name">Fanclub Name:</label>
+            <label for="fanclub_name">Fanclub Name</label>
             <input 
                 type="text" 
                 id="fanclub_name" 
@@ -21,7 +25,7 @@
         </div>
 
         <div class="form-group">
-            <label for="artist_id">Associated Artist:</label>
+            <label for="artist_id">Associated Artist</label>
             <select id="artist_id" name="artist_id" required>
                 <option value="">-- Select an Artist --</option>
                 
