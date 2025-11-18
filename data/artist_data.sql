@@ -167,12 +167,16 @@ INSERT INTO LINK_Member_Role (Member_ID, Role_ID) VALUES
 INSERT INTO Artist_Event (Artist_ID, Event_ID) VALUES
 (1, 1),
 (2, 2),
-(3, 3),
+(3, 3),  
 (5, 5),
-(3, 30),
+(8, 26), 
+(9, 27),
+(1, 28),
+(10, 29),
+(3, 30), 
 (3, 31),
-(2, 31),
-(5, 31);
+(2, 31), 
+(5, 31); 
 
 -- 9. ARTIST_FOLLOWER TABLE (Junction, references Artist and Fan)
 -- NOTE: Assuming 'Fan' records are already inserted or the table is not required to be inserted first.
@@ -188,22 +192,46 @@ INSERT INTO Artist_Follower (Artist_ID, Fan_ID, Followed_Date) VALUES
 (10, 7, '2025-11-17'),
 (11, 8, '2025-11-17');
 
+-- 10. SONG TABLE 
+INSERT INTO Song (Song_Name) VALUES
+('Pink Venom'), 
+('How You Like That'), 
+('Shut Down'), 
+('DDU-DU DDU-DU'), 
+('Kill This Love'), 
+('As If It''s Your Last'), 
+('Drunk-Dazed'), 
+('Sweet Venom'), 
+('Polaroid Love'), 
+('Bite Me'), 
+('In Bloom'), 
+('CRUSH'), 
+('Black Mamba'), 
+('Next Level'), 
+('Savage'), 
+('Drama'), 
+('Supernova');
+
 -- 10. SETLIST TABLE (Junction, references Artist and Event)
-INSERT INTO Setlist (Artist_ID, Event_ID, Song_Name, Play_Order) VALUES
-(1, 1, 'Pink Venom', 1),
-(1, 1, 'How You Like That', 2),
-(1, 1, 'Shut Down', 3),
-(1, 1, 'DDU-DU DDU-DU', 4),
-(1, 1, 'Kill This Love', 5),
-(1, 1, 'As If It''s Your Last', 6),
-(2, 2, 'Drunk-Dazed', 1),
-(2, 2, 'Sweet Venom', 2),
-(2, 2, 'Polaroid Love', 3),
-(2, 2, 'Bite Me', 4),
-(3, 3, 'In Bloom', 1),
-(3, 3, 'CRUSH', 2),
-(5, 5, 'Black Mamba', 1),
-(5, 5, 'Next Level', 2),
-(5, 5, 'Savage', 3),
-(5, 5, 'Drama', 4),
-(5, 5, 'Supernova', 5);
+INSERT INTO Setlist (Artist_ID, Event_ID, Song_ID, Play_Order) VALUES
+-- BLACKPINK Comeback Tour 
+(1, 1, 1, 1),
+(1, 1, 2, 2),
+(1, 1, 3, 3),
+(1, 1, 4, 4),
+(1, 1, 5, 5),
+(1, 1, 6, 6),
+-- ENHYPEN Dunkin Donut Collab x Fanmeet 
+(2, 2, 7, 1),
+(2, 2, 8, 2),
+(2, 2, 9, 3),
+(2, 2, 10, 4),
+-- ZB1 Hi-Five Session
+(3, 3, 11, 1),
+(3, 3, 12, 2),
+-- AESPA Artist Showcase 
+(5, 5, 13, 1),
+(5, 5, 14, 2),
+(5, 5, 15, 3),
+(5, 5, 16, 4),
+(5, 5, 17, 5);

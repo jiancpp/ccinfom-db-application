@@ -184,6 +184,28 @@ ADD CONSTRAINT fk_artist_member
     FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
     
+DELIMITER $$
+
+DROP TRIGGER IF EXISTS trg_member_status_check$$
+
+CREATE TRIGGER trg_member_status_check
+BEFORE INSERT ON Member
+FOR EACH ROW
+BEGIN
+    DECLARE artist_status ENUM('Active', 'Inactive', 'Hiatus');
+
+    SELECT Activity_Status
+    INTO artist_status
+    FROM Artist
+    WHERE Artist_ID = NEW.Artist_ID;
+
+    IF artist_status IN ('Hiatus', 'Inactive') THEN
+        SET NEW.Activity_Status = artist_status;
+    END IF;
+END$$
+
+DELIMITER ;
+    
 -- 
 -- Constraints for `Member_Nationality`
 -- 
