@@ -268,6 +268,30 @@ CREATE TABLE `Setlist` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+DROP TABLE IF EXISTS `Setlist`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Setlist` (
+	`Artist_ID` INT(11) NOT NULL,
+	`Event_ID` INT(11) NOT NULL,
+    `Song_ID` INT(11) NOT NULL,
+    `Play_Order` INT(11) NOT NULL,
+    PRIMARY KEY (`Artist_ID`, `Event_ID`, `Play_Order`),
+    UNIQUE (`Artist_ID`, `Event_ID`, `Song_ID`),
+    CHECK (`Play_Order` > 0)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `Song`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Song` (
+	`Song_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Song_Name` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`Song_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
 -- ==============================================
 --              TRANSACTION TABLES
 -- ==============================================
@@ -420,7 +444,6 @@ CREATE TABLE `LINK_Member_Role` (
     PRIMARY KEY (`Member_ID`, `Role_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
 
 DROP TABLE IF EXISTS `Location_Country`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

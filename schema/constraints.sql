@@ -221,8 +221,14 @@ ADD CONSTRAINT fk_event_artist
 -- Constraints for `Setlist`
 -- 
 ALTER TABLE Setlist
+ADD CONSTRAINT fk_setlist_artist
+    FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`),
+ADD CONSTRAINT fk_setlist_event
+    FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`),
 ADD CONSTRAINT fk_setlist_artist_event
-	FOREIGN KEY (`Artist_ID`, `Event_ID`) REFERENCES Artist_Event(`Artist_ID`, `Event_ID`)
+	FOREIGN KEY (`Artist_ID`, `Event_ID`) REFERENCES Artist_Event(`Artist_ID`, `Event_ID`),
+ADD CONSTRAINT fk_setlist_song
+    FOREIGN KEY (`Song_ID`) REFERENCES Song(`Song_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 
