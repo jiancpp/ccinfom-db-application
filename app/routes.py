@@ -1356,8 +1356,8 @@ def artist_details(artist_id):
     member_roles_query = '''
         SELECT mr.Member_ID, 
             r.Role_Name 
-        FROM Member_Role AS mr
-        JOIN Role AS r ON mr.Role_ID = r.Role_ID
+        FROM LINK_Member_Role AS mr
+        JOIN REF_Role AS r ON mr.Role_ID = r.Role_ID
         JOIN Member AS me ON mr.Member_ID = me.Member_ID
         WHERE me.Artist_ID = %s
         '''
@@ -1365,8 +1365,8 @@ def artist_details(artist_id):
     member_nationality_query = '''
         SELECT mn.Member_ID, 
             n.Nationality_Name 
-        FROM Member_Nationality AS mn
-        JOIN Nationality AS n ON mn.Nationality_ID = n.Nationality_ID
+        FROM LINK_Member_Nationality AS mn
+        JOIN REF_Nationality AS n ON mn.Nationality_ID = n.Nationality_ID
         JOIN Member AS me ON mn.Member_ID = me.Member_ID
         WHERE me.Artist_ID = %s
         '''

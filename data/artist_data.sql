@@ -96,8 +96,8 @@ INSERT INTO Member (Member_ID, Artist_ID, Member_Name, Activity_Status, Birth_Da
 (70, 11, 'Oh Yoon-a', 'Active', '2009-10-07'),
 (71, 11, 'Lim Seo-won', 'Active', '2011-01-27');
 
--- 4. NATIONALITY TABLE (Child, references Member)
-INSERT INTO Nationality (Nationality_ID, Nationality_Name) VALUES
+-- 4. REF_NATIONALITY TABLE (Child, references Member)
+INSERT INTO REF_Nationality (Nationality_ID, Nationality_Name) VALUES
 (1, 'South Korean'),
 (2, 'New Zealander'),
 (3, 'Thai'),
@@ -109,8 +109,8 @@ INSERT INTO Nationality (Nationality_ID, Nationality_Name) VALUES
 (9, 'Vietnamese'),
 (10, 'Filipino');
 
--- 5. MEMBER_NATIONALITY TABLE (Junction, references Member and Nationality)
-INSERT INTO Member_Nationality (Member_ID, Nationality_ID) VALUES
+-- 5. LINK_MEMBER_NATIONALITY TABLE (Junction, references Member and Nationality)
+INSERT INTO LINK_Member_Nationality (Member_ID, Nationality_ID) VALUES
 (1, 1), (2, 1), (3, 2), (4, 3), (5, 1), (6, 1), (7, 1), (7, 4), (8, 1), (8, 5),
 (9, 1), (10, 1), (11, 6), (12, 1), (13, 7), (14, 1), (15, 1), (16, 1), (17, 7),
 (18, 1), (19, 1), (20, 1), (21, 1), (22, 1), (23, 1), (24, 6), (24, 1), (25, 1),
@@ -121,8 +121,8 @@ INSERT INTO Member_Nationality (Member_ID, Nationality_ID) VALUES
 (59, 1), (60, 7), (61, 1), (62, 4), (62, 1), (63, 1), (64, 1), (65, 6), (66, 10),
 (67, 6), (68, 1), (69, 10), (70, 1), (71, 1);
 
--- 6. ROLE TABLE () (Child, references Member)
-INSERT INTO Role (Role_ID, Role_Name) VALUES
+-- 6. REF_ROLE TABLE () (Child, references Member)
+INSERT INTO REF_Role (Role_ID, Role_Name) VALUES
 (1, 'Vocalist'),
 (2, 'Visual'),
 (3, 'Rapper'),
@@ -142,8 +142,8 @@ INSERT INTO Role (Role_ID, Role_Name) VALUES
 (17, 'Lead Rapper'),
 (18, 'Main Dancer');
 
--- 7. MEMBER_ROLE TABLE (Child, references Member)
-INSERT INTO Member_Role (Member_ID, Role_ID) VALUES
+-- 7. LINK_MEMBER_ROLE TABLE (Child, references Member)
+INSERT INTO LINK_Member_Role (Member_ID, Role_ID) VALUES
 (1, 1), (1, 2), (2, 3), (2, 1), (3, 1), (3, 4), (4, 4), (5, 6), (5, 1), (5, 4),
 (6, 1), (6, 4), (7, 3), (7, 4), (7, 1), (8, 3), (8, 1), (9, 1), (9, 4), (9, 2),
 (10, 1), (10, 5), (11, 4), (11, 3), (11, 5), (12, 1), (12, 3), (13, 8), (13, 1),

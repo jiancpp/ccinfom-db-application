@@ -256,46 +256,6 @@ CREATE TABLE `Member` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
-DROP TABLE IF EXISTS `Nationality`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Nationality` (
-	`Nationality_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Nationality_Name` VARCHAR(255) NOT NULL,
-    PRIMARY KEY (`Nationality_ID`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-DROP TABLE IF EXISTS `Member_Nationality`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Member_Nationality` (
-	`Member_ID` INT(11) NOT NULL,
-    `Nationality_ID` INT(11) NOT NULL,
-    PRIMARY KEY (`Member_ID`, `Nationality_ID`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-DROP TABLE IF EXISTS `Role`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Role` (
-	`Role_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Role_Name` VARCHAR(255) NOT NULL,
-    PRIMARY KEY (`Role_ID`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-DROP TABLE IF EXISTS `Member_Role`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Member_Role` (
-	`Member_ID` INT(11) NOT NULL,
-    `Role_ID` INT(11) NOT NULL,
-    PRIMARY KEY (`Member_ID`, `Role_ID`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
 DROP TABLE IF EXISTS `Setlist`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -420,6 +380,47 @@ CREATE TABLE `LINK_Event_Type` (
     
     PRIMARY KEY (`Event_ID`, `Type_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+DROP TABLE IF EXISTS `REF_Nationality`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `REF_Nationality` (
+	`Nationality_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Nationality_Name` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`Nationality_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `LINK_Member_Nationality`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `LINK_Member_Nationality` (
+	`Member_ID` INT(11) NOT NULL,
+    `Nationality_ID` INT(11) NOT NULL,
+    PRIMARY KEY (`Member_ID`, `Nationality_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `REF_Role`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `REF_Role` (
+	`Role_ID` INT(11) NOT NULL AUTO_INCREMENT,
+    `Role_Name` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`Role_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `LINK_Member_Role`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `LINK_Member_Role` (
+	`Member_ID` INT(11) NOT NULL,
+    `Role_ID` INT(11) NOT NULL,
+    PRIMARY KEY (`Member_ID`, `Role_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
 
 DROP TABLE IF EXISTS `Location_Country`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
