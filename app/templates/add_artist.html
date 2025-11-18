@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %} Create New Artist - KSync {% endblock %}
+
+{% block content %}
+    <style>
+        /* Existing Styles for event-type-container, event-type, etc. are now repurposed/removed */
+
+        /* --- New/Revised Styles --- */
+        .header-title {
+            color: #667eea; 
+            font-size: 2.5rem; 
+            margin-bottom: 5px;
+        }
+
+        /* Card for the Member section */
+        .member-card {
+            background-color: #f9f9ff;
+            border: 1px solid #e9e9ff;
+        }
+
+        /* Style for the individual member input rows */
+        .member-row {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px dashed #eee;
+            align-items: flex-end; /* Align inputs and button */
+        }
+        
+        .member-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .member-input-group {
+            flex-grow: 1;
+            /* Flex-basis for member inputs: Name, Stage Name, Role */
+            display: flex;
+            gap: 10px; 
+        }
+
+        .member-input-group > div {
+            flex-basis: 33.33%; /* Evenly space the three main fields */
+        }
+        
+        .member-input-group label {
+            font-size: 0.85rem;
+            color: #777;
+            margin-bottom: 3px;
+            display: block;
+        }
+        
+        /* Delete button styling */
+        .btn-delete {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            height: 38px; /* Match input height */
+            flex-shrink: 0;
+        }
+        
+        .btn-add-member {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+    </style>
+
+    <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
+        <h1 class="header-title">
+            <i class="fa fa-users"></i> Create New Artist
+        </h1>
+        <p style="color: #555;">
+            All fields marked with * are required.
+        </p>
+    </header>
+
+    <form method="POST" action="{{ url_for('main_routes.add_artist') }}">
+        
+        <div class="grid" style="grid-template-columns: 1fr 1.5fr; gap: 20px;">
+            
+            {# --- LEFT COLUMN: ARTIST CORE DETAILS --- #}
+            <div class="card">
+                <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                    Artist Information
+                </h3>
+
+                <div class="form-group">
+                    <label for="artist_name">Artist Name *</label>
+                    <input type="text" id="artist_name" name="artist_name" required placeholder="e.g., KSync, BLACKPINK">
+                </div>
+
+                <div class="form-group">
+                    <label for="manager_id">Manager / Agency *</label>
+                    <select id="manager_id" name="manager_id" required>
+                        <option value="">-- Select Manager / Agency --</option>
+                        </select>
+                </div>
+
+                <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label for="debut_date">Debut Date *</label>
+                        <input type="date" id="debut_date" name="debut_date" required>
+                    </div>
+                    <div>
+                        <label for="activity_status">Activity Status *</label>
+                        <select id="activity_status" name="activity_status" required>
+                            <option value="Active">Active</option>
+                            <option value="Hiatus">Hiatus</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="official_fanclub">Official Fanclub Name (Optional)</label>
+                    <input type="text" id="official_fanclub" name="official_fanclub" placeholder="e.g., KSyncers">
+                </div>
+            </div>
+
+            {# --- RIGHT COLUMN: MEMBER DETAILS --- #}
+            <div class="card member-card">
+                <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                    Artist Members
+                </h3>
+                
+                <div id="members-container">
+                    </div>
+
+                <button type="button" class="btn-add-member" onclick="addMemberRow()">
+                    <i class="fa fa-plus-circle"></i> Add New Member
+                </button>
+
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 30px; text-align: center;">
+            <button type="submit" class="btn" style="background-color: #764ba2; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
+                <i class="fa fa-music"></i> Create Artist
+            </button>
+        </div>
+
+    </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let memberCount = 0;
+
+    /**
+     * Generates the HTML string for a single member input row.
+     */
+    function getMemberRowHTML(index) {
+        return `
+            <div class="member-row" id="member-row-${index}">
+                <div class="member-input-group">
+                    <div>
+                        <label for="member_name_${index}">Name *</label>
+                        <input type="text" id="member_name_${index}" name="members[${index}][name]" placeholder="Real Name" required>
+                    </div>
+                    <div>
+                        <label for="member_stage_name_${index}">Stage Name *</label>
+                        <input type="text" id="member_stage_name_${index}" name="members[${index}][stage_name]" placeholder="Stage Name" required>
+                    </div>
+                    <div>
+                        <label for="member_role_${index}">Role (e.g., Leader, Main Vocal)</label>
+                        <input type="text" id="member_role_${index}" name="members[${index}][role]" placeholder="Role" >
+                    </div>
+                </div>
+                <button type="button" class="btn-delete" onclick="removeMemberRow(${index})">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    /**
+     * Adds a new member row to the container.
+     */
+    function addMemberRow() {
+        const container = document.getElementById('members-container');
+        const newRowHTML = getMemberRowHTML(memberCount);
+        container.insertAdjacentHTML('beforeend', newRowHTML);
+        memberCount++;
+    }
+
+    /**
+     * Removes a member row and re-indexes the remaining fields.
+     */
+    function removeMemberRow(indexToRemove) {
+        const row = document.getElementById(`member-row-${indexToRemove}`);
+        if (row) {
+            row.remove();
+        }
+
+        // Re-index remaining fields to ensure sequential array submission
+        const container = document.getElementById('members-container');
+        const remainingRows = container.querySelectorAll('.member-row');
+        
+        memberCount = 0; // Reset counter for re-indexing
+
+        remainingRows.forEach((row, newIndex) => {
+            // Update row ID
+            row.id = `member-row-${newIndex}`;
+
+            // Update input names and IDs
+            row.querySelectorAll('input').forEach(input => {
+                const oldName = input.name;
+                // Use a regex replace to update the index inside the brackets
+                input.name = oldName.replace(/\[\d+\]/, `[${newIndex}]`);
+                input.id = input.id.replace(/_\d+$/, `_${newIndex}`);
+            });
+
+            // Update button click handler
+            row.querySelector('.btn-delete').setAttribute('onclick', `removeMemberRow(${newIndex})`);
+
+            memberCount = newIndex + 1;
+        });
+
+        // Ensure at least one row remains if necessary, or check if the counter is accurate
+        if (memberCount === 0) {
+            addMemberRow(); // Optional: Ensure at least one member field is always present
+        }
+    }
+
+    // Add an initial member row when the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        addMemberRow();
+    });
+</script>
+{% endblock %}

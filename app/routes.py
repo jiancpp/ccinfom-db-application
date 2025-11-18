@@ -901,28 +901,34 @@ def manage_fanclubs():
 def manage_artists():
     query = """
         SELECT
-            A.Artist_ID,
-            A.Artist_Name,
-            A.Activity_Status,
-            A.Debut_Date,
-            M.Manager_Name,
-            M.Agency AS Manager_Agency,
-            COUNT(Mem.Member_ID) AS Member_Count
+            A.Artist_ID AS Artist_ID,
+            A.Artist_Name AS Artist_Name,
+            A.Activity_Status AS Activity_Status,
+            A.Debut_Date AS Debut_Date,
+            M.Manager_Name AS Manager_Name
         FROM
             Artist A
         LEFT JOIN
             Manager M ON A.Manager_ID = M.Manager_ID
-        LEFT JOIN
-            Member Mem ON A.Artist_ID = Mem.Artist_ID
         GROUP BY
             A.Artist_ID, A.Artist_Name, A.Activity_Status, A.Debut_Date, M.Manager_Name, M.Agency
         ORDER BY 
-            A.Artist_Name;
+            A.Artist_ID;
         """
         
     artists = execute_select_query(query)
         
     return render_template('manage_artists.html', artists=artists)
+
+@main_routes.route('/manage_artist/add_artist', methods=["GET","POST"])
+def add_artist():
+    if request.method == 'POST':
+        print("Hello")
+
+
+    return render_template(
+        'add_artist.html',
+    )
 
 
 @main_routes.route('/manage_events')
