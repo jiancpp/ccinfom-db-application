@@ -5,7 +5,7 @@ from collections import defaultdict
 import datetime
 import mysql.connector
 
-from .db_utils import execute_select_query, execute_insert_query, get_conn
+from .db_utils import execute_select_query, execute_insert_query, get_conn, get_updated_value
 
 main_routes = Blueprint('main_routes', __name__)
 
@@ -799,15 +799,91 @@ def profile():
 
     return render_template('profile.html', fan=fan, memberships=memberships, purchases=purchases)
 
+@main_routes.route('/edit_profile', methods=['GET', 'POST'])
+def edit_profile():
+
+    current_fan_id = g.current_user['Fan_ID']
+    
+    fan_query = '''
+        SELECT *
+        FROM Fan
+        WHERE Fan_ID = %s
+        '''
+        
+    fan = execute_select_query(fan_query, (current_fan_id,))
+
+    if not fan:
+        flash('Error loading profile data.', 'error')
+        return redirect(url_for('main_routes.profile'))
+    
+    if request.method == 'POST':
+        current_fan_id = g.current_user['Fan_ID']
+
+        first_name = get_updated_value('first_name', fan[0]['First_Name'])
+        last_name = get_updated_value('last_name', fan[0]['Last_Name'])
+        username = get_updated_value('username', fan[0]['Username'])
+        email = get_updated_value('email', fan[0]['Email'])
+
+        fan_username_query = '''
+        SELECT Fan_ID
+        FROM Fan
+        WHERE Username = %s AND Fan_ID != %s
+        '''
+        fan_username = execute_select_query(fan_username_query, (username, current_fan_id))
+
+        if fan_username:
+            flash(f'The username "{username}" is already taken.', 'error')
+            return render_template('edit_profile.html', fan=fan)
+
+        fan_email_query = '''
+        SELECT Fan_ID
+        FROM Fan
+        WHERE Email = %s AND Fan_ID != %s
+        '''
+        fan_email = execute_select_query(fan_email_query, (email, current_fan_id))
+
+        if fan_email:
+            flash(f'The email "{email}" is already registered.', 'error')
+            return render_template('edit_profile.html', fan=fan)
+            
+        update_fan_record = '''
+        UPDATE Fan
+        SET First_Name = %s,
+            Last_Name = %s,
+            Username = %s,
+            Email = %s
+        WHERE Fan_ID = %s
+        '''
+
+        if execute_insert_query(update_fan_record, (first_name, last_name, username, email, current_fan_id)):
+            session['username'] = username
+            flash('Profile updated successfully!.', 'success')
+            return redirect(url_for('main_routes.profile'))
+        else:
+            flash('A server error occurred.', 'error')
+
+    return render_template('edit_profile.html', fan=fan)
+
+@main_routes.route('/delete_account', methods=['POST'])
+def delete_account():
+    current_fan_id = g.current_user['Fan_ID']
+
+    session.pop('fan_id', None)
+    session.pop('username', None)
+    session.pop('logged_in', None)
+
+    delete_fanclub_membership_record = '''
+    DELETE FROM Fan
+    WHERE Fan_ID = %s
+    '''
+
+    execute_insert_query(delete_fanclub_membership_record, (current_fan_id, ))
+
+    flash('Account deleted successfully.', 'success')
+    return redirect(url_for('main_routes.index'))
 
 @main_routes.route('/manager_portal')
 def manager_portal():
-    return render_template('manager_portal.html')
-
-
-@main_routes.route('/manage_fans')
-def manage_fans():
-    # edit
     return render_template('manager_portal.html')
 
 

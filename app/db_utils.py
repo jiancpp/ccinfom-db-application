@@ -1,4 +1,5 @@
 from app.config import DB_HOST, DB_USER, DB_PASS, DB_NAME
+from flask import request
 import mysql.connector
 
 # ============================================
@@ -54,3 +55,10 @@ def execute_insert_query(sql, params=()):
             conn.close()
 
     return is_successful
+
+def get_updated_value(key, current_db_value):
+        submitted_value = request.form.get(key)
+        if submitted_value is None or submitted_value.strip() == '':
+            return current_db_value
+            
+        return submitted_value.strip()
