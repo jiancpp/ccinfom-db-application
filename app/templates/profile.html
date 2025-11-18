@@ -2,20 +2,32 @@
 {% block title %}Profile - KSync{% endblock %}
 
 {% block content %}
-    <header style="border-bottom: 3px solid #764ba2; padding-bottom: 10px; margin-bottom: 25px;">
-        <h1 style="color: #764ba2; font-size: 2.5rem; margin-bottom: 5px;">
-            👤 {{ fan.First_Name }}'s Profile
-        </h1>
-        <p style="color: #555;">
-            All your stats are sync'd up.
-        </p>
+    <header style="border-bottom: 3px solid #764ba2; padding-bottom: 10px; margin-bottom: 25px; display: flex; justify-content: space-between;">
+        <div>
+            <h1 style="color: #764ba2; font-size: 2.5rem; margin-bottom: 5px;">
+                👤 {{ fan[0].First_Name }}'s Profile
+            </h1>
+            <p style="color: #555;">
+                All your stats are sync'd up.
+            </p>
+        </div>
+        <form method="POST" action="{{ url_for('main_routes.delete_account') }}" 
+            onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');">
+            
+            <button type="submit" class="btn btn-delete" style="background-color: #d53f3f;"> 
+                Delete Account 
+            </button>
+            
+        </form>
+
     </header>
 
     <div class="grid" style="grid-template-columns: 1fr 1fr;">
         
         <div class="card">
-            <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
-                <i class="fa fa-user-circle-o"></i> Account Information
+            <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between;">
+                <span><i class="fa fa-user-circle-o"></i> Account Information</span>
+                <a href="{{ url_for('main_routes.edit_profile') }}" class="btn" style="font-weight: 500;">Edit Profile</a>
             </h3>
             
             <p><strong>Fan ID:</strong> ID{{ "%05d" | format(fan[0].Fan_ID) }}</p>

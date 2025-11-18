@@ -259,14 +259,8 @@
                                 </button>
                             {% endif %}
                         </form>
-                    {% else %}
-                        {# Login link must have the classes that allow it to flex-grow and look like a button #}
-                        <a href="{{ url_for('main_routes.login') }}" class="artist-btn btn-follow btn-link">
-                            <i class="fa fa-sign-in"></i> Login to Follow
-                        </a>
                     {% endif %}
 
-                    {# 2. View Profile Button: We must ensure this link uses the necessary classes for equal size #}
                     <a href="{{ url_for('main_routes.artist_details', artist_id=artist.Artist_ID) }}" 
                     class="artist-btn btn-outline btn-link">
                         View Profile
