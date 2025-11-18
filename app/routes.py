@@ -918,8 +918,152 @@ def manager_portal():
 
 @main_routes.route('/manage_fanclubs')
 def manage_fanclubs():
-    # edit
-    return render_template('manager_portal.html')
+    query = '''
+    SELECT 
+        f.*, 
+        a.Artist_Name
+    FROM Fanclub AS f 
+        JOIN Artist AS a ON f.Artist_ID = a.Artist_ID
+    '''
+
+    fanclubs = execute_select_query(query)
+
+    return render_template(
+        'manage_fanclubs.html', 
+        fanclubs=fanclubs
+    )
+
+
+@main_routes.route('/manage_fanclubs/add_fanclub', methods=['GET', 'POST'])
+def add_fanclub():
+    artist_query = '''
+    SELECT Artist_ID, Artist_Name
+    FROM Artist
+    ORDER BY Artist_Name
+    '''
+    artists = execute_select_query(artist_query)
+
+    if request.method == 'POST':
+        try:
+            fanclub_name = request.form.get('fanclub_name')
+            artist_id = request.form.get('artist_id')
+            
+            if not fanclub_name or not artist_id:
+                flash("Fanclub Name and Associated Artist are required.", 'error')
+                return redirect(request.url)
+            
+            check_name_query = '''
+            SELECT Fanclub_ID FROM Fanclub WHERE Fanclub_Name = %s
+            '''
+            existing_fanclub = execute_select_query(check_name_query, (fanclub_name,))
+
+            if existing_fanclub:
+                flash(f"A fanclub named '{fanclub_name}' already exists. Please choose a unique name.", 'error')
+                return render_template('add_fanclub.html', artists=artists)
+
+            insert_fanclub_record = '''
+            INSERT INTO Fanclub (Fanclub_Name, Artist_ID)
+            VALUES (%s, %s)
+            '''
+            
+            execute_insert_query(insert_fanclub_record, (
+                fanclub_name, 
+                artist_id)
+            )
+
+            flash(f"Fanclub '{fanclub_name}' successfully created!", 'success')
+            return redirect(url_for('main_routes.manage_fanclubs'))
+        
+        except Exception as e:
+            flash(f"An unexpected error occurred while adding the fanclub: {e}", 'error')
+            return render_template('add_fanclub.html', artists=artists)
+
+    return render_template('add_fanclub.html', artists=artists)
+
+
+@main_routes.route('/manage_fanclubs/<int:fanclub_id>/edit_fanclub', methods=['GET', 'POST'])
+def edit_fanclub(fanclub_id):
+    fanclub_query = '''
+    SELECT Fanclub_ID, Fanclub_Name, Artist_ID 
+    FROM Fanclub
+    WHERE Fanclub_ID = %s
+    '''
+    artist_query = '''
+    SELECT Artist_ID, Artist_Name
+    FROM Artist
+    ORDER BY Artist_Name
+    '''
+    
+    fanclub_data = execute_select_query(fanclub_query, (fanclub_id,))  
+    fanclub = fanclub_data[0]
+    artists = execute_select_query(artist_query)
+
+    if request.method == 'POST':
+        try:
+            new_name = request.form.get('fanclub_name')
+            new_artist_id = request.form.get('artist_id')
+            
+            if not new_name or not new_artist_id:
+                flash("Fanclub Name and Associated Artist are required.", 'error')
+                return render_template('edit_fanclub.html', fanclub=fanclub, artists=artists)
+
+            if new_name != fanclub['Fanclub_Name']:
+                check_name_query = '''
+                SELECT Fanclub_ID FROM Fanclub WHERE Fanclub_Name = %s
+                '''
+                existing_fanclub = execute_select_query(check_name_query, (new_name,))
+
+                if existing_fanclub:
+                    flash(f"A fanclub named '{new_name}' already exists. Please choose a unique name.", 'error')
+                    return render_template('edit_fanclub.html', fanclub=fanclub, artists=artists)
+
+            update_fanclub_query = '''
+            UPDATE Fanclub
+            SET Fanclub_Name = %s, Artist_ID = %s
+            WHERE Fanclub_ID = %s
+            '''
+            
+            execute_insert_query(update_fanclub_query, (
+                new_name, 
+                new_artist_id,
+                fanclub_id)
+            )
+
+            flash(f"Fanclub '{new_name}' updated successfully!", 'success')
+            return redirect(url_for('main_routes.manage_fanclubs'))
+        
+        except Exception as e:
+            flash(f"An unexpected error occurred while updating the fanclub: {e}", 'error')
+            return render_template('edit_fanclub.html', fanclub=fanclub, artists=artists)
+
+    return render_template('edit_fanclub.html', fanclub=fanclub, artists=artists)
+
+
+@main_routes.route('/manage_fanclubs/<int:fanclub_id>/delete_fanclub', methods=['POST'])
+def delete_fanclub(fanclub_id):
+    fanclub_name_query = "SELECT Fanclub_Name FROM Fanclub WHERE Fanclub_ID = %s"
+    fanclub_data = execute_select_query(fanclub_name_query, (fanclub_id,))
+    
+    if not fanclub_data:
+        flash("Fanclub not found.", 'error')
+        return redirect(url_for('main_routes.manage_fanclubs'))
+
+    fanclub_name = fanclub_data[0]['Fanclub_Name']
+    
+    try:
+        delete_query = '''
+        DELETE FROM Fanclub
+        WHERE Fanclub_ID = %s
+        '''
+    
+        execute_insert_query(delete_query, (fanclub_id,))
+
+        flash(f"Fanclub '{fanclub_name}' successfully deleted.", 'success')
+        return redirect(url_for('main_routes.manage_fanclubs'))
+        
+    except Exception as e:
+        flash(f"Error deleting fanclub '{fanclub_name}'. It may be associated with existing records (Events, etc.). Error: {e}", 'error')
+        return redirect(url_for('main_routes.manage_fanclubs'))
 
 
 @main_routes.route('/manage_artists')
