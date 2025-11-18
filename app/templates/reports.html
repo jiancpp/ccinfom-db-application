@@ -274,6 +274,8 @@
                     <td>Fanclub Name</td>
                     <td>Total Ticket Sales</td>
                     <td>Total Merchandise Sales</td>
+                    <td>Total Ticket Purchase by Members</td>
+                    <td>Total Merchandise Purchase by Members</td>
                     <td>Total Sales</td>
                 </tr>
             </thead>
@@ -284,6 +286,8 @@
                     <td>{{ record.Fanclub_Name }}</td>
                     <td>₱<span class="money"></span>{{ record.Total_Tickets }}</span></td>
                     <td>₱<span class="money"></span>{{ record.Total_Merchandise }}</span></td>
+                    <td>₱<span class="money"></span>{{ record.Total_Member_Tickets }}</span></td>
+                    <td>₱<span class="money"></span>{{ record.Total_Member_Merchandise }}</span></td>
                     <td>₱<span class="money">{{ record.Total_Sales }}</span></td>
                 </tr>
                 {% endfor %}                
