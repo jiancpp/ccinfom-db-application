@@ -3,6 +3,7 @@ from flask import render_template, request, redirect, url_for, jsonify
 from collections import defaultdict
 
 import datetime
+import re
 import mysql.connector
 
 from .db_utils import execute_select_query, execute_insert_query, get_conn, get_updated_value
@@ -1089,20 +1090,67 @@ def manage_artists():
         
     return render_template('manage_artists.html', artists=artists)
 
+@main_routes.route('/manage_artists/<int:artist_id>/delete_artist', methods=['POST'])
+def delete_artist(artist_id):
+    artist_name_query = "SELECT Artist_Name FROM Artist WHERE Artist_ID = %s"
+    artist_data = execute_select_query(artist_name_query, (artist_id,))
+    
+    if not artist_data:
+        flash("Artist not found.", 'error')
+        return redirect(url_for('main_routes.manage_artists'))
+
+    artist_name = artist_data[0]['Artist_Name']
+    
+    try:
+        delete_query = '''
+        DELETE FROM Artist
+        WHERE Artist_ID = %s
+        '''
+    
+        execute_insert_query(delete_query, (artist_id,))
+
+        flash(f"Artist '{artist_name}' successfully deleted.", 'success')
+        return redirect(url_for('main_routes.manage_artists'))
+        
+    except Exception as e:
+        flash(f"Error deleting artist '{artist_name}'. It may be associated with existing records (Events, etc.). Error: {e}", 'error')
+        return redirect(url_for('main_routes.manage_artists'))
+
 @main_routes.route('/manage_artist/add_artist_info', methods=["GET","POST"])
 def add_artist_info():
-    if request.method == 'POST':
-        print("Hello")
+    role_query = '''
+    SELECT Role_Name
+    FROM REF_Role
+    ORDER BY Role_Name
+    '''
+    nationality_query = '''
+    SELECT Nationality_Name
+    FROM REF_Nationality
+    ORDER BY Nationality_Name
+    '''
 
+    dbroles = execute_select_query(role_query)
+    dbnationalities = execute_select_query(nationality_query)
+
+    roles = [
+        {'value': str(row['Role_Name']), 'text': str(row['Role_Name'])}
+        for row in dbroles if 'Role_Name' in row
+    ]
+
+    nationalities = [
+        {'value': str(row['Nationality_Name']), 'text': str(row['Nationality_Name'])}
+        for row in dbnationalities if 'Nationality_Name' in row
+    ]
 
     return render_template(
         'add_artist_info.html',
+        roles=roles,
+        nationalities=nationalities
     )
 
 @main_routes.route('/manage_artist/add_artist_info/add_artist', methods=["GET","POST"])
 def add_artist():
     if request.method == 'POST':
-        # --- 1. Retrieve & Prepare Data ---
         
         artist_data = {
             'artist_name': request.form.get('artist_name'),
@@ -1113,15 +1161,12 @@ def add_artist():
             'manager_phone': request.form.get('new_manager_phone'),
             'manager_email': request.form.get('new_manager_email'),
         }
-
-        # Retrieve Members list (Logic from previous step)
+        
         member_data_map = {} 
         final_members_list = []
         
         for key, value in request.form.items():
             if key.startswith('members['):
-                # Using simple string parsing (re module imported at the top)
-                import re
                 match = re.search(r'members\[(\d+)\]\[(\w+)\]', key)
                 
                 if match:
@@ -1142,82 +1187,70 @@ def add_artist():
             member_dict['nationality'] = request.form.getlist(nationality_key)
             
             final_members_list.append(member_dict)
-
         
-        conn = get_conn() # Get a new database connection
+        conn = get_conn() 
         cursor = conn.cursor()
 
         try:
-            # --- 2. Database Insertion Logic (Transactional) ---
+            if (artist_data['manager_name']): 
+                manager_insert_sql = '''
+                INSERT INTO Manager (Manager_Name, Agency, Contact_Num, Contact_Email)
+                VALUES (%s, %s, %s, %s)
+                '''
+                execute_insert_query(manager_insert_sql, (
+                    artist_data['manager_name'], 
+                    artist_data['agency_name'], 
+                    artist_data['manager_phone'], 
+                    artist_data['manager_email']
+                ))
 
-            # A. Insert into Manager Table
-            manager_insert_sql = '''
-            INSERT INTO Manager (Manager_Name, Agency, Contact_Num, Contact_Email)
-            VALUES (%s, %s, %s, %s)
-            '''
-            cursor.execute(manager_insert_sql, (
-                artist_data['manager_name'], 
-                artist_data['agency_name'], 
-                artist_data['manager_phone'], 
-                artist_data['manager_email']
-            ))
-            # Get the ID of the newly inserted Manager
-            manager_id = cursor.lastrowid
-            if not manager_id:
-                raise Exception("Failed to retrieve Manager ID after insertion.")
+                manager_id = cursor.lastrowid
+                if not manager_id:
+                    raise Exception("Failed to retrieve Manager ID after insertion.")
+            else:
+                manager_id = None
 
-
-            # B. Insert into Artist Table (Requires Manager_ID)
             artist_insert_sql = '''
             INSERT INTO Artist (Artist_Name, Debut_Date, Activity_Status, Manager_ID)
             VALUES (%s, %s, %s, %s)
             '''
-            cursor.execute(artist_insert_sql, (
+            execute_insert_query(artist_insert_sql, (
                 artist_data['artist_name'],
                 artist_data['debut_date'],
                 artist_data['activity_status'],
                 manager_id
             ))
-            # Get the ID of the newly inserted Artist
+            
             artist_id = cursor.lastrowid
             if not artist_id:
                 raise Exception("Failed to retrieve Artist ID after insertion.")
 
-
-            # C. Handle Roles, Nationalities, and Members
             for member_data in final_members_list:
                 
-                # C.1. Handle Nationalities and Link to Artist
-                for nation_name in member_data.get('nationality', []):
-                    # Check if Nationality exists, or insert it
-                    nationality_id = get_updated_value('Nationality', 'Nationality_Name', nation_name, 'Nationality_ID', conn)
-                    
-                    # Link Nationality to Artist (Artist_Nationality junction table)
-                    artist_nation_link_sql = '''
-                    INSERT IGNORE INTO Artist_Nationality (Artist_ID, Nationality_ID)
-                    VALUES (%s, %s)
-                    '''
-                    cursor.execute(artist_nation_link_sql, (artist_id, nationality_id))
                 
-                # C.2. Handle Roles and Link to Artist
-                for role_name in member_data.get('role', []):
-                    # Check if Role exists, or insert it
-                    role_id = get_updated_value('Role', 'Role_Name', role_name, 'Role_ID', conn)
-                        
-                    # Link Role to Artist (Artist_Role junction table)
-                    artist_role_link_sql = '''
-                    INSERT IGNORE INTO Artist_Role (Artist_ID, Role_ID)
+                for nation_name in member_data.get('nationality', []):
+                    nationality_id = get_updated_value('Nationality', nation_name)
+                    
+                    artist_nation_link_sql = '''
+                    INSERT INTO Artist_Nationality (Artist_ID, Nationality_ID)
                     VALUES (%s, %s)
                     '''
-                    cursor.execute(artist_role_link_sql, (artist_id, role_id))
+                    execute_insert_query(artist_nation_link_sql, (artist_id, nationality_id))
+                
+                for role_name in member_data.get('role', []):
+                    role_id = get_updated_value('Role', role_name)
+                        
+                    artist_role_link_sql = '''
+                    INSERT INTO Artist_Role (Artist_ID, Role_ID)
+                    VALUES (%s, %s)
+                    '''
+                    execute_insert_query(artist_role_link_sql, (artist_id, role_id))
 
-
-                # C.3. Insert into Member Table (Requires Artist_ID)
                 member_insert_sql = '''
                 INSERT INTO Member (Artist_ID, Real_Name, Stage_Name, Birth_Date, Activity_Status)
                 VALUES (%s, %s, %s, %s, %s)
                 '''
-                cursor.execute(member_insert_sql, (
+                execute_insert_query(member_insert_sql, (
                     artist_id,
                     member_data['name'],
                     member_data['stage_name'],
@@ -1225,26 +1258,21 @@ def add_artist():
                     member_data['activity_status']
                 ))
 
-            # --- 3. Commit Transaction ---
             conn.commit()
             flash(f"Artist '{artist_data['artist_name']}' and {len(final_members_list)} members added successfully!", 'success')
-            return redirect(url_for('main_routes.artists')) # Redirect to the artists list
+            return redirect(url_for('main_routes.manage_artists')) 
 
         except mysql.connector.Error as err:
             conn.rollback()
             print(f"Database error: {err}")
             flash(f"An error occurred while creating the artist: {err.msg}", 'danger')
-            return redirect(url_for('main_routes.add_artist')) # Return to the form with error
+            return redirect(url_for('main_routes.add_artist')) 
 
         finally:
-            # Close the cursor and connection
-            if 'cursor' in locals() and cursor:
-                cursor.close()
             if 'conn' in locals() and conn:
                 conn.close()
 
-    # Handle GET request (render the form)
-    return render_template("add_artist_info.html") # Assuming your form template is named this
+    return add_artist_info()
 
 
 

@@ -123,7 +123,7 @@
             {# === NEW: MANAGER DETAILS CARD === #}
                 <div class="card" style="margin-bottom: 20px;">
                     <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
-                        <i class="fa fa-briefcase"></i> Create New Manager / Agency
+                        <i class="fa fa-briefcase"></i> Add Manager Details
                     </h3>
                     
                     <div class="form-group">
@@ -146,15 +146,11 @@
                             <input type="email" id="new_manager_email" name="new_manager_email" placeholder="manager@agency.com">
                         </div>
                     </div>
-                    <p style="font-size: 0.85rem; color: #888; margin-top: 10px;">
-                        Fields in this section are only required if you don't select an existing manager on the left.
-                    </p>
                 </div>
             </div>
 
             {# --- RIGHT COLUMN CONTAINER --- #}
             <div>
-
                 {# === EXISTING: ARTIST MEMBERS CARD (Uses the updated member row) === #}
                 <div class="card member-card">
                     <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
@@ -185,24 +181,9 @@
 {% block scripts %}
 <script>
     let memberCount = 0;
-
-// NOTE: This array would be populated by Jinja/Python on page load
-    // Example format for roles, fetched from Role_Table
-    const availableRoles = [
-        { value: "Leader", text: "Leader" },
-        { value: "MainVocal", text: "Main Vocal" },
-        { value: "MainDancer", text: "Main Dancer" },
-        { value: "Rapper", text: "Rapper" },
-        { value: "Maknae", text: "Maknae" }
-    ];
-
-    // Example format for nationalities, fetched from Nationality_Table
-    const availableNationalities = [
-        { value: "Korean", text: "Korean" },
-        { value: "Japanese", text: "Japanese" },
-        { value: "Chinese", text: "Chinese" },
-        { value: "American", text: "American" }
-    ];
+    
+    const availableRoles = {{roles | tojson}};
+    const availableNationalities = {{nationalities | tojson}};
 
     /**
      * Helper function to convert an array of objects to <option> HTML string
@@ -211,81 +192,77 @@
         return optionsArray.map(opt => `<option value="${opt.value}">${opt.text}</option>`).join('');
     }
 
-    /**
-     * Generates the HTML string for a single member input row.
-     */
-    function getMemberRowHTML(index) {
-        // Generate options dynamically from JS variables (which Jinja populates)
-        const roleOptions = generateOptionsHTML(availableRoles);
-        const nationalityOptions = generateOptionsHTML(availableNationalities);
+function getMemberRowHTML(index) {
+    // Generate options dynamically from JS variables (which Jinja populates)
+    const roleOptions = generateOptionsHTML(availableRoles);
+    const nationalityOptions = generateOptionsHTML(availableNationalities);
 
-        return `
-            <div class="member-row" id="member-row-${index}">
-                <div class="member-input-group">
-                    
-                    <div>
-                        <label for="member_name_${index}">Real Name *</label>
-                        <input type="text" id="member_name_${index}" name="members[${index}][name]" placeholder="Real Name" required>
-                    </div>
-
-                    <div>
-                        <label for="member_stage_name_${index}">Stage Name *</label>
-                        <input type="text" id="member_stage_name_${index}" name="members[${index}][stage_name]" placeholder="Stage Name" required>
-                    </div>
-
-                    <div>
-                        <label for="member_role_${index}">Role(s)</label>
-                        <div style="display: flex; gap: 5px;">
-                            <select id="member_role_${index}" name="members[${index}][role]" multiple style="height: 38px; flex-grow: 1;">
-                                ${roleOptions}
-                            </select>
-                            <button type="button" class="btn-sm" style="background-color: #007bff; color: white; padding: 0 8px; font-size: 0.85rem; height: 38px; flex-shrink: 0;"
-                                    onclick="addNewValue('Role', ${index})">
-                                + Add New
-                            </button>
-                        </div>
-                        <p style="font-size: 0.75rem; color: #888; margin-top: 2px;">
-                            Hold CTRL/CMD to select multiple.
-                        </p>
-                    </div>
-
-                    <div>
-                        <label for="member_nationality_${index}">Nationality</label>
-                        <div style="display: flex; gap: 5px;">
-                            <select id="member_nationality_${index}" name="members[${index}][nationality]" multiple style="height: 38px; flex-grow: 1;">
-                                ${nationalityOptions}
-                            </select>
-                             <button type="button" class="btn-sm" style="background-color: #007bff; color: white; padding: 0 8px; font-size: 0.85rem; height: 38px; flex-shrink: 0;"
-                                    onclick="addNewValue('Nationality', ${index})">
-                                + Add New
-                            </button>
-                        </div>
-                        <p style="font-size: 0.75rem; color: #888; margin-top: 2px;">
-                            Hold CTRL/CMD to select multiple.
-                        </p>
-                    </div>
-
-                    <div>
-                        <label for="member_birth_date_${index}">Birth Date</label>
-                        <input type="date" id="member_birth_date_${index}" name="members[${index}][birth_date]">
-                    </div>
-
-                    <div>
-                        <label for="member_status_${index}">Status</label>
-                        <select id="member_status_${index}" name="members[${index}][activity_status]">
-                            <option value="Active">Active</option>
-                            <option value="Hiatus">Hiatus</option>
-                            <option value="Inactive">Inactive</option>
-                        </select>
-                    </div>
+    return `
+        <div class="member-row" id="member-row-${index}">
+            <div class="member-input-group">
+                
+                <div>
+                    <label for="member_name_${index}">Member Name *</label>
+                    <input type="text" id="member_name_${index}" name="members[${index}][name]" placeholder="Real Name or Stage Name" required>
                 </div>
                 
-                <button type="button" class="btn-delete" onclick="removeMemberRow(${index})">
-                    <i class="fa fa-trash"></i>
-                </button>
+                <div>
+                    <label for="member_birth_date_${index}">Birth Date</label>
+                    <input type="date" id="member_birth_date_${index}" name="members[${index}][birth_date]">
+                </div>
+
+                <div>
+                    <label for="member_status_${index}">Status</label>
+                    <select id="member_status_${index}" name="members[${index}][activity_status]">
+                        <option value="Active">Active</option>
+                        <option value="Hiatus">Hiatus</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+
+
+                <div style="grid-column: span 2;"> 
+                    <label for="member_role_${index}">Role(s)</label>
+                    <div style="display: flex; gap: 5px; align-items: flex-start;">
+                        <select id="member_role_${index}" name="members[${index}][role]" multiple style="height: 38px; flex-grow: 1;">
+                            ${roleOptions}
+                        </select>
+                        <button type="button" class="btn-sm btn-add-ref" 
+                                onclick="addNewValue('Role', ${index})"
+                                title="Add a new Role">
+                            <i class="fa fa-plus"></i>
+                        </button>
+                    </div>
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 2px;">
+                        Hold CTRL/CMD to select multiple.
+                    </p>
+                </div>
+
+                <div>
+                    <label for="member_nationality_${index}">Nationality</label>
+                    <div style="display: flex; gap: 5px; align-items: flex-start;">
+                        <select id="member_nationality_${index}" name="members[${index}][nationality]" multiple style="height: 38px; flex-grow: 1;">
+                            ${nationalityOptions}
+                        </select>
+                        <button type="button" class="btn-sm btn-add-ref" 
+                                onclick="addNewValue('Nationality', ${index})"
+                                title="Add a new Nationality">
+                            <i class="fa fa-plus"></i>
+                        </button>
+                    </div>
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 2px;">
+                        Hold CTRL/CMD to select multiple.
+                    </p>
+                </div>
+
             </div>
-        `;
-    }
+            
+            <button type="button" class="btn-delete" onclick="removeMemberRow(${index})">
+                <i class="fa fa-trash"></i>
+            </button>
+        </div>
+    `;
+}
 
     /**
      * Dummy function to simulate adding a new role/nationality.

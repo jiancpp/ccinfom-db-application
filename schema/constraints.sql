@@ -244,11 +244,14 @@ ADD CONSTRAINT fk_event_artist
 -- 
 ALTER TABLE Setlist
 ADD CONSTRAINT fk_setlist_artist
-    FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`),
+    FOREIGN KEY (`Artist_ID`) REFERENCES Artist(`Artist_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_setlist_event
-    FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`),
+    FOREIGN KEY (`Event_ID`) REFERENCES Event(`Event_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_setlist_artist_event
-	FOREIGN KEY (`Artist_ID`, `Event_ID`) REFERENCES Artist_Event(`Artist_ID`, `Event_ID`),
+	FOREIGN KEY (`Artist_ID`, `Event_ID`) REFERENCES Artist_Event(`Artist_ID`, `Event_ID`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_setlist_song
     FOREIGN KEY (`Song_ID`) REFERENCES Song(`Song_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE;
@@ -308,13 +311,13 @@ ADD CONSTRAINT fk_follower_artist
 ALTER TABLE `Merchandise`
 ADD CONSTRAINT fk_merch_artist
     FOREIGN KEY (`Artist_ID`) REFERENCES `Artist`(`Artist_ID`)
-    ON UPDATE CASCADE,
+	ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_merch_event
     FOREIGN KEY (`Event_ID`) REFERENCES `Event`(`Event_ID`)
     ON DELETE CASCADE ON UPDATE CASCADE,
 ADD CONSTRAINT fk_merch_fanclub
     FOREIGN KEY (`Fanclub_ID`) REFERENCES `Fanclub`(`Fanclub_ID`)
-    ON UPDATE CASCADE;
+	ON DELETE CASCADE ON UPDATE CASCADE,
 
 -- 
 -- Constraints for `Order`

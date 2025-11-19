@@ -65,7 +65,15 @@
                         <td>{{artist.Manager_Name}}</td>
                         <td>{{artist.Activity_Status}}</td>
                         <td><span class="date">{{artist.Debut_Date}}</span></td>
-                        <td><button class="btn btn-smaller">Edit</button><button class="btn btn-smaller">Delete</button></td>
+                        <td><button class="btn btn-smaller">Edit</button>
+                            <form method="POST" action="{{ url_for('main_routes.delete_artist', artist_id=artist.Artist_ID) }}" 
+                                style="display: inline;" 
+                                onsubmit="return confirm('Are you sure you want to delete the artist {{ artist.Artist_Name }}? This action cannot be undone.');">
+
+                                <button type="submit" class="btn btn-smaller">
+                                    Delete
+                                </button></td>
+                            </form>
                     </tr>
                 {% endfor %}
             </tbody>
