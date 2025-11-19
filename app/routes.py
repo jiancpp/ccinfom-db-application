@@ -1863,6 +1863,7 @@ def buy_ticket(event_id):
 
     return render_template(
         "buy_ticket.html", 
+        event_id=event_id,
         event=event, 
         ticket_tiers=ticket_tiers, 
         tier_sections=tier_sections)
@@ -1960,6 +1961,64 @@ def view_ticket(ticket_id):
     return render_template(
         "event_ticket.html",
         tickets=tickets
+    )
+
+@main_routes.route('/setlist/view/<int:event_id>')
+def view_setlist(event_id):
+    event_query = """
+    SELECT e.Event_Name, DATE_FORMAT(e.Start_Date, '%Y-%m-%d') AS event_date, v.Venue_Name
+    FROM Event e
+    JOIN Venue v ON e.Venue_ID = v.Venue_ID
+    WHERE e.Event_ID = %s
+    """
+    event_data = execute_select_query(event_query, (event_id,))
+    if not event_data:
+        return redirect(url_for('main_routes.events'))
+
+
+    event = event_data[0]
+
+    artist_query = """
+    SELECT a.Artist_ID, a.Artist_Name
+    FROM Artist a
+    JOIN Artist_Event ae ON a.Artist_ID = ae.Artist_ID
+    WHERE ae.Event_ID = %s
+    """
+    artists = execute_select_query(artist_query, (event_id,))
+
+    setlist_query = """
+    SELECT sl.Song_ID, sl.Play_Order, s.Song_Name
+    FROM Setlist sl
+    JOIN Song s ON sl.Song_ID = s.Song_ID
+    WHERE sl.Event_ID = %s
+    ORDER BY sl.Play_Order ASC
+    """
+    setlist_records = execute_select_query(setlist_query, (event_id,))
+    
+    all_songs_query = '''
+    SELECT 
+        s.Song_ID, 
+        s.Song_Name 
+    FROM 
+        Song s
+    JOIN 
+        Setlist sl ON s.Song_ID = sl.Song_ID 
+    WHERE 
+        sl.Event_ID = %s  -- Filter by the specific event ID
+    ORDER BY 
+        s.Song_Name ASC
+        '''
+    all_songs = execute_select_query(all_songs_query, (event_id,))
+
+    return render_template(
+        'setlist_view.html',
+        event_id=event_id,
+        event_name=event['Event_Name'],
+        event_date=event['event_date'],
+        venue_name=event['Venue_Name'],
+        artists=artists,
+        setlist_records=setlist_records,
+        all_songs=all_songs
     )
 
 # ============================================
@@ -2816,17 +2875,12 @@ def add_merchandise():
         merch_price = request.form.get('merchandise_price')
         initial_stock = request.form.get('initial_stock')
         
-
         artist_id = request.form.get('artist_id') if request.form.get('artist_id') else None
         fanclub_id = request.form.get('fanclub_id') if request.form.get('fanclub_id') else None
         
         selected_event_ids = request.form.getlist('event_ids')
         
-        print("\n--- DEBUG START ---")
-        print(f"Received Name: {merch_name}")
-        print(f"Received Events IDs: {selected_event_ids}")
-        print("-------------------")
-
+        
         if not all([merch_name, merch_price, initial_stock]):
             flash('Please fill in all required fields.', 'error')
             return redirect(url_for('main_routes.add_merchandise'))
@@ -2841,7 +2895,6 @@ def add_merchandise():
             price = float(merch_price)
             stock = int(initial_stock)
             
-
             merchandise_insert_query = """
                 INSERT INTO Merchandise (Merchandise_Name, Merchandise_Description, Merchandise_Price, Initial_Stock, Quantity_Stock, Artist_ID, Fanclub_ID)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -2850,9 +2903,25 @@ def add_merchandise():
             
             new_merchandise_id = execute_select_one_query(merchandise_insert_query, merchandise_params)
             
-            flash(f'Merchandise "{merch_name}" successfully created!', 'success')
+            if not new_merchandise_id:
+                raise Exception("Failed to retrieve the new Merchandise ID after insertion. Check execute_insert_query.")
+
+            if selected_event_ids:
+                insert_junction_query = "INSERT INTO Merchandise_Event (Merchandise_ID, Event_ID) VALUES (%s, %s)"
+                
+                for event_id_str in selected_event_ids:
+                    event_id = int(event_id_str) 
+                    junction_params = (new_merchandise_id, event_id)
+                    execute_select_one_query(insert_junction_query, junction_params)
+            
+            
+            flash(f'Merchandise "{merch_name}" successfully created and linked!', 'success')
             return redirect(url_for('main_routes.manage_merchandise'))
 
+        except ValueError:
+            flash('Invalid input for Price or Stock quantities. Please enter valid numbers.', 'error')
+            return redirect(url_for('main_routes.add_merchandise'))
+            
         except Exception as e:
             flash(f'An internal error occurred during creation: {e}', 'error')
             return redirect(url_for('main_routes.add_merchandise'))
