@@ -1326,6 +1326,32 @@ def add_event():
                 event_name, venue_id, start_date, end_date, start_time, end_time, 
             )
 
+            overlap_query = """
+            SELECT e.Event_ID, e.Event_Name
+            FROM Event e
+            WHERE 
+                e.Venue_ID = %s 
+                AND e.Event_ID != %s 
+                AND e.End_Date >= %s AND e.Start_Date <= %s
+                AND ( (e.Start_Date = %s AND e.End_Date = %s AND %s < e.End_Time AND %s > e.Start_Time) OR e.Start_Date < %s OR %s < e.End_Date )
+            LIMIT 1;
+            """
+            
+            overlap_params = (
+                venue_id, 0, # Pass 0 or NULL to ignore the exclusion check
+                end_date, start_date, 
+                start_date, end_date, 
+                start_time, end_time,
+                start_date, end_date
+            )
+
+            overlap_result = execute_select_query(overlap_query, overlap_params)
+            
+            if overlap_result:
+                overlapping_event = overlap_result[0]
+                flash(f"Date Conflict: Event '{overlapping_event['Event_Name']}' (ID: {overlapping_event['Event_ID']}) is already scheduled at this venue during the requested time.", 'error')
+                return redirect(request.url)
+
             # Commit into database
             event_id = execute_modified_insert(new_event, new_event_params)
             print("EVENT_ID RECEIVED", event_id)
@@ -1463,15 +1489,16 @@ def edit_event(event_id):
     event_detail_query = '''
     SELECT 
         e.Event_ID, e.Event_Name, e.Start_Date, e.End_Date, e.Start_Time, e.End_Time,
-        ae.Artist_ID, fe.Fanclub_ID
+        ae.Artist_ID, fe.Fanclub_ID, v.Venue_Name, v.Venue_ID
     FROM Event e
+    JOIN Venue v ON e.Venue_ID = v.Venue_ID
     LEFT JOIN Artist_Event ae ON e.Event_ID = ae.Event_ID
     LEFT JOIN Fanclub_Event fe ON e.Event_ID = fe.Event_ID
     WHERE e.Event_ID = %s
     '''
 
     event_types_query = "SELECT * FROM REF_Event_Type"
-    event_type_ids_query = "SELECT Type_ID FROM LINK_Event_Type WHERE Event_ID = %s"
+    event_type_ids_query = "SELECT Event_ID, Type_ID FROM LINK_Event_Type WHERE Event_ID = %s"
     event_types = execute_select_query(event_types_query)
     event_type_ids = execute_select_query(event_type_ids_query, (event_id,))
 
@@ -1502,15 +1529,134 @@ def edit_event(event_id):
         elif isinstance(event_data["End_Time"], str):
             t = datetime.datetime.strptime(event_data["End_Time"], "%H:%M:%S").time()
             event_data["End_Time"] = t.strftime("%H:%M")
+    
+    if request.method == 'POST':
+        try:
+            form = request.form
+            
+            # Event Record
+            event_name = form.get('event_name')
+            event_types_list = form.getlist('event-type') 
+            start_date_str = form.get('start_date')
+            end_date_str = form.get('end_date')      # Optional
+            start_time_str = form.get('start_time')
+            end_time_str = form.get('end_time')
+            venue_id = form.get('venue_')
+            
+            print("CHECK", event_name, start_date_str, start_time_str, end_time_str)
+            if not all([event_name, start_date_str, start_time_str, end_time_str]) or not event_types_list:
+                flash("Missing required event information. Please check Event Name, all Date/Time fields, and select at least one Event Type.", 'error')
+                return redirect(request.url)
+                
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            start_time = datetime.datetime.strptime(start_time_str, '%H:%M').time()
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else start_date
+            end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time()
 
+            overlap_query = """
+            SELECT e.Event_ID, e.Event_Name
+            FROM Event e
+            WHERE 
+                e.Venue_ID = %s 
+                AND e.Event_ID != %s 
+                AND e.End_Date >= %s AND e.Start_Date <= %s
+                AND ( (e.Start_Date = %s AND e.End_Date = %s AND %s < e.End_Time AND %s > e.Start_Time) OR e.Start_Date < %s OR %s < e.End_Date )
+            LIMIT 1;
+            """
+            
+            overlap_params = (
+                venue_id, 0, # Pass 0 or NULL to ignore the exclusion check
+                end_date, start_date, 
+                start_date, end_date, 
+                start_time, end_time,
+                start_date, end_date
+            )
 
+            overlap_result = execute_select_query(overlap_query, overlap_params)
+            
+            if overlap_result:
+                overlapping_event = overlap_result[0]
+                flash(f"Date Conflict: Event '{overlapping_event['Event_Name']}' (ID: {overlapping_event['Event_ID']}) is already scheduled at this venue during the requested time.", 'error')
+                return redirect(request.url)
+
+            update_event_query = '''
+            UPDATE Event 
+            SET Event_Name = %s, Start_Date = %s, End_Date = %s, Start_Time = %s, End_Time = %s
+            WHERE Event_ID = %s
+            '''
+            update_event_params = (
+                event_name, start_date, end_date, start_time, end_time, event_id
+            )
+
+            rows_affected = execute_modified_insert(update_event_query, update_event_params)
+            print("EVENT_ID RECEIVED", event_id)
+            
+            if rows_affected is None:
+                flash("Failed to update event record.", 'error')
+                return redirect(url_for('main_routes.manage_events'))
+            
+
+            # For event types
+            delete_links_query = "DELETE FROM LINK_Event_Type WHERE Event_ID = %s"
+            execute_modified_insert(delete_links_query, (event_id,)) 
+            event_types_list = form.getlist('event-type') # List of Type_IDs from the form
+
+            if event_types_list:
+                insert_links_query = "INSERT INTO LINK_Event_Type (Event_ID, Type_ID) VALUES (%s, %s)"
+                
+                # Loop through the list of Type IDs received from the form
+                for type_id in event_types_list:
+                    link_params = (event_id, type_id)
+                    execute_modified_insert(insert_links_query, link_params) 
+                    
+            flash("Event updated successfully!", 'success')
+            return redirect(url_for('main_routes.manage_events'))
+                    
+        except Exception as e:
+            flash(f"An unexpected error occurred. {e}", 'error')
 
     return render_template(
         'edit_event.html',
+        event_id=event_id,
         event_data=event_data,
         event_types=event_types,
         event_type_ids=event_type_ids
     )
+
+@main_routes.route('/delete_event/<int:event_id>', methods=["GET"])
+def delete_event(event_id):
+    try:
+        check_purchases_query = """
+        SELECT COUNT(*) AS total_purchases
+        FROM Ticket_Purchase tp
+        JOIN Ticket_Tier tt ON tp.Tier_ID = tt.Tier_ID
+        WHERE tt.Event_ID = %s
+        """
+        
+        purchase_data = execute_select_query(check_purchases_query, (event_id,))
+        
+        total_purchases = purchase_data[0]['total_purchases'] if purchase_data else 0
+
+        if total_purchases > 0:
+            flash(f"Deletion Failed: Event ID {event_id} has {total_purchases} existing ticket purchase(s). You must cancel or refund tickets before deleting.", 'error')
+            return redirect(url_for('main_routes.manage_events'))
+
+        
+        # Delete from all linking/child tables:
+        execute_insert_query("DELETE FROM LINK_Event_Type WHERE Event_ID = %s", (event_id,))
+        execute_insert_query("DELETE FROM Artist_Event WHERE Event_ID = %s", (event_id,))
+        execute_insert_query("DELETE FROM Fanclub_Event WHERE Event_ID = %s", (event_id,))
+        execute_insert_query("DELETE FROM Ticket_Tier WHERE Event_ID = %s", (event_id,))
+        
+        delete_event_query = "DELETE FROM Event WHERE Event_ID = %s"
+        execute_insert_query(delete_event_query, (event_id,))
+        
+        flash(f"Event ID {event_id} and all related data deleted successfully.", 'success')
+        
+    except Exception as e:
+        flash(f"An unexpected error occurred while deleting event {event_id}: {e}", 'error')
+    
+    return redirect(url_for('main_routes.manage_events'))
 
 # ============================================
 #           Event Subpages
