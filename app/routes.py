@@ -1325,11 +1325,6 @@ def get_venue_sections(venue_id):
 
     return jsonify({'sections': sections_data})
 
-@main_routes.route('/manage_merchandise')
-def manage_merchandise():
-    # edit
-    return render_template('manager_portal.html')
-
 # ============================================
 #           Event Subpages
 # ============================================
