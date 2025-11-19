@@ -4,24 +4,47 @@
 <style>
     table {
         width: 100%;
+        border-collapse: collapse; /* Ensure clean table borders */
+        margin-top:3px;
     }
-
+    th, td {
+        padding: 12px 8px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0; /* Light line under rows */
+        white-space: wrap; /* Prevent wrapping of short names/IDs */
+    }
+    th {
+        background-color: #f7fafc; /* Light header background */
+        font-weight: 700;
+        color: #4a5568;
+    }
     .btn-smaller {
         font-size: 12px;
-        padding: 10px;
+        padding: 6px 10px; /* Adjusted padding for better fit */
         margin: 0 5px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
     }
-
     .event-table {
-        width: 100%;
-        height: 300px;
-        padding: 5px;
-        margin-top: 1rem;
+        width: 100%; 
+        max-height: 500px; /* Set a max height */
+        overflow-y: auto; /* Enable vertical scroll bar */
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
     }
-
     .center {
         margin: auto;
         text-align: center;
+    }
+    /* Style for event lists to look like comma-separated badges */
+    .event-list-badge {
+        display: block;
+        padding: 3px 0;
+        font-size: 0.9em;
+        line-height: 1.3;
+        color: #5a67d8; /* Highlight color for events */
+        max-width: 250px;
     }
 
 </style>
@@ -39,25 +62,21 @@
 </div>
 
 {% if merchandise %}
-<div class="scroll-pane event-table">
+<div class="event-table"> 
     <table>
         
         <thead>
             <tr> 
-                <th>Merchandise ID</th> 
-                <th>Merchandise Name</th>
-                <th>Event ID</th>
-                <th>Event Name</th>
-                
-                <th>Artist ID</th> 
-                
-                <th>Artist Name</th>
-                <th>Fanclub ID</th>
+                <th>ID</th> 
+                <th>Name</th>
+                <th>Event IDs</th>
+                <th>Event Names</th>
+                <th>Artist Name</th> 
                 <th>Fanclub Name</th>
-                <th>Merchandise Description</th>
-                <th>Merchandise Price</th>
-                <th>Initial Stock</th>
-                <th>Quantity Stock</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Init Stock</th>
+                <th>Curr Stock</th>
                 <th>Actions</th> 
             </tr> 
         </thead>
@@ -65,14 +84,19 @@
         <tbody>
             {% for merch in merchandise %}
             <tr>
-                <td>{{ merch.Merchandise_ID }}</td>
-                <td>{{ merch.Merchandise_Name }}</td>
-                <td>{{ merch.Event_ID }}</td>
-                <td>{{ merch.Event_Name }}</td>
-                <td>{{ merch.Artist_ID }}</td>
-                <td>{{ merch.Artist_Name }}</td>
-                <td>{{ merch.Fanclub_ID }}</td>
-                <td>{{ merch.Fanclub_Name }}</td>
+                <td> <span class="event-list-badge">{{ merch.Merchandise_ID }}</span></td>
+                <td><span class="event-list-badge">{{ merch.Merchandise_Name }}</span></td>
+                
+                <td>
+                        {{ merch.Event_IDs }}
+                </td>
+                
+                <td>
+                        {{ merch.Event_Names }}
+                </td>
+
+                <td>{{ merch.Artist_Name or 'N/A' }}</td>
+                <td>{{ merch.Fanclub_Name or 'N/A' }}</td>
                 <td>{{ merch.Merchandise_Description }}</td>
                 <td>₱<span class="money">{{ merch.Merchandise_Price }}</span></td>
                 <td>{{ merch.Initial_Stock }}</td>
@@ -98,6 +122,8 @@
 <div style="padding: 10px; margin-top: 20px;">
     <button class="btn" onclick="window.location.href='{{ url_for('main_routes.add_merchandise') }}'">Add New Merchandise</button>
 </div>
+{% else %}
+<p class="center" style="margin-top: 2rem; color: #718096;">No merchandise records found.</p>
 {% endif %}
 
 
