@@ -1161,7 +1161,7 @@ def add_artist():
             'artist_name': request.form.get('artist_name'),
             'debut_date': request.form.get('debut_date'),
             'activity_status': request.form.get('activity_status'),
-            'agency_name': request.form.get('agency_name'),
+            'agency': request.form.get('agency'),
             'manager_name': request.form.get('new_manager_name'),
             'manager_phone': request.form.get('new_manager_phone'),
             'manager_email': request.form.get('new_manager_email'),
@@ -1204,7 +1204,7 @@ def add_artist():
                 '''
                 cursor.execute(manager_insert_sql, (
                     artist_data['manager_name'], 
-                    artist_data['agency_name'], 
+                    artist_data['agency'], 
                     artist_data['manager_phone'], 
                     artist_data['manager_email']
                 ))
@@ -1309,6 +1309,295 @@ def add_artist():
                 conn.close()
 
     return add_artist_info()
+
+def timedelta_to_time(td):
+    """Converts a timedelta object to a time object (used for time fields)."""
+    return (datetime.datetime.min + td).time()
+
+@main_routes.route('/manage_artist/edit_artist/<int:artist_id>', methods=["GET", "POST"])
+def edit_artist(artist_id):
+    # --- 1. Fetch Reference Data (Roles and Nationalities) ---
+    # Fetch all reference values for dropdowns
+    role_query = "SELECT Role_ID, Role_Name FROM REF_Role ORDER BY Role_Name"
+    nationality_query = "SELECT Nationality_ID, Nationality_Name FROM REF_Nationality ORDER BY Nationality_Name"
+
+    dbroles = execute_select_query(role_query)
+    dbnationalities = execute_select_query(nationality_query)
+
+    roles = [{'id': row['Role_ID'], 'value': str(row['Role_Name']), 'text': str(row['Role_Name'])} for row in dbroles]
+    nationalities = [{'id': row['Nationality_ID'], 'value': str(row['Nationality_Name']), 'text': str(row['Nationality_Name'])} for row in dbnationalities]
+
+    # --- 2. GET Request: Fetch Existing Data ---
+    if request.method == "GET":
+        
+        # A. Fetch Artist Core Data (Already robust and correct)
+        artist_query = '''
+        SELECT Artist_ID, Artist_Name, Debut_Date, Activity_Status
+        FROM Artist
+        WHERE Artist_ID = %s
+        '''
+        
+        db_result = execute_select_query(artist_query, (artist_id,))
+        
+        if not db_result or not isinstance(db_result, list) or len(db_result) == 0:
+            flash("Artist not found or database error.", 'error')
+            return redirect(url_for('main_routes.artist_list'))
+            
+        artist_data = db_result[0]
+
+        if artist_data.get('Debut_Date') and hasattr(artist_data['Debut_Date'], 'strftime'):
+            artist_data['Debut_Date'] = artist_data['Debut_Date'].strftime('%Y-%m-%d')
+        else:
+            artist_data['Debut_Date'] = ''
+        
+        # B. Fetch Manager Data
+        manager_query = '''
+        SELECT Manager_ID, Agency, Manager_Name, Contact_Num, Contact_Email
+        FROM Manager
+        WHERE Artist_ID = %s
+        '''
+        manager_data_list = execute_select_query(manager_query, (artist_id,))
+        manager_data = manager_data_list[0] if manager_data_list else {} # Ensure manager is a dict or empty dict
+        
+        # C. Fetch Member Data (Already robust and correct)
+        members_query = '''
+        SELECT 
+            M.Member_ID, 
+            M.Member_Name, 
+            M.Birth_Date, 
+            M.Activity_Status
+        FROM Member M
+        WHERE M.Artist_ID = %s
+        '''
+        dbmembers = execute_select_query(members_query, (artist_id,))
+        
+        initial_members = []
+        for member in dbmembers:
+            member_id = member['Member_ID']
+            
+            # Fetch Roles linked to this member
+            member_roles_query = '''
+            SELECT R.Role_Name 
+            FROM REF_Role R JOIN LINK_Member_Role L ON R.Role_ID = L.Role_ID
+            WHERE L.Member_ID = %s
+            '''
+            # Fetch Nationalities linked to this member
+            member_nationalities_query = '''
+            SELECT N.Nationality_Name 
+            FROM REF_Nationality N JOIN LINK_Member_Nationality MN ON N.Nationality_ID = MN.Nationality_ID
+            WHERE MN.Member_ID = %s
+            '''
+            
+            roles_result = execute_select_query(member_roles_query, (member_id,))
+            nationalities_result = execute_select_query(member_nationalities_query, (member_id,))
+            
+            member_roles = [r['Role_Name'] for r in roles_result]
+            member_nationalities = [n['Nationality_Name'] for n in nationalities_result]
+            
+            birth_date_str = member.get('Birth_Date')
+            if birth_date_str and hasattr(birth_date_str, 'strftime'):
+                 birth_date_str = birth_date_str.strftime('%Y-%m-%d')
+            else:
+                 birth_date_str = ''
+
+            initial_members.append({
+                'member_id': member['Member_ID'],
+                'name': member['Member_Name'],
+                'birth_date': birth_date_str,
+                'activity_status': member['Activity_Status'],
+                'roles': member_roles,
+                'nationalities': member_nationalities
+            })
+
+        return render_template(
+            'edit_artist.html',
+            artist=artist_data,
+            manager=manager_data,
+            initial_members=initial_members,
+            roles=roles,
+            nationalities=nationalities
+        )
+
+    # --- 3. POST Request: Handle Update ---
+    elif request.method == "POST":
+        try:
+            form = request.form
+            
+            # 1. Extract Artist Data (No changes needed)
+            artist_name = form.get('artist_name')
+            debut_date_str = form.get('debut_date')
+            activity_status = form.get('activity_status')
+            
+            if not all([artist_name, debut_date_str, activity_status]):
+                flash("Missing required Artist Name, Debut Date, or Activity Status.", 'error')
+                return redirect(request.url)
+            
+            debut_date = datetime.datetime.strptime(debut_date_str, '%Y-%m-%d').date()
+
+            # 2. Update Artist Table (No changes needed)
+            update_artist_query = '''
+            UPDATE Artist 
+            SET Artist_Name = %s, Debut_Date = %s, Activity_Status = %s
+            WHERE Artist_ID = %s
+            '''
+            update_artist_params = (artist_name, debut_date, activity_status, artist_id)
+            execute_modified_insert(update_artist_query, update_artist_params)
+
+            # 3. Update or Insert Manager Data (No changes needed)
+            manager_id = form.get('manager_id')
+            agency = form.get('agency')
+            manager_name = form.get('new_manager_name')
+            contact_num = form.get('new_manager_phone')
+            contact_email = form.get('new_manager_email')
+            
+            # ... (Manager logic is correct) ...
+            if manager_id:
+                # Update existing manager
+                manager_query = '''
+                UPDATE Manager 
+                SET Agency = %s, Manager_Name = %s, Contact_Num = %s, Contact_Email = %s
+                WHERE Manager_ID = %s
+                '''
+                manager_params = (agency, manager_name, contact_num, contact_email, manager_id)
+            elif any([agency, manager_name, contact_num, contact_email]):
+                # Insert new manager
+                manager_query = '''
+                INSERT INTO Manager (Artist_ID, Agency, Manager_Name, Contact_Num, Contact_Email)
+                VALUES (%s, %s, %s, %s, %s)
+                '''
+                manager_params = (artist_id, agency, manager_name, contact_num, contact_email)
+            else:
+                manager_query = None # No manager data provided, no action needed
+
+            if manager_query:
+                execute_modified_insert(manager_query, manager_params)
+
+
+            # 4. Handle Member Updates, Inserts, and Deletes
+            
+            # Get IDs of all members currently in the database for this artist
+            existing_member_ids_query = "SELECT Member_ID FROM Member WHERE Artist_ID = %s"
+            existing_member_ids = {m['Member_ID'] for m in execute_select_query(existing_member_ids_query, (artist_id,))}
+            
+            # --- START FIX: Properly structure member data from flattened form ---
+            members_map = {}
+            for key in form:
+                if key.startswith('members['):
+                    # Extract index and field name using regex or string splitting
+                    # Example: members[0][name] -> index=0, field='name'
+                    import re
+                    match = re.search(r'members\[(\d+)\]\[(.*?)\]', key)
+                    if match:
+                        index = int(match.group(1))
+                        field = match.group(2)
+                        
+                        if index not in members_map:
+                            members_map[index] = {'member_id': None, 'name': None, 'birth_date': None, 'activity_status': 'Active', 'role': [], 'nationality': []}
+                        
+                        # Handle fields that are lists (like roles and nationalities)
+                        if field in ('role', 'nationality'):
+                            # Use getlist for fields that accept multiple values from the template's <select multiple>
+                            # This will correctly handle multiple selected items for the same key.
+                            members_map[index][field] = form.getlist(key) 
+                        else:
+                            # Standard singular fields
+                            members_map[index][field] = form.get(key)
+
+            # Convert the map to a list, sorted by index
+            final_members_list = [v for k, v in sorted(members_map.items())]
+            # --- END FIX ---
+            
+            form_member_ids = set()
+
+            for member_data in final_members_list:
+                member_id = member_data.get('member_id')
+                member_name = member_data.get('name')
+                birth_date_str = member_data.get('birth_date')
+                activity_status = member_data.get('activity_status')
+                
+                # Roles and Nationalities are now directly in member_data as lists (from the fix)
+                member_roles = member_data.get('role', [])
+                member_nationalities = member_data.get('nationality', [])
+                
+                if not member_name or not activity_status or not birth_date_str:
+                    # Skip members that were partially filled or blank new rows
+                    continue 
+                
+                # Standardize data types
+                birth_date = datetime.datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+
+                # Get ID mapping for references
+                role_ids = [r['id'] for r in roles if r['value'] in member_roles]
+                nationality_ids = [n['id'] for n in nationalities if n['value'] in member_nationalities]
+
+                if member_id and str(member_id).isdigit() and int(member_id) in existing_member_ids:
+                    # UPDATE EXISTING MEMBER
+                    member_id = int(member_id)
+                    form_member_ids.add(member_id)
+                    
+                    update_member_query = '''
+                    UPDATE Member 
+                    SET Member_Name = %s, Birth_Date = %s, Activity_Status = %s
+                    WHERE Member_ID = %s
+                    '''
+                    execute_modified_insert(update_member_query, (member_name, birth_date, activity_status, member_id))
+                    
+                else:
+                    # INSERT NEW MEMBER
+                    insert_member_query = '''
+                    INSERT INTO Member (Artist_ID, Member_Name, Birth_Date, Activity_Status)
+                    VALUES (%s, %s, %s, %s)
+                    '''
+                    # Note: Real_Name is explicitly set to NULL (the third %s)
+                    member_id = execute_modified_insert(insert_member_query, (artist_id, member_name, birth_date, activity_status), return_id=True)
+                    form_member_ids.add(member_id)
+
+
+                # Update Member Links (Roles and Nationalities) - Requires clearing and re-inserting
+                
+                # Delete old links
+                execute_modified_insert("DELETE FROM LINK_Member_Role WHERE Member_ID = %s", (member_id,))
+                execute_modified_insert("DELETE FROM LINK_Member_Nationality WHERE Member_ID = %s", (member_id,))
+
+                # Insert new Role links
+                if role_ids:
+                    link_role_query = "INSERT INTO LINK_Member_Role (Member_ID, Role_ID) VALUES (%s, %s)"
+                    for role_id in role_ids:
+                        execute_modified_insert(link_role_query, (member_id, role_id))
+
+                # Insert new Nationality links
+                if nationality_ids:
+                    link_nationality_query = "INSERT INTO LINK_Member_Nationality (Member_ID, Nationality_ID) VALUES (%s, %s)"
+                    for nationality_id in nationality_ids:
+                        execute_modified_insert(link_nationality_query, (member_id, nationality_id))
+
+            members_to_delete = existing_member_ids - form_member_ids
+                        
+            if members_to_delete:
+                member_id_list = list(members_to_delete)
+                
+                # Dynamically generate the IN clause placeholders: (%s, %s, %s, ...)
+                placeholders = ', '.join(['%s'] * len(member_id_list))
+                
+                # Delete links (Roles)
+                delete_role_query = f"DELETE FROM LINK_Member_Role WHERE Member_ID IN ({placeholders})"
+                execute_modified_insert(delete_role_query, member_id_list)
+                
+                # Delete links (Nationalities)
+                delete_nat_query = f"DELETE FROM LINK_Member_Nationality WHERE Member_ID IN ({placeholders})"
+                execute_modified_insert(delete_nat_query, member_id_list)
+
+                # Then delete the members
+                delete_member_query = f"DELETE FROM Member WHERE Member_ID IN ({placeholders})"
+                execute_modified_insert(delete_member_query, member_id_list)
+
+                
+            flash("Artist details updated successfully!", 'success')
+            return redirect(url_for('main_routes.manage_artist'))
+
+        except Exception as e:
+            flash(f"An unexpected error occurred during update: {e}", 'error')
+            return redirect(request.url)
 
 
 

@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% block title %} Edit Artist - KSync {% endblock %}
+
+{% block content %}
+<style>
+    .header-title {
+        color: #667eea; 
+        font-size: 2.5rem; 
+        margin-bottom: 5px;
+    }
+
+    .member-card {
+        background-color: #f9f9ff;
+        border: 1px solid #e9e9ff;
+    }
+
+    .member-row {
+        display: flex;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 2px solid #99a8ea;
+        align-items: flex-end; 
+    }
+    
+    .member-row:last-of-type {
+        border-bottom: none;
+    }
+
+    .member-input-group {
+        flex-grow: 1;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 10px; 
+    }
+
+    .member-input-group .full-span-row {
+        grid-column: 1 / span 3; 
+        display: flex;     
+        gap: 15px;
+    }
+    
+    .member-input-group > div:not(.full-span-row) {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .member-input-group label {
+        font-size: 0.85rem;
+        color: #777;
+        margin-bottom: 3px;
+    }
+
+    .btn-delete {
+        background-color: rgb(201, 88, 88);
+        color: white;
+        border: none;
+        padding: 8px 10px;
+        cursor: pointer;
+        border-radius: 4px;
+        height: 38px; 
+        flex-shrink: 0;
+    }
+
+    .btn-add-member {
+        background-color: #667eea;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-radius: 6px;
+        width: 100%;
+        margin-top: 15px;
+    }
+</style>
+
+<header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
+    <h1 class="header-title">
+        <i class="fa fa-users"></i> Edit Artist: {{ artist.artist_name }}
+    </h1>
+    <p style="color: #555;">All fields marked with * are required.</p>
+</header>
+
+<form method="POST" action="{{ url_for('main_routes.edit_artist', artist_id=artist['Artist_ID']) }}">
+    
+    <div class="grid" style="grid-template-columns: 1fr 1.5fr; gap: 20px;">
+        
+        <!-- LEFT COLUMN -->
+        <div>
+        <div class="card">
+            <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                Artist Information
+            </h3>
+            
+            <input type="hidden" name="artist_id" value="{{ artist['Artist_ID'] }}">
+
+            <div class="form-group">
+                <label for="artist_name">Artist Name *</label>
+                <input type="text" id="artist_name" name="artist_name" required value="{{ artist['Artist_Name'] }}">
+            </div>
+
+            <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label for="debut_date">Debut Date *</label>
+                    <input type="date" id="debut_date" name="debut_date" required value="{{ artist['Debut_Date'] }}">
+                </div>
+                <div>
+                    <label for="activity_status">Activity Status *</label>
+                    <select id="activity_status" name="activity_status" required>
+                        {% set current_status = artist['Activity_Status'] %}
+                        <option value="Active"     {% if current_status=='Active' %}selected{% endif %}>Active</option>
+                        <option value="Hiatus"     {% if current_status=='Hiatus' %}selected{% endif %}>Hiatus</option>
+                        <option value="Inactive"   {% if current_status=='Inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="Disbanded"  {% if current_status=='Disbanded' %}selected{% endif %}>Disbanded</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- MANAGER DETAILS -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                <i class="fa fa-briefcase"></i> Manager Details
+            </h3>
+            
+            <input type="hidden" name="manager_id" value="{{ manager.Manager_ID | default('') }}">
+
+            <div class="form-group">
+                <label for="agency_name">Agency Name</label>
+                <input type="text" id="agency" name="agency_name" value="{{ manager.Agency_Name }}">
+            </div>
+
+            <div class="form-group">
+                <label for="new_manager_name">Manager Contact Name</label>
+                <input type="text" id="new_manager_name" name="new_manager_name" value="{{ manager.Manager_Name }}">
+            </div>
+
+            <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label for="new_manager_phone">Contact Number</label>
+                    <input type="tel" id="new_manager_phone" name="new_manager_phone" value="{{ manager.Contact_Num }}">
+                </div>
+                <div>
+                    <label for="new_manager_email">Email Address</label>
+                    <input type="email" id="new_manager_email" name="new_manager_email" value="{{ manager.Contact_Email }}">
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div>
+            <div class="card member-card">
+                <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                    Artist Members
+                </h3>
+                
+                <div id="members-container"></div>
+
+                <button type="button" class="btn-add-member" onclick="addMemberRow()">
+                    <i class="fa fa-plus-circle"></i> Add New Member
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-group" style="margin-top: 30px; text-align: center;">
+        <button type="submit" class="btn" style="background-color: #764ba2; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
+            <i class="fa fa-save"></i> Save Changes
+        </button>
+    </div>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let memberCount = 0;
+
+const initialMembers = {{ initial_members | tojson }};
+const availableRoles = {{ roles | tojson }};
+const availableNationalities = {{ nationalities | tojson }};
+
+function generateOptionsHTML(optionsArray, selectedValues = []) {
+    return optionsArray.map(opt => {
+        const selected = selectedValues.includes(opt.value) ? "selected" : "";
+        return `<option value="${opt.value}" ${selected}>${opt.text}</option>`;
+    }).join('');
+}
+
+function getMemberRowHTML(index, memberData = {}) {
+    const defaults = {
+        member_id: "",
+        name: "",
+        birth_date: "",
+        activity_status: "Active",
+        roles: [],
+        nationalities: []
+    };
+    const data = { ...defaults, ...memberData };
+
+    const roleOptions = generateOptionsHTML(availableRoles, data.roles);
+    const natOptions = generateOptionsHTML(availableNationalities, data.nationalities);
+    const size = 4;
+
+    return `
+    <div class="member-row" id="member-row-${index}">
+        <div class="member-input-group">
+
+            <input type="hidden" name="members[${index}][member_id]" value="${data.member_id}">
+
+            <div>
+                <label>Member Name *</label>
+                <input type="text" name="members[${index}][name]" required value="${data.name}">
+            </div>
+
+            <div>
+                <label>Birth Date *</label>
+                <input type="date" name="members[${index}][birth_date]" required value="${data.birth_date}">
+            </div>
+
+            <div>
+                <label>Activity Status *</label>
+                <select name="members[${index}][activity_status]">
+                    <option value="Active" ${data.activity_status==="Active"?"selected":""}>Active</option>
+                    <option value="Hiatus" ${data.activity_status==="Hiatus"?"selected":""}>Hiatus</option>
+                    <option value="Inactive" ${data.activity_status==="Inactive"?"selected":""}>Inactive</option>
+                </select>
+            </div>
+
+            <div class="full-span-row">
+
+                <div style="flex:1;">
+                    <label>Role(s) *</label>
+                    <select name="members[${index}][role]" multiple size="${size}" style="width:100%;">
+                        ${roleOptions}
+                    </select>
+                </div>
+
+                <div style="flex:1;">
+                    <label>Nationality *</label>
+                    <select name="members[${index}][nationality]" multiple size="${size}" style="width:100%;">
+                        ${natOptions}
+                    </select>
+                </div>
+
+            </div>
+        </div>
+
+        <button type="button" class="btn-delete" onclick="removeMemberRow(${index})">
+            <i class="fa fa-trash"></i>
+        </button>
+    </div>`;
+}
+
+function addMemberRow(member = {}) {
+    const html = getMemberRowHTML(memberCount, member);
+    document.getElementById("members-container").insertAdjacentHTML("beforeend", html);
+    memberCount++;
+}
+
+function removeMemberRow(index) {
+    const row = document.getElementById(`member-row-${index}`);
+    if (row) row.remove();
+
+    const rows = document.querySelectorAll("#members-container .member-row");
+    memberCount = 0;
+
+    rows.forEach((row, newIndex) => {
+        row.id = `member-row-${newIndex}`;
+
+        row.querySelectorAll("input, select").forEach(input => {
+            if (input.name) input.name = input.name.replace(/\[\d+\]/, `[${newIndex}]`);
+        });
+
+        row.querySelector(".btn-delete").setAttribute("onclick", `removeMemberRow(${newIndex})`);
+
+        memberCount = newIndex + 1;
+    });
+
+    if (memberCount === 0) addMemberRow();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (initialMembers.length > 0) {
+        initialMembers.forEach(m => addMemberRow(m));
+    } else {
+        addMemberRow();
+    }
+});
+</script>
+{% endblock %}
