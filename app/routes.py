@@ -2874,17 +2874,12 @@ def add_merchandise():
         merch_price = request.form.get('merchandise_price')
         initial_stock = request.form.get('initial_stock')
         
-
         artist_id = request.form.get('artist_id') if request.form.get('artist_id') else None
         fanclub_id = request.form.get('fanclub_id') if request.form.get('fanclub_id') else None
         
         selected_event_ids = request.form.getlist('event_ids')
         
-        print("\n--- DEBUG START ---")
-        print(f"Received Name: {merch_name}")
-        print(f"Received Events IDs: {selected_event_ids}")
-        print("-------------------")
-
+        
         if not all([merch_name, merch_price, initial_stock]):
             flash('Please fill in all required fields.', 'error')
             return redirect(url_for('main_routes.add_merchandise'))
@@ -2899,7 +2894,6 @@ def add_merchandise():
             price = float(merch_price)
             stock = int(initial_stock)
             
-
             merchandise_insert_query = """
                 INSERT INTO Merchandise (Merchandise_Name, Merchandise_Description, Merchandise_Price, Initial_Stock, Quantity_Stock, Artist_ID, Fanclub_ID)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -2908,9 +2902,25 @@ def add_merchandise():
             
             new_merchandise_id = execute_select_one_query(merchandise_insert_query, merchandise_params)
             
-            flash(f'Merchandise "{merch_name}" successfully created!', 'success')
+            if not new_merchandise_id:
+                raise Exception("Failed to retrieve the new Merchandise ID after insertion. Check execute_insert_query.")
+
+            if selected_event_ids:
+                insert_junction_query = "INSERT INTO Merchandise_Event (Merchandise_ID, Event_ID) VALUES (%s, %s)"
+                
+                for event_id_str in selected_event_ids:
+                    event_id = int(event_id_str) 
+                    junction_params = (new_merchandise_id, event_id)
+                    execute_select_one_query(insert_junction_query, junction_params)
+            
+            
+            flash(f'Merchandise "{merch_name}" successfully created and linked!', 'success')
             return redirect(url_for('main_routes.manage_merchandise'))
 
+        except ValueError:
+            flash('Invalid input for Price or Stock quantities. Please enter valid numbers.', 'error')
+            return redirect(url_for('main_routes.add_merchandise'))
+            
         except Exception as e:
             flash(f'An internal error occurred during creation: {e}', 'error')
             return redirect(url_for('main_routes.add_merchandise'))
