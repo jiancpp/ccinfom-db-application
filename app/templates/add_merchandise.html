@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Add Merchandise - KSync{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 50%; margin: auto; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);">
+    <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
+        <h1 style="color: #667eea; font-size: 2.5rem; margin-bottom: 5px;">
+            Create new Merchandise
+        </h1>
+        <p style="color: #555;">
+            All fields marked with * are required.
+        </p>
+    </header>
+    
+    <form method="POST" action="{{ url_for('main_routes.add_merchandise') }}">
+        
+        <div class="form-group">
+            <label for="merchandise_name"> Merchandise Name *</label>
+            <input type="text" id="merchandise_name" name="merchandise_name" required placeholder="Enter Merchandise Name">
+        </div>
+
+        <div class="form-group">
+            <label for="merchandise_price"> Merchandise Price *</label>
+            <input type="number" id="merchandise_price" name="merchandise_price" step="0.01" min="0.01" required placeholder="Enter Merchandise Price">
+        </div>
+
+        <div class="form-group">
+            <label for="initial_stock"> Initial Stock Quantity *</label>
+            <input type="number" id="initial_stock" name="initial_stock" required placeholder="Enter Initial Stock Quantity">
+        </div>
+
+        <div class="form-group">
+            <label for="event_id">Associated Event </label>
+            <select id="event_id" name="event_id">
+                <option value="">-- Select an Event (Optional) --</option>
+                {% for event in events %}
+                    <option value="{{ event.Event_ID }}">{{ event.Event_Name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="artist_id">Associated Artist </label>
+            <select id="artist_id" name="artist_id">
+                <option value="">-- Select an Artist --</option>
+                {% for artist in artists %}
+                    <option value="{{ artist.Artist_ID }}">{{ artist.Artist_Name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="fanclub_id">Associated Fanclub </label>
+            <select id="fanclub_id" name="fanclub_id">
+                <option value="">-- Select Fanclub --</option>
+                {% for fanclub in fanclubs %}
+                    <option value="{{ fanclub.Fanclub_ID }}">{{ fanclub.Fanclub_Name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn">
+                <i class="fa fa-plus-circle"></i> Create Merchandise </button>
+            <a href="{{ url_for('main_routes.manage_merchandise') }}" class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

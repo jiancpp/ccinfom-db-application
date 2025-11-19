@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Manage Merchandise - KSync{% endblock %}
+{% block content %}
+<style>
+    table {
+        width: 100%;
+    }
+
+    .btn-smaller {
+        font-size: 12px;
+        padding: 10px;
+        margin: 0 5px;
+    }
+
+    .event-table {
+        width: 100%;
+        height: 300px;
+        padding: 5px;
+        margin-top: 1rem;
+    }
+
+    .center {
+        margin: auto;
+        text-align: center;
+    }
+
+</style>
+
+<div>
+    <button class="btn btn-outline" onclick="window.location.href='{{ url_for('main_routes.manager_portal') }}'"><i class="fa fa-arrow-left"></i> Back</button>
+    <div class="header-titles">
+        <h1 style="color: #667eea; margin-top: 0.5rem; margin-bottom: 0.1rem; font-size: 3rem; white-space: nowrap;">
+            Manage Merchandise Records
+        </h1>
+        <p style="font-size: 1.3rem; font-weight: 300; color: #555; margin-top: 0; white-space: nowrap;">
+            View, Add, Delete, and Update Merchandise Records
+        </p>
+    </div>
+</div>
+
+{% if merchandise %}
+<div class="scroll-pane event-table">
+    <table>
+        
+        <thead>
+            <tr> 
+                <th>Merchandise ID</th> 
+                <th>Merchandise Name</th>
+                <th>Event ID</th>
+                <th>Event Name</th>
+                
+                <th>Artist ID</th> 
+                
+                <th>Artist Name</th>
+                <th>Fanclub ID</th>
+                <th>Fanclub Name</th>
+                <th>Merchandise Description</th>
+                <th>Merchandise Price</th>
+                <th>Initial Stock</th>
+                <th>Quantity Stock</th>
+                <th>Actions</th> 
+            </tr> 
+        </thead>
+        
+        <tbody>
+            {% for merch in merchandise %}
+            <tr>
+                <td>{{ merch.Merchandise_ID }}</td>
+                <td>{{ merch.Merchandise_Name }}</td>
+                <td>{{ merch.Event_ID }}</td>
+                <td>{{ merch.Event_Name }}</td>
+                <td>{{ merch.Artist_ID }}</td>
+                <td>{{ merch.Artist_Name }}</td>
+                <td>{{ merch.Fanclub_ID }}</td>
+                <td>{{ merch.Fanclub_Name }}</td>
+                <td>{{ merch.Merchandise_Description }}</td>
+                <td>₱<span class="money">{{ merch.Merchandise_Price }}</span></td>
+                <td>{{ merch.Initial_Stock }}</td>
+                <td>{{ merch.Quantity_Stock }}</td>
+                <td>
+                    <a href="{{ url_for('main_routes.edit_merchandise', merchandise_id=merch.Merchandise_ID) }}" class="btn btn-smaller">
+                    Edit
+                    </a>
+                    <form method="POST" action="{{ url_for('main_routes.delete_merchandise', merchandise_id=merch.Merchandise_ID) }}" 
+                        style="display: inline;" 
+                        onsubmit="return confirm('Are you sure you want to delete the merchandise {{ merch.Merchandise_Name }}? This action cannot be undone.');">
+                        
+                        <button type="submit" class="btn btn-smaller">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div style="padding: 10px; margin-top: 20px;">
+    <button class="btn" onclick="window.location.href='{{ url_for('main_routes.add_merchandise') }}'">Add New Merchandise</button>
+</div>
+{% endif %}
+
+
+{% endblock %}
