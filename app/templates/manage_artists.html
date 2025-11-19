@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Manage Artists - KSync{% endblock %}
+{% block content %}
+<style>
+    table {
+        width: 100%;
+    }
+
+    .btn-smaller {
+        font-size: 12px;
+        padding: 10px;
+        margin: 0 5px;
+    }
+
+    .artist-table {
+        width: 100%;
+        height: 300px;
+        padding: 5px;
+        margin-top: 1rem;
+    }
+
+    .artist-table th:last-child,
+    .artist-table td:last-child {
+    text-align: right;
+}
+
+    .center {
+        margin: auto;
+        text-align: center;
+    }
+
+</style>
+
+<div>
+    <button class="btn btn-outline" onclick="window.location.href='{{ url_for('main_routes.manager_portal') }}'"><i class="fa fa-arrow-left"></i> Back</button>
+    <div class="header-titles">
+        <h1 style="color: #667eea; margin-top: 0.5rem; margin-bottom: 0.1rem; font-size: 3rem; white-space: nowrap;">
+            Manage Artist Records
+        </h1>
+        <p style="font-size: 1.3rem; font-weight: 300; color: #555; margin-top: 0; white-space: nowrap;">
+            View, Add, Delete, and Update Artist Records
+        </p>
+    </div>
+</div>
+
+{% if artists %}
+<div class="scroll-pane artist-table">
+    <table>
+        <colgroup>
+            <col style="width: auto;">
+        </colgroup>
+        <thead>
+            <td>Artist ID</td>
+            <td>Artist Name</td>
+            <td>Manager Name</td>
+            <td>Activity Status</td>
+            <td>Debut Date</td>
+            <td></td>
+        </thead>
+            <tbody>
+                {% for artist in artists %}
+                    <tr>
+                        <td>{{artist.Artist_ID}}</td>
+                        <td>{{artist.Artist_Name}}</td>
+                        <td>{{artist.Manager_Name}}</td>
+                        <td>{{artist.Activity_Status}}</td>
+                        <td><span class="date">{{artist.Debut_Date}}</span></td>
+                        <td><button class="btn btn-smaller">Edit</button><button class="btn btn-smaller">Delete</button></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+    </table>
+</div>
+<div style="padding: 10px; margin-top: 20px;">
+    <button class="btn" onclick="window.location.href='{{ url_for('main_routes.add_artist') }}'">Add New Artist</button>
+</div>
+{% endif %}
+
+
+{% endblock %}

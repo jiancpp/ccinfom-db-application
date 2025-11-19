@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Manage Fanclubs - KSync{% endblock %}
+{% block content %}
+<style>
+    table {
+        width: 100%;
+    }
+
+    .btn-smaller {
+        font-size: 12px;
+        padding: 10px;
+        margin: 0 5px;
+    }
+
+    .event-table {
+        width: 100%;
+        height: 300px;
+        padding: 5px;
+        margin-top: 1rem;
+    }
+
+    .center {
+        margin: auto;
+        text-align: center;
+    }
+
+</style>
+
+<div>
+    <button class="btn btn-outline" onclick="window.location.href='{{ url_for('main_routes.manager_portal') }}'"><i class="fa fa-arrow-left"></i> Back</button>
+    <div class="header-titles">
+        <h1 style="color: #667eea; margin-top: 0.5rem; margin-bottom: 0.1rem; font-size: 3rem; white-space: nowrap;">
+            Manage Fanclub Records
+        </h1>
+        <p style="font-size: 1.3rem; font-weight: 300; color: #555; margin-top: 0; white-space: nowrap;">
+            View, Add, Delete, and Update Fanclub Records
+        </p>
+    </div>
+</div>
+
+{% if fanclubs %}
+<div class="scroll-pane event-table">
+    <table>
+        <colgroup>
+            <col style="width: 150px;">    <col>                         <col style="width: 15%;">     <col style="width: 25%;">     <col style="width: 15%;">   </colgroup>
+        <thead>
+            <td>Fanclub ID</td>
+            <td>Fanclub Name</td>
+            <td>Artist ID</td>
+            <td>Artist Name</td>
+            <td></td>
+        </thead>
+            <tbody>
+                {% for fanclub in fanclubs %}
+                    <tr>
+                        <td>{{fanclub.Fanclub_ID}}</td>
+                        <td>{{fanclub.Fanclub_Name}}</td>
+                        <td>{{fanclub.Artist_ID}}</td>
+                        <td>{{fanclub.Artist_Name}}</td>
+                        <td>
+                            <a href="{{ url_for('main_routes.edit_fanclub', fanclub_id=fanclub.Fanclub_ID) }}" class="btn btn-smaller">
+                                Edit
+                            </a>
+                            <form method="POST" action="{{ url_for('main_routes.delete_fanclub', fanclub_id=fanclub.Fanclub_ID) }}" 
+                                style="display: inline;" 
+                                onsubmit="return confirm('Are you sure you want to delete the fanclub {{ fanclub.Fanclub_Name }}? This action cannot be undone.');">
+                                
+                                <button type="submit" class="btn btn-smaller">
+                                    Delete
+                                </button>
+                            </form>
+                    </tr>
+                {% endfor %}
+            </tbody>
+    </table>
+</div>
+<div style="padding: 10px; margin-top: 20px;">
+    <button class="btn" onclick="window.location.href='{{ url_for('main_routes.add_fanclub') }}'">Add New Fanclub</button>
+</div>
+{% endif %}
+
+
+{% endblock %}

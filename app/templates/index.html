@@ -3,9 +3,43 @@
 {% block content %}
 <style>
     /* --- GENERAL HOME STYLES --- */
-    h1 {
-        color: #4c5bb2; /* Deep Blue/Purple for main header */
-        margin-bottom: 0.5rem;
+    .hero-banner {
+        padding: 20px 0 20px 20px;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 15px rgba(76, 91, 178, 0.15);
+        background-color: #f7f7ff;
+        border-radius: 8px;
+        text-align: center;
+        display: flex;
+        flex-direction: column; 
+    }
+    .hero-banner h1 {
+        color: #4c5bb2; 
+        text-shadow: 0 0 5px rgba(76, 91, 178, 0.4);
+        margin: 0;
+        font-size: 7rem; 
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        line-height: 1; 
+        letter-spacing: -0.5px;
+    }
+    .hero-banner h2 {
+        color: #4c5bb2; 
+        margin: 0; /* Ensures no extra vertical margin */
+        font-size: 1.5rem; 
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: -20px;
+        line-height: 1.5; /* Crucial: removes extra space above/below the text */
+
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+    }
+    .hero-banner p {
+        color: #7a7e93;
+        margin: 10px 0 0 0;
+        font-size: 1.1rem;
     }
     h2 {
         border-bottom: 2px solid #e0e0e0;
@@ -61,28 +95,21 @@
     }
     .artist-status {
         display: inline-block;
-        font-size: 11px;
-        font-weight: 700;
-        padding: 4px 8px;
-        border-radius: 4px;
-        text-transform: uppercase;
-        margin-bottom: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 0px;
+        padding: 4px 10px 5px;
+        border-radius: 20px;
+        color: white;
     }
-    .status-Active { 
-        background-color: #e6ffe6; 
-        color: #25903e; 
-        border: 1px solid #25903e;
-    }
-    .status-Inactive { 
-        background-color: #ffe6e6; 
-        color: rgb(201, 88, 88); 
-        border: 1px solid rgb(201, 88, 88);
-    }
+
+    .status-Active { background: #25903e; }
+    .status-Inactive { background: rgb(201, 88, 88); }
     .status-Hiatus { 
-        background-color: #fff9e6; 
-        color: #ecb50d; 
-        border: 1px solid #ecb50d;
+        background: #ecb50d; 
+        color: #333; 
     }
+
     .artist-followers {
         font-weight: 500;
         color: #4c5bb2; 
@@ -107,10 +134,11 @@
     }
 </style>
 
-<h1>🎵 Welcome to KSync</h1>
-<p style="color: #666;">Manage artists, events, and fans — or explore the shop!</p>
-
-<hr>
+<div class="hero-banner">
+    <h2>Welcome to</h2>
+    <h1>KSync</h1>
+    <p>Manage artists, events, and fans — or explore the shop!</p>
+</div>
 
 {# --- ARTISTS SECTION --- #}
 <h2>✨ Top Artists ({{ total_artists }})</h2>

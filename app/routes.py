@@ -637,11 +637,15 @@ def reports():
     if report_filter == 'fanclub-contribution-report':
         fanclub_contribution_query = '''
         SELECT
-            RANK() OVER (ORDER BY (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0)) DESC) AS Ranking,
+            RANK() OVER (ORDER BY (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0) + 
+            COALESCE(list3.Member_Ticket_Purchase, 0) + COALESCE(list4.Member_Merch_Purchase, 0)) DESC) AS Ranking,
             f.Fanclub_Name,
             COALESCE(list1.Ticket_Sales, 0) AS Total_Tickets,
             COALESCE(list2.Merch_Sales, 0) AS Total_Merchandise,
-            (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0)) AS Total_Sales
+            COALESCE(list3.Member_Ticket_Purchase, 0) AS Total_Member_Tickets,
+            COALESCE(list4.Member_Merch_Purchase, 0) AS Total_Member_Merchandise,
+            (COALESCE(list1.Ticket_Sales, 0) + COALESCE(list2.Merch_Sales, 0) + 
+            COALESCE(list3.Member_Ticket_Purchase, 0) + COALESCE(list4.Member_Merch_Purchase, 0)) AS Total_Sales
         FROM Fanclub AS f
         LEFT JOIN (
             SELECT fe.Fanclub_ID, SUM(t.Price) AS Ticket_Sales
@@ -659,9 +663,30 @@ def reports():
             WHERE YEAR(o.Order_Date) = %s
             GROUP BY m.Fanclub_ID
         ) AS list2 ON f.Fanclub_ID = list2.Fanclub_ID
-        ORDER BY Total_Sales DESC
+        LEFT JOIN (
+			SELECT fm.Fanclub_ID, SUM(t.Price) AS Member_Ticket_Purchase
+            FROM Fanclub_Membership AS fm
+				LEFT JOIN Ticket_Purchase AS tp ON fm.Fan_ID = tp.Fan_ID
+                LEFT JOIN Ticket_Tier AS t ON tp.Tier_ID = t.Tier_ID
+                LEFT JOIN Artist_Event AS ae ON t.Event_ID = ae.Event_ID
+            WHERE YEAR(tp.Purchase_Date) = %s
+            GROUP BY fm.Fanclub_ID
+		) AS list3 ON f.Fanclub_ID = list3.Fanclub_ID
+        LEFT JOIN (
+            SELECT fm.Fanclub_ID, SUM(m.Merchandise_Price * pl.Quantity_Purchased) AS Member_Merch_Purchase
+            FROM Fanclub_Membership AS fm
+                LEFT JOIN `Order` AS o ON fm.Fan_ID = o.Fan_ID
+                LEFT JOIN Purchase_List AS pl ON o.Order_ID = pl.Order_ID
+                LEFT JOIN Merchandise AS m ON pl.Merchandise_ID = m.Merchandise_ID
+            WHERE YEAR(o.Order_Date) = %s
+            GROUP BY fm.Fanclub_ID
+        ) AS list4 ON f.Fanclub_ID = list4.Fanclub_ID
+        ORDER BY Total_Sales DESC;
         '''
-        fanclub_contribution_data = execute_select_query(fanclub_contribution_query, (selected_fanclub_contribution_year, selected_fanclub_contribution_year))
+        fanclub_contribution_data = execute_select_query(fanclub_contribution_query, (selected_fanclub_contribution_year, 
+                                                                                      selected_fanclub_contribution_year,
+                                                                                      selected_fanclub_contribution_year, 
+                                                                                      selected_fanclub_contribution_year))
 
     
     return render_template(
@@ -861,7 +886,7 @@ def edit_profile():
 
         if execute_insert_query(update_fan_record, (first_name, last_name, username, email, current_fan_id)):
             session['username'] = username
-            flash('Profile updated successfully!.', 'success')
+            flash('Profile updated successfully!', 'success')
             return redirect(url_for('main_routes.profile'))
         else:
             flash('A server error occurred.', 'error')
@@ -893,36 +918,335 @@ def manager_portal():
 
 @main_routes.route('/manage_fanclubs')
 def manage_fanclubs():
-    # edit
-    return render_template('manager_portal.html')
+    query = '''
+    SELECT 
+        f.*, 
+        a.Artist_Name
+    FROM Fanclub AS f 
+        JOIN Artist AS a ON f.Artist_ID = a.Artist_ID
+    '''
+
+    fanclubs = execute_select_query(query)
+
+    return render_template(
+        'manage_fanclubs.html', 
+        fanclubs=fanclubs
+    )
+
+
+@main_routes.route('/manage_fanclubs/add_fanclub', methods=['GET', 'POST'])
+def add_fanclub():
+    artist_query = '''
+    SELECT Artist_ID, Artist_Name
+    FROM Artist
+    ORDER BY Artist_Name
+    '''
+    artists = execute_select_query(artist_query)
+
+    if request.method == 'POST':
+        try:
+            fanclub_name = request.form.get('fanclub_name')
+            artist_id = request.form.get('artist_id')
+            
+            if not fanclub_name or not artist_id:
+                flash("Fanclub Name and Associated Artist are required.", 'error')
+                return redirect(request.url)
+            
+            check_name_query = '''
+            SELECT Fanclub_ID FROM Fanclub WHERE Fanclub_Name = %s
+            '''
+            existing_fanclub = execute_select_query(check_name_query, (fanclub_name,))
+
+            if existing_fanclub:
+                flash(f"A fanclub named '{fanclub_name}' already exists. Please choose a unique name.", 'error')
+                return render_template('add_fanclub.html', artists=artists)
+
+            insert_fanclub_record = '''
+            INSERT INTO Fanclub (Fanclub_Name, Artist_ID)
+            VALUES (%s, %s)
+            '''
+            
+            execute_insert_query(insert_fanclub_record, (
+                fanclub_name, 
+                artist_id)
+            )
+
+            flash(f"Fanclub '{fanclub_name}' successfully created!", 'success')
+            return redirect(url_for('main_routes.manage_fanclubs'))
+        
+        except Exception as e:
+            flash(f"An unexpected error occurred while adding the fanclub: {e}", 'error')
+            return render_template('add_fanclub.html', artists=artists)
+
+    return render_template('add_fanclub.html', artists=artists)
+
+
+@main_routes.route('/manage_fanclubs/<int:fanclub_id>/edit_fanclub', methods=['GET', 'POST'])
+def edit_fanclub(fanclub_id):
+    fanclub_query = '''
+    SELECT Fanclub_ID, Fanclub_Name, Artist_ID 
+    FROM Fanclub
+    WHERE Fanclub_ID = %s
+    '''
+    artist_query = '''
+    SELECT Artist_ID, Artist_Name
+    FROM Artist
+    ORDER BY Artist_Name
+    '''
+    
+    fanclub_data = execute_select_query(fanclub_query, (fanclub_id,))  
+    fanclub = fanclub_data[0]
+    artists = execute_select_query(artist_query)
+
+    if request.method == 'POST':
+        try:
+            new_name = request.form.get('fanclub_name')
+            new_artist_id = request.form.get('artist_id')
+            
+            if not new_name or not new_artist_id:
+                flash("Fanclub Name and Associated Artist are required.", 'error')
+                return render_template('edit_fanclub.html', fanclub=fanclub, artists=artists)
+
+            if new_name != fanclub['Fanclub_Name']:
+                check_name_query = '''
+                SELECT Fanclub_ID FROM Fanclub WHERE Fanclub_Name = %s
+                '''
+                existing_fanclub = execute_select_query(check_name_query, (new_name,))
+
+                if existing_fanclub:
+                    flash(f"A fanclub named '{new_name}' already exists. Please choose a unique name.", 'error')
+                    return render_template('edit_fanclub.html', fanclub=fanclub, artists=artists)
+
+            update_fanclub_query = '''
+            UPDATE Fanclub
+            SET Fanclub_Name = %s, Artist_ID = %s
+            WHERE Fanclub_ID = %s
+            '''
+            
+            execute_insert_query(update_fanclub_query, (
+                new_name, 
+                new_artist_id,
+                fanclub_id)
+            )
+
+            flash(f"Fanclub '{new_name}' updated successfully!", 'success')
+            return redirect(url_for('main_routes.manage_fanclubs'))
+        
+        except Exception as e:
+            flash(f"An unexpected error occurred while updating the fanclub: {e}", 'error')
+            return render_template('edit_fanclub.html', fanclub=fanclub, artists=artists)
+
+    return render_template('edit_fanclub.html', fanclub=fanclub, artists=artists)
+
+
+@main_routes.route('/manage_fanclubs/<int:fanclub_id>/delete_fanclub', methods=['POST'])
+def delete_fanclub(fanclub_id):
+    fanclub_name_query = "SELECT Fanclub_Name FROM Fanclub WHERE Fanclub_ID = %s"
+    fanclub_data = execute_select_query(fanclub_name_query, (fanclub_id,))
+    
+    if not fanclub_data:
+        flash("Fanclub not found.", 'error')
+        return redirect(url_for('main_routes.manage_fanclubs'))
+
+    fanclub_name = fanclub_data[0]['Fanclub_Name']
+    
+    try:
+        delete_query = '''
+        DELETE FROM Fanclub
+        WHERE Fanclub_ID = %s
+        '''
+    
+        execute_insert_query(delete_query, (fanclub_id,))
+
+        flash(f"Fanclub '{fanclub_name}' successfully deleted.", 'success')
+        return redirect(url_for('main_routes.manage_fanclubs'))
+        
+    except Exception as e:
+        flash(f"Error deleting fanclub '{fanclub_name}'. It may be associated with existing records (Events, etc.). Error: {e}", 'error')
+        return redirect(url_for('main_routes.manage_fanclubs'))
 
 
 @main_routes.route('/manage_artists')
 def manage_artists():
     query = """
         SELECT
-            A.Artist_ID,
-            A.Artist_Name,
-            A.Activity_Status,
-            A.Debut_Date,
-            M.Manager_Name,
-            M.Agency AS Manager_Agency,
-            COUNT(Mem.Member_ID) AS Member_Count
+            A.Artist_ID AS Artist_ID,
+            A.Artist_Name AS Artist_Name,
+            A.Activity_Status AS Activity_Status,
+            A.Debut_Date AS Debut_Date,
+            M.Manager_Name AS Manager_Name
         FROM
             Artist A
         LEFT JOIN
             Manager M ON A.Manager_ID = M.Manager_ID
-        LEFT JOIN
-            Member Mem ON A.Artist_ID = Mem.Artist_ID
         GROUP BY
             A.Artist_ID, A.Artist_Name, A.Activity_Status, A.Debut_Date, M.Manager_Name, M.Agency
         ORDER BY 
-            A.Artist_Name;
+            A.Artist_ID;
         """
         
     artists = execute_select_query(query)
         
     return render_template('manage_artists.html', artists=artists)
+
+@main_routes.route('/manage_artist/add_artist_info', methods=["GET","POST"])
+def add_artist_info():
+    if request.method == 'POST':
+        print("Hello")
+
+
+    return render_template(
+        'add_artist_info.html',
+    )
+
+@main_routes.route('/manage_artist/add_artist_info/add_artist', methods=["GET","POST"])
+def add_artist():
+    if request.method == 'POST':
+        # --- 1. Retrieve & Prepare Data ---
+        
+        artist_data = {
+            'artist_name': request.form.get('artist_name'),
+            'debut_date': request.form.get('debut_date'),
+            'activity_status': request.form.get('activity_status'),
+            'agency_name': request.form.get('agency_name'),
+            'manager_name': request.form.get('new_manager_name'),
+            'manager_phone': request.form.get('new_manager_phone'),
+            'manager_email': request.form.get('new_manager_email'),
+        }
+
+        # Retrieve Members list (Logic from previous step)
+        member_data_map = {} 
+        final_members_list = []
+        
+        for key, value in request.form.items():
+            if key.startswith('members['):
+                # Using simple string parsing (re module imported at the top)
+                import re
+                match = re.search(r'members\[(\d+)\]\[(\w+)\]', key)
+                
+                if match:
+                    index = int(match.group(1))
+                    field_name = match.group(2)
+                    
+                    if index not in member_data_map:
+                        member_data_map[index] = {}
+                    
+                    member_data_map[index][field_name] = value
+
+        for index in sorted(member_data_map.keys()):
+            member_dict = member_data_map[index]
+            role_key = f'members[{index}][role]'
+            nationality_key = f'members[{index}][nationality]'
+            
+            member_dict['role'] = request.form.getlist(role_key)
+            member_dict['nationality'] = request.form.getlist(nationality_key)
+            
+            final_members_list.append(member_dict)
+
+        
+        conn = get_conn() # Get a new database connection
+        cursor = conn.cursor()
+
+        try:
+            # --- 2. Database Insertion Logic (Transactional) ---
+
+            # A. Insert into Manager Table
+            manager_insert_sql = '''
+            INSERT INTO Manager (Manager_Name, Agency, Contact_Num, Contact_Email)
+            VALUES (%s, %s, %s, %s)
+            '''
+            cursor.execute(manager_insert_sql, (
+                artist_data['manager_name'], 
+                artist_data['agency_name'], 
+                artist_data['manager_phone'], 
+                artist_data['manager_email']
+            ))
+            # Get the ID of the newly inserted Manager
+            manager_id = cursor.lastrowid
+            if not manager_id:
+                raise Exception("Failed to retrieve Manager ID after insertion.")
+
+
+            # B. Insert into Artist Table (Requires Manager_ID)
+            artist_insert_sql = '''
+            INSERT INTO Artist (Artist_Name, Debut_Date, Activity_Status, Manager_ID)
+            VALUES (%s, %s, %s, %s)
+            '''
+            cursor.execute(artist_insert_sql, (
+                artist_data['artist_name'],
+                artist_data['debut_date'],
+                artist_data['activity_status'],
+                manager_id
+            ))
+            # Get the ID of the newly inserted Artist
+            artist_id = cursor.lastrowid
+            if not artist_id:
+                raise Exception("Failed to retrieve Artist ID after insertion.")
+
+
+            # C. Handle Roles, Nationalities, and Members
+            for member_data in final_members_list:
+                
+                # C.1. Handle Nationalities and Link to Artist
+                for nation_name in member_data.get('nationality', []):
+                    # Check if Nationality exists, or insert it
+                    nationality_id = get_updated_value('Nationality', 'Nationality_Name', nation_name, 'Nationality_ID', conn)
+                    
+                    # Link Nationality to Artist (Artist_Nationality junction table)
+                    artist_nation_link_sql = '''
+                    INSERT IGNORE INTO Artist_Nationality (Artist_ID, Nationality_ID)
+                    VALUES (%s, %s)
+                    '''
+                    cursor.execute(artist_nation_link_sql, (artist_id, nationality_id))
+                
+                # C.2. Handle Roles and Link to Artist
+                for role_name in member_data.get('role', []):
+                    # Check if Role exists, or insert it
+                    role_id = get_updated_value('Role', 'Role_Name', role_name, 'Role_ID', conn)
+                        
+                    # Link Role to Artist (Artist_Role junction table)
+                    artist_role_link_sql = '''
+                    INSERT IGNORE INTO Artist_Role (Artist_ID, Role_ID)
+                    VALUES (%s, %s)
+                    '''
+                    cursor.execute(artist_role_link_sql, (artist_id, role_id))
+
+
+                # C.3. Insert into Member Table (Requires Artist_ID)
+                member_insert_sql = '''
+                INSERT INTO Member (Artist_ID, Real_Name, Stage_Name, Birth_Date, Activity_Status)
+                VALUES (%s, %s, %s, %s, %s)
+                '''
+                cursor.execute(member_insert_sql, (
+                    artist_id,
+                    member_data['name'],
+                    member_data['stage_name'],
+                    member_data.get('birth_date'),
+                    member_data['activity_status']
+                ))
+
+            # --- 3. Commit Transaction ---
+            conn.commit()
+            flash(f"Artist '{artist_data['artist_name']}' and {len(final_members_list)} members added successfully!", 'success')
+            return redirect(url_for('main_routes.artists')) # Redirect to the artists list
+
+        except mysql.connector.Error as err:
+            conn.rollback()
+            print(f"Database error: {err}")
+            flash(f"An error occurred while creating the artist: {err.msg}", 'danger')
+            return redirect(url_for('main_routes.add_artist')) # Return to the form with error
+
+        finally:
+            # Close the cursor and connection
+            if 'cursor' in locals() and cursor:
+                cursor.close()
+            if 'conn' in locals() and conn:
+                conn.close()
+
+    # Handle GET request (render the form)
+    return render_template("add_artist_info.html") # Assuming your form template is named this
+
+
 
 
 @main_routes.route('/manage_events')

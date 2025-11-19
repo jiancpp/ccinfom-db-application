@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Add Fanclub - KSync{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 50%; margin: auto; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);">
+    <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
+        <h1 style="color: #667eea; font-size: 2.5rem; margin-bottom: 5px;">
+            Create new Fanclub
+        </h1>
+        <p style="color: #555;">
+            All fields marked with * are required.
+        </p>
+    </header>
+    
+    <form method="POST" action="{{ url_for('main_routes.add_fanclub') }}">
+        
+        <div class="form-group">
+            <label for="fanclub_name">Fanclub Name *</label>
+            <input type="text" id="fanclub_name" name="fanclub_name" required placeholder="Enter Fanclub Name">
+        </div>
+
+        <div class="form-group">
+            <label for="artist_id">Associated Artist *</label>
+            <select id="artist_id" name="artist_id" required>
+                <option value="">-- Select an Artist --</option>
+                {% for artist in artists %}
+                    <option value="{{ artist.Artist_ID }}">{{ artist.Artist_Name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn">
+                <i class="fa fa-plus-circle"></i> Create Fanclub
+            </button>
+            <a href="{{ url_for('main_routes.manage_fanclubs') }}" class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
