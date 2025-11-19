@@ -1311,15 +1311,18 @@ def add_event():
 
 @main_routes.route('/api/venue/<int:venue_id>/sections', methods=['GET'])
 def get_venue_sections(venue_id):  
+    
     sections_query = '''
-        SELECT Section_ID, Section_Name, Max_Capacity
+        SELECT Section_ID, Section_Name, Max_Capacity AS Capacity, Venue_ID
         FROM Section
         WHERE Venue_ID = %s
         ORDER BY Section_Name
     '''
-    
+
     sections_data = execute_select_query(sections_query, (venue_id,))
-    
+    print("VENUE ID RECEIVED:", venue_id)
+    print("SECTIONS FROM DB:", sections_data)
+
     return jsonify({'sections': sections_data})
 
 @main_routes.route('/manage_merchandise')

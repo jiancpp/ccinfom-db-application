@@ -65,7 +65,16 @@
             display: none;
         }
 
-
+        .btn-add-tier {
+            background-color: #737077;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            width: 100%;
+            margin-top: 15px;
+        }
     </style>
 
     <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
@@ -167,7 +176,7 @@
         </div>
 
 
-        <div id="page-two" class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div id="page-two" class="grid" style="display: grid; grid-template-columns: 1fr; gap: 20px;">
             <div class="card">
                 <h3 id="organizer-header" style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
                 </h3>
@@ -193,9 +202,19 @@
                     </div>     
                 </div>
             </div>
-           <div class="card">
-                <div class="form-group venue-sections-container"></div>
-           </div>     
+            <div class="card">
+                <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                    Ticket Tiers
+                </h3>
+            
+                <div id="tiers-container">
+                    </div>
+            
+                <button type="button" class="btn-add-tier" onclick="addTicketTier()">
+                    <i class="fa fa-plus-circle"></i> Add New Ticket Tier
+                </button>
+            </div>
+            
         </div>
         <div class="form-group" style="display: flex; margin-top: 30px;">
             <button id="btn-prev" class="btn" style="display:none; background-color: #764ba2ca; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
@@ -208,10 +227,9 @@
 
     </form>
 {% endblock %}
-
 {% block scripts %}
 <script>
-    const form = document.getElementById('create-event-form'); // FIX: Select by unique ID
+    const form = document.getElementById('create-event-form'); 
     const pageOne = document.getElementById('page-one')
     const pageTwo = document.getElementById('page-two')
     const btnNext = document.getElementById('btn-next')
@@ -224,22 +242,50 @@
     const artistEventRadio = document.getElementById('artist-event')
     const fanclubEventRadio = document.getElementById('fanclub-event')
     const categoryRadios = document.querySelectorAll('input[name="event-category"]');
+    const venueSelect = document.getElementById('venue_id'); // Defined here for use in btnNext
 
     // Page Two
     const artistNames = document.getElementById('artist-name')
     const fanclubNames = document.getElementById('fanclub-name')
-    const organizerHeader = document.getElementById('organizer-header')    
+    const organizerHeader = document.getElementById('organizer-header')
+
+    // --- NEW GLOBAL VARIABLES ---
+    let venueSections = {};
+    let tierCounter = 0;
+    let isFetchingSections = false; // Add a flag to prevent duplicate fetches
+    // --- END NEW GLOBAL VARIABLES ---
+
+    // --- EXISTING HELPER FUNCTIONS (No major changes needed) ---
 
     function isPageOneValid() {
-        const tempSubmit = document.createElement('button');
-        tempSubmit.type = 'submit';
-        tempSubmit.style.display = 'none';
-        form.appendChild(tempSubmit);
-        
-        const isValid = form.checkValidity();
-        
-        form.removeChild(tempSubmit);
-        return isValid;
+        const eventName = document.getElementById('event_name');
+        const venueId = document.getElementById('venue_id');
+        const startDate = document.getElementById('start_date');
+        const startTime = document.getElementById('start_time');
+        const endTime = document.getElementById('end_time');
+        const selectedCategory = document.querySelector('input[name="event-category"]:checked');
+        const selectedTypes = document.querySelectorAll('input[name="event-type"]:checked:not(:disabled)');
+
+        if (!eventName.value || !venueId.value || !startDate.value || !startTime.value || !endTime.value) {
+            return false;
+        }
+
+        if (!selectedCategory || selectedTypes.length === 0) {
+            return false;
+        }
+
+        // Check date/time logic (Start must be before End)
+        const startDateTime = new Date(`${startDate.value}T${startTime.value}`);
+        const endDateTime = document.getElementById('end_date').value 
+            ? new Date(`${document.getElementById('end_date').value}T${endTime.value}`) 
+            : new Date(`${startDate.value}T${endTime.value}`);
+
+        if (endDateTime <= startDateTime) {
+            alert('Event end time must be after the start time.');
+            return false;
+        }
+
+        return true;
     }
 
     artistSelect.addEventListener("change", function(){
@@ -270,12 +316,10 @@
             const shouldBeDisabled = isArtistOnly && (selectedCategoryValue === 'fanclub-event');
 
             if (shouldBeDisabled) {
-                // DISABLE the event type
                 checkbox.setAttribute("disabled", "disabled");
-                checkbox.checked = false; // Uncheck if it was previously checked
+                checkbox.checked = false;
                 parentCard.classList.add('is-disabled'); 
             } else {
-                // ENABLE the event type (It's an Artist Event, or it's a general type)
                 checkbox.removeAttribute("disabled");
                 parentCard.classList.remove('is-disabled'); 
             }
@@ -291,14 +335,14 @@
             }
 
             if (selectedCategoryValue === 'artist-event') {
-                artistNames.style.display = 'block'; // Show Artist select container
+                artistNames.style.display = 'block'; 
                 fanclubNames.style.display = 'none'
-                fanclubSelect.value = ""; // Clear fanclub selection
+                fanclubSelect.value = ""; 
                 organizerHeader.textContent = "Performing Artists"
             } else if (selectedCategoryValue === 'fanclub-event') {
                 fanclubNames.style.display = 'block'
-                artistNames.style.display = 'none'; // Hide Artist select container
-                artistSelect.value = ""; // Clear artist selection
+                artistNames.style.display = 'none'; 
+                artistSelect.value = ""; 
                 organizerHeader.textContent = "Event Organizers"
             }
         });
@@ -309,95 +353,239 @@
         updateEventTypeVisibility(initialCheckedRadio.value);
     }
 
-    /* PAGE TWO */
+    function updateTierCapacity(selectElement) {
+        const selectedSections = Array.from(selectElement.selectedOptions);
+        let totalCapacity = 0;
+        
+        selectedSections.forEach(option => {
+            const sectionId = option.value;
+            if (venueSections[sectionId]) {
+                // Ensure Capacity is treated as a number
+                totalCapacity += parseInt(venueSections[sectionId].Capacity);
+            }
+        });
 
-    // Function to fetch sections from the server
-    function fetchVenueSections(venueId) {
-        // If the user selects the default "-- Select Venue --" option
-        if (!venueId) {
-            document.getElementById('venue-sections-container').innerHTML = '';
-            return;
+        const capacityDisplay = selectElement.closest('.form-group').querySelector('.capacity-display');
+        if (capacityDisplay) {
+            capacityDisplay.textContent = `Current Max Capacity: ${totalCapacity.toLocaleString()}`;
         }
 
-        // Use the JavaScript Fetch API to call your Python backend
-        // The URL structure assumes you'll create a route like '/api/venue/123/sections'
+        const tierCard = selectElement.closest('.tier-card');
+        const quantityInput = tierCard.querySelector('input[name="tier_quantity[]"]');
+        if (quantityInput) {
+            quantityInput.setAttribute('max', totalCapacity);
+        }
+    }
+
+    // --- UPDATED renderVenueSections (Responsible for populating existing and adding initial tier) ---
+    function renderVenueSections(sections) {
+        console.log("RAW SECTIONS FROM API:", sections, "TYPE:", typeof sections, "ARRAY?", Array.isArray(sections));
+
+        // Force result to be an array structurally
+        
+        if (!Array.isArray(sections)) {
+            console.error("API returned invalid sections format:", sections);
+            sections = [];
+        }
+
+        venueSections = sections.reduce((map, section) => {
+            map[section.Section_ID] = {
+                Section_ID: section.Section_ID,
+                Section_Name: section.Section_Name,
+                Capacity: parseInt(section.Capacity) || 0
+            };
+            return map;
+        }, {});
+        
+        const tiersContainer = document.getElementById('tiers-container');
+
+        // Add tier if needed
+        if (pageTwo.style.display === "grid" &&
+            tiersContainer.children.length === 0 &&
+            sections.length > 0) 
+        {
+            addTicketTier();
+        }
+
+        // Update selects
+        document.querySelectorAll('.venue-section-select').forEach(select => {
+            const selectedValues = Array.from(select.options)
+                .filter(o => o.selected)
+                .map(o => o.value);
+
+            select.innerHTML = '';
+
+            sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section.Section_ID;
+                option.textContent = `${section.Section_Name} (${section.Capacity.toLocaleString()})`;
+                if (selectedValues.includes(String(section.Section_ID))) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+
+            updateTierCapacity(select);
+            select.removeEventListener('change', updateTierCapacityWrapper);
+            select.addEventListener('change', updateTierCapacityWrapper);
+        });
+    }
+
+    // --- UPDATED fetchVenueSections (Handles fetch state) ---
+    function fetchVenueSections(venueId) {
+        if (!venueId) {
+            venueSections = {};
+            document.getElementById('tiers-container').innerHTML = '';
+            return;
+        }
+        
+        // Prevent multiple simultaneous fetches
+        if (isFetchingSections) return;
+        isFetchingSections = true;
+
         fetch(`/api/venue/${venueId}/sections`)
             .then(response => {
                 if (!response.ok) {
-                    // Throw an error if the server response is not successful
                     throw new Error('Failed to fetch sections: ' + response.statusText);
                 }
                 return response.json();
             })
             .then(data => {
-                // Success! The 'data' variable contains the JSON response from Python
                 renderVenueSections(data.sections);
             })
             .catch(error => {
                 console.error('Error fetching venue sections:', error);
-                // Optionally display an error message to the user
-                document.getElementById('venue-sections-container').innerHTML = 
-                    '<p style="color: red;">Could not load sections for this venue.</p>';
+                document.getElementById('tiers-container').innerHTML = 
+                    '<p style="color: red;">Could not load sections for this venue. Please check the venue setup.</p>';
+                venueSections = {};
+            })
+            .finally(() => {
+                isFetchingSections = false;
             });
     }
 
-    const venueSelect = document.getElementById('venue_id');
+    // --- Venue Change Listener (Triggers the fetch) ---
     venueSelect.addEventListener('change', function() {
         const selectedVenueId = this.value;
         fetchVenueSections(selectedVenueId);
     });
 
-    function renderVenueSections(sections) {
-        const container = document.getElementById('venue-sections-container');
-        let html = '';
+    const updateTierCapacityWrapper = function() {
+        updateTierCapacity(this);
+    };
 
-        if (sections.length === 0) {
-            html = '<p>No sections available for this venue.</p>';
-        } else {
-            html += '<label>Select Event Sections *</label>';
-            html += '<div class="event-section-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;">';
-            
-            sections.forEach(section => {
-                // Assuming your JSON returns Section_ID and Section_Name
-                html += `
-                    <div class="option-card">
-                        <input type="checkbox" 
-                            name="event-section" 
-                            value="${section.Section_ID}" 
-                            id="section-${section.Section_ID}"
-                            class="section-option">
-                        <label for="section-${section.Section_ID}" style="margin-left: 10px;">
-                            ${section.Section_Name} (Capacity: ${section.Capacity})
-                        </label>
+    // --- UPDATED addTicketTier (Ensures data is used if available) ---
+    function addTicketTier() {
+        tierCounter++;
+        const container = document.getElementById('tiers-container');
+        const tierIndex = tierCounter;
+
+        const tierHtml = `
+            <div class="tier-card card" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 15px;">
+                <h4 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    Ticket Tier #${tierIndex}
+                    <button type="button" class="btn-remove-tier" 
+                        onclick="this.closest('.tier-card').remove();"
+                        style="background: none; border: none; color: red; cursor: pointer; font-size: 1.2rem;">
+                        <i class="fa fa-times-circle"></i>
+                    </button>
+                </h4>
+                <div class="form-group">
+                    <label for="tier_name_${tierIndex}">Tier Name *</label>
+                    <input type="text" id="tier_name_${tierIndex}" name="tier_name[]" required 
+                        placeholder="e.g., VIP, General Admission">
+                </div>
+                <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label for="tier_price_${tierIndex}">Price (USD) *</label>
+                        <input type="number" id="tier_price_${tierIndex}" name="tier_price[]" required min="0" step="0.01" 
+                            placeholder="0.00">
                     </div>
-                `;
+                    <div>
+                        <label for="tier_quantity_${tierIndex}">Total Quantity *</label>
+                        <input type="number" id="tier_quantity_${tierIndex}" name="tier_quantity[]" required min="1" 
+                            placeholder="e.g., 500">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="tier_benefits_${tierIndex}">Benefits</label>
+                    <textarea id="tier_benefits_${tierIndex}" name="tier_benefits[]" rows="2" 
+                        placeholder="e.g., Soundcheck access, Poster"></textarea>
+                </div>
+                <div class="form-group" id="tier-sections">
+                    <label for="tier_sections_${tierIndex}">Assigned Venue Sections *</label>
+                    <p class="capacity-display" style="font-size: 0.9rem; color: #555;">Current Max Capacity: 0</p>
+                    <select id="tier_sections_${tierIndex}" name="tier_sections_${tierIndex}[]" required multiple class="venue-section-select">
+                    </select>
+                    <small>Hold **Ctrl/Cmd** to select multiple sections.</small>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; margin-top: 15px;">
+                    <input type="checkbox" id="tier_reserved_seating_${tierIndex}" name="tier_reserved_seating_${tierIndex}" value="1" 
+                        style="width: 20px;">
+                    <label for="tier_reserved_seating_${tierIndex}" style="margin: 0 0 0 10px;">Is Reserved Seating</label>
+                </div>
+                <input type="hidden" name="tier_id[]" value="${tierIndex}">
+            </div>
+        `;
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = tierHtml.trim();
+        const newTierCard = tempDiv.firstChild;
+        container.appendChild(newTierCard);
+
+        const newSelect = newTierCard.querySelector('.venue-section-select');
+        
+        // Populate sections on creation using the global venueSections object
+        const sectionsArray = Object.values(venueSections);
+
+        if (sectionsArray.length > 0) {
+            sectionsArray.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section.Section_ID;
+                option.textContent = `${section.Section_Name} (${section.Capacity.toLocaleString()})`;
+                newSelect.appendChild(option);
             });
-
-            html += '</div>';
+            newSelect.setAttribute("required", "required");
+        } else {
+            newSelect.removeAttribute("required");
+            document.getElementById("tier-sections").style.display = "none";
         }
-
-        container.innerHTML = html;
+        
+        newSelect.addEventListener('change', updateTierCapacityWrapper);
+        updateTierCapacity(newSelect);
     }
+    // --- END UPDATED addTicketTier FUNCTION ---
 
-    // General Form Buttons
 
+    // --- UPDATED btnNext Listener (Primary Fix) ---
     btnNext.addEventListener("click", function(event){
         event.preventDefault()
         const eventTypeCount = document.querySelectorAll('.type-option').length
 
         if (isPageOneValid() && eventTypeCount > 0) {
-            // Hide Page One elements
+            // Transition to page two
             pageOne.style.display = "none";
             btnNext.style.display = "none";
-            
-            // Show Page Two elements
             pageTwo.style.display = "grid";
             btnPrev.style.display = "block";
             btnSubmit.style.display = "block";
+
+            // If the venue is selected but sections haven't loaded yet, force the fetch.
+            // renderVenueSections handles calling addTicketTier once the data arrives.
+            const selectedVenueId = venueSelect.value;
+            const sectionsExist = Object.keys(venueSections).length > 0;
+            const tiersContainer = document.getElementById('tiers-container');
+            
+            if (selectedVenueId && !sectionsExist && !isFetchingSections) {
+                 // Fetch the sections first. renderVenueSections will call addTicketTier later.
+                 fetchVenueSections(selectedVenueId);
+            } else if (selectedVenueId && sectionsExist && tiersContainer.children.length === 0) {
+                 // Sections are already loaded, but no tiers exist. Add the first tier now.
+                 addTicketTier();
+            }
+
         } else {
-            // If invalid, trigger the native browser validation messages
             alert('Please fill out all required fields on this page before proceeding.');
-            isPageOneValid(); // Reruns validation to show error messages
         }
     })
 
@@ -410,6 +598,5 @@
         pageOne.style.display = "grid"
         btnNext.style.display = "block"
     })
-
 </script>
 {% endblock %}
