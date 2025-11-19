@@ -6,7 +6,7 @@ import datetime
 import re
 import mysql.connector
 
-from .db_utils import execute_select_query, execute_insert_query, get_conn, get_updated_value, execute_modified_insert
+from .db_utils import execute_select_query, execute_insert_query, get_conn, get_updated_value, execute_modified_insert, execute_select_one_query
 
 main_routes = Blueprint('main_routes', __name__)
 
