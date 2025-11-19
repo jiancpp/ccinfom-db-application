@@ -1862,6 +1862,7 @@ def buy_ticket(event_id):
 
     return render_template(
         "buy_ticket.html", 
+        event_id=event_id,
         event=event, 
         ticket_tiers=ticket_tiers, 
         tier_sections=tier_sections)
@@ -1959,6 +1960,64 @@ def view_ticket(ticket_id):
     return render_template(
         "event_ticket.html",
         tickets=tickets
+    )
+
+@main_routes.route('/setlist/view/<int:event_id>')
+def view_setlist(event_id):
+    event_query = """
+    SELECT e.Event_Name, DATE_FORMAT(e.Start_Date, '%Y-%m-%d') AS event_date, v.Venue_Name
+    FROM Event e
+    JOIN Venue v ON e.Venue_ID = v.Venue_ID
+    WHERE e.Event_ID = %s
+    """
+    event_data = execute_select_query(event_query, (event_id,))
+    if not event_data:
+        return redirect(url_for('main_routes.events'))
+
+
+    event = event_data[0]
+
+    artist_query = """
+    SELECT a.Artist_ID, a.Artist_Name
+    FROM Artist a
+    JOIN Artist_Event ae ON a.Artist_ID = ae.Artist_ID
+    WHERE ae.Event_ID = %s
+    """
+    artists = execute_select_query(artist_query, (event_id,))
+
+    setlist_query = """
+    SELECT sl.Setlist_ID, sl.Song_ID, sl.Play_Order, s.Song_Name
+    FROM Setlist sl
+    JOIN Song s ON sl.Song_ID = s.Song_ID
+    WHERE sl.Event_ID = %s
+    ORDER BY sl.Play_Order ASC
+    """
+    setlist_records = execute_select_query(setlist_query, (event_id,))
+    
+    all_songs_query = '''
+    SELECT 
+        s.Song_ID, 
+        s.Song_Name 
+    FROM 
+        Song s
+    JOIN 
+        Setlist sl ON s.Song_ID = sl.Song_ID 
+    WHERE 
+        sl.Event_ID = %s  -- Filter by the specific event ID
+    ORDER BY 
+        s.Song_Name ASC
+        '''
+    all_songs = execute_select_query(all_songs_query, (event_id,))
+
+    return render_template(
+        'setlist_view.html',
+        event_id=event_id,
+        event_name=event['Event_Name'],
+        event_date=event['event_date'],
+        venue_name=event['Venue_Name'],
+        artists=artists,
+        setlist_records=setlist_records,
+        all_songs=all_songs
     )
 
 # ============================================

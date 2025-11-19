@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Setlist for {{ event_name }} - KSync{% endblock %}
+{% block content %}
+<style>
+    .section-header {
+        display: flex;
+        justify-content: flex-start; /* Changed from space-between */
+        align-items: center;
+        border-bottom: 2px solid #ccc;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .setlist-list {
+        list-style: none;
+        padding: 0;
+    }
+    .setlist-item {
+        display: flex;
+        /* Updated: Ensure only display logic is used */
+        justify-content: flex-start; 
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px dashed #eee;
+    }
+    .song-order {
+        font-weight: bold;
+        margin-right: 15px;
+        color: #667eea;
+        font-size: 1.1em;
+    }
+    .song-info {
+        flex-grow: 1;
+    }
+    /* Removed unused action-buttons styles */
+</style>
+
+<div class="container">
+    <button class="btn btn-outline" onclick="window.history.back()"><i class="fa fa-arrow-left"></i> Back</button>
+
+    <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
+        <h1 style="color: #667eea; font-size: 2.5rem; margin-bottom: 5px;">
+            Setlist for: {{ event_name }}
+        </h1>
+        <p style="color: #555;">Event ID: {{ event_id }}</p>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px;">
+        
+        <div class="card">
+            <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                Event & Artist
+            </h3>
+            
+            <p><strong>Date:</strong> {{ event_date }}</p>
+            <p><strong>Venue:</strong> {{ venue_name }}</p>
+            
+            {% if artists and artists|length > 0 %}
+                <h4 style="margin-top: 15px;">Performing Artist(s):</h4>
+                <ul>
+                    {% for artist in artists %}
+                        <li>{{ artist.Artist_Name }} (ID: {{ artist.Artist_ID }})</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">No artists assigned to this event.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="section-header">
+                <h3 style="color: #4a4a4a;">Setlist Record ({{ setlist_records|length }})</h3>
+                </div>
+
+            {% if setlist_records and setlist_records|length > 0 %}
+                <ul class="setlist-list">
+                    {% for item in setlist_records|sort(attribute='Play_Order') %}
+                        <li class="setlist-item" style="list-style: none;">
+                            <span class="song-order">{{ item.Play_Order }}.</span>
+                            <span class="song-info">
+                                <strong>{{ item.Song_Name }}</strong> 
+                            </span>
+                            </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>The setlist for this event is empty.</p>
+            {% endif %}
+        </div>
+        
+    </div>
+    
+    <hr>
+    
+    <div class="card" style="margin-top: 30px;">
+        <div class="section-header">
+            <h3 style="color: #4a4a4a;">All Song Records</h3>
+            </div>
+        
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Song ID</th>
+                    <th>Song Name</th>
+                    </tr>
+            </thead>
+            <tbody>
+                {% if all_songs %}
+                    {% for song in all_songs %}
+                        <tr>
+                            <td>{{ song.Song_ID }}</td>
+                            <td>{{ song.Song_Name }}</td>
+                            </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="2">No songs found in the database.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
