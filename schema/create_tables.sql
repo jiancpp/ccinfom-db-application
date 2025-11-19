@@ -61,8 +61,8 @@ CREATE TABLE `Merchandise` (
     `Fanclub_ID` INT,
     `Merchandise_Description` VARCHAR(1000) DEFAULT NULL, -- Increased length
     `Merchandise_Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    `Initial_Stock` INT(11) NOT NULL DEFAULT 0,
-    `Quantity_Stock` INT(11) NOT NULL DEFAULT 0,
+    `Initial_Stock` INT(6) NOT NULL DEFAULT 0,
+    `Quantity_Stock` INT(6) NOT NULL DEFAULT 0,
 
     PRIMARY KEY (`Merchandise_ID`),
     UNIQUE (`Merchandise_Name`),
