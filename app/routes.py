@@ -1197,7 +1197,7 @@ def add_artist():
                 INSERT INTO Manager (Manager_Name, Agency, Contact_Num, Contact_Email)
                 VALUES (%s, %s, %s, %s)
                 '''
-                execute_insert_query(manager_insert_sql, (
+                cursor.execute(manager_insert_sql, (
                     artist_data['manager_name'], 
                     artist_data['agency_name'], 
                     artist_data['manager_phone'], 
@@ -1214,7 +1214,7 @@ def add_artist():
             INSERT INTO Artist (Artist_Name, Debut_Date, Activity_Status, Manager_ID)
             VALUES (%s, %s, %s, %s)
             '''
-            execute_insert_query(artist_insert_sql, (
+            cursor.execute(artist_insert_sql, (
                 artist_data['artist_name'],
                 artist_data['debut_date'],
                 artist_data['activity_status'],
@@ -1227,36 +1227,67 @@ def add_artist():
 
             for member_data in final_members_list:
                 
-                
-                for nation_name in member_data.get('nationality', []):
-                    nationality_id = get_updated_value('Nationality', nation_name)
-                    
-                    artist_nation_link_sql = '''
-                    INSERT INTO Artist_Nationality (Artist_ID, Nationality_ID)
-                    VALUES (%s, %s)
-                    '''
-                    execute_insert_query(artist_nation_link_sql, (artist_id, nationality_id))
-                
-                for role_name in member_data.get('role', []):
-                    role_id = get_updated_value('Role', role_name)
-                        
-                    artist_role_link_sql = '''
-                    INSERT INTO Artist_Role (Artist_ID, Role_ID)
-                    VALUES (%s, %s)
-                    '''
-                    execute_insert_query(artist_role_link_sql, (artist_id, role_id))
-
+            
                 member_insert_sql = '''
-                INSERT INTO Member (Artist_ID, Real_Name, Stage_Name, Birth_Date, Activity_Status)
-                VALUES (%s, %s, %s, %s, %s)
+                -- NOTE: The SQL MUST include Artist_ID as the first parameter
+                INSERT INTO Member (Artist_ID, Member_Name, Birth_Date, Activity_Status)
+                VALUES (%s, %s, %s, %s)
                 '''
-                execute_insert_query(member_insert_sql, (
-                    artist_id,
-                    member_data['name'],
-                    member_data['stage_name'],
-                    member_data.get('birth_date'),
+                cursor.execute(member_insert_sql, (
+                    artist_id,                  
+                    member_data['name'],          
+                    member_data.get('artist_name'), 
                     member_data['activity_status']
                 ))
+
+             
+                member_id = cursor.lastrowid
+                if not member_id:
+                    raise Exception(f"Failed to retrieve Member ID after insertion for member: {member_data['name']}")
+
+             
+                for nation_name in member_data.get('nationality', []):
+               
+                    nationality_lookup_sql = "SELECT Nationality_ID FROM REF_Nationality WHERE Nationality_Name = %s"
+                    cursor.execute(nationality_lookup_sql, (nation_name,))
+                    
+                    result = cursor.fetchone()
+                    
+                    if result:
+                        nationality_id = result[0]
+                    else:
+                        raise ValueError(f"Selected nationality '{nation_name}' not found in database.")
+                    
+  
+                    member_nation_link_sql = '''
+                    INSERT INTO LINK_Member_Nationality (Member_ID, Nationality_ID)
+                    VALUES (%s, %s)
+                    '''
+
+                    cursor.execute(member_nation_link_sql, (member_id, nationality_id))
+                
+                for role_name in member_data.get('role', []):
+                    
+                
+                    role_lookup_sql = "SELECT Role_ID FROM REF_Role WHERE Role_Name = %s"
+                    cursor.execute(role_lookup_sql, (role_name,))
+                    
+                
+                    result = cursor.fetchone()
+                    
+                    if result:
+                        role_id = result[0]
+                    else:
+                   
+                        raise ValueError(f"Selected role '{role_name}' not found in REF_Role database.")
+                
+                        
+                    member_role_link_sql = '''
+                    INSERT INTO LINK_Member_Role (Member_ID, Role_ID)
+                    VALUES (%s, %s)
+                    '''
+                    # Now 'role_id' is the correct integer
+                    cursor.execute(member_role_link_sql, (member_id, role_id))
 
             conn.commit()
             flash(f"Artist '{artist_data['artist_name']}' and {len(final_members_list)} members added successfully!", 'success')
