@@ -221,7 +221,7 @@
             <button id="btn-prev" class="btn" style="display:none; background-color: #764ba2ca; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
                 <i class="fa fa-arrow-left"></i> Previous Step 
             </button>
-            <button id="btn-submit" type="submit" class="btn" style="display:none; background-color: #764ba2; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
+            <button id="btn-submit" type="submit" class="btn" style="display:none; background-color: #764ba2; margin-left: 10px; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
                 <i class="fa fa-calendar-check"></i> Finish Event Details
             </button>
         </div>
@@ -488,7 +488,7 @@
                 </div>
                 <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
-                        <label for="tier_price_${tierIndex}">Price (USD) *</label>
+                        <label for="tier_price_${tierIndex}">Price (PHP) *</label>
                         <input type="number" id="tier_price_${tierIndex}" name="tier_price[]" required min="0" step="0.01" 
                             placeholder="0.00">
                     </div>
@@ -503,14 +503,14 @@
                     <textarea id="tier_benefits_${tierIndex}" name="tier_benefits[]" rows="2" 
                         placeholder="e.g., Soundcheck access, Poster"></textarea>
                 </div>
-                <div class="form-group" id="tier-sections">
+                <div class="form-group tier-sections" id="tier-sections" >
                     <label for="tier_sections_${tierIndex}">Assigned Venue Sections *</label>
                     <p class="capacity-display" style="font-size: 0.9rem; color: #555;">Current Max Capacity: 0</p>
                     <select id="tier_sections_${tierIndex}" name="tier_sections_${tierIndex}[]" required multiple class="venue-section-select">
                     </select>
                     <small>Hold **Ctrl/Cmd** to select multiple sections.</small>
                 </div>
-                <div class="form-group" style="display: flex; align-items: center; margin-top: 15px;">
+                <div class="form-group is-reserved-button" style="display: flex; align-items: center; margin-top: 15px;">
                     <input type="checkbox" id="tier_reserved_seating_${tierIndex}" name="tier_reserved_seating_${tierIndex}" value="1" 
                         style="width: 20px;">
                     <label for="tier_reserved_seating_${tierIndex}" style="margin: 0 0 0 10px;">Is Reserved Seating</label>
@@ -539,7 +539,12 @@
             newSelect.setAttribute("required", "required");
         } else {
             newSelect.removeAttribute("required");
-            document.getElementById("tier-sections").style.display = "none";
+            document.querySelectorAll(".tier-sections").forEach( tier_section => {
+                tier_section.style.display = "none";
+            })
+            document.querySelectorAll(".is-reserved-button").forEach( container => {
+                container.style.display = "none";
+            })
         }
         
         newSelect.addEventListener('change', updateTierCapacityWrapper);

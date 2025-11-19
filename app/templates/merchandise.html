@@ -279,7 +279,6 @@
     {# Merch Cards Section: Dynamically display based on the 'filter' variable passed from the route #}
     <section>
 
-        {# 1. SELECT THE CORRECT DATA SOURCE #}
         {% set data_to_display = [] %}
         {% set group_type = 'Merchandise' %}
         {% set header_text = 'All Merchandise' %}
@@ -295,7 +294,6 @@
             {% set header_text = 'Merchandise Grouped by Fanclub' %}
         
         {% else %} 
-            {# This handles 'all' and any default state #}
             {% set data_to_display = artists_merch or fanclubs_merch %}
             {% set header_text = 'All Merchandise' %}
         
@@ -393,12 +391,10 @@
     
             function getCurrentFilterValue() {
                 const checkedRadio = document.querySelector('input[name="filter"]:checked');
-                // Default to 'all' if no radio is checked (shouldn't happen with your HTML)
                 return checkedRadio ? checkedRadio.value : 'all'; 
             }
     
             function applyFilterRestrictions(targetValue) {
-                // Function to disable/enable and reset filters based on the selected radio chip value
                 if (targetValue === 'artists') {
                     fanclubSelect.disabled = true;
                     fanclubSelect.value = ""; 
@@ -416,23 +412,18 @@
                 }
             }
     
-            // --- 1. Event Listener for Radio Button Changes ---
-            // Radio buttons still use the HTML onchange to submit, but we ensure the restriction runs first.
             filterRadios.forEach(radio => {
                 radio.addEventListener('change', function() {
                     applyFilterRestrictions(this.value);
                 });
             });
-            
-            // --- 2. Event Listener for Dropdown Changes (NEW) ---
-            // This takes over form submission from the HTML onchange we removed.
+
+
             function handleDropdownChange() {
                 const currentFilter = getCurrentFilterValue();
                 
-                // Re-apply restrictions just in case, ensuring the conflicting dropdown is cleared/disabled
                 applyFilterRestrictions(currentFilter);
                 
-                // Now that conflicts are handled, submit the form.
                 filterForm.submit();
             }
             
@@ -440,7 +431,6 @@
             fanclubSelect.addEventListener('change', handleDropdownChange);
     
     
-            // --- 3. Initial State Setup (on page load) ---
             applyFilterRestrictions(getCurrentFilterValue());
         });
     </script>
