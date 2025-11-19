@@ -55,22 +55,24 @@ DROP TABLE IF EXISTS `Merchandise`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Merchandise` (
-    `Merchandise_ID` INT(11) NOT NULL AUTO_INCREMENT,
-    `Merchandise_Name` VARCHAR(100) NOT NULL,
-    `Artist_ID` INT(11),
-    `Event_ID` INT(11),
-    `Fanclub_ID` INT(11),
-    `Merchandise_Description` VARCHAR(500) DEFAULT NULL,
+	`Merchandise_ID` INT NOT NULL AUTO_INCREMENT,
+    `Merchandise_Name` VARCHAR(255) NOT NULL, -- Increased length
+    `Artist_ID` INT,
+    `Fanclub_ID` INT,
+    `Merchandise_Description` VARCHAR(1000) DEFAULT NULL, -- Increased length
     `Merchandise_Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    `Initial_Stock` INT(6) NOT NULL DEFAULT 0,
-    `Quantity_Stock` INT(6) NOT NULL DEFAULT 0,
+    `Initial_Stock` INT NOT NULL DEFAULT 0,
+    `Quantity_Stock` INT NOT NULL DEFAULT 0,
 
     PRIMARY KEY (`Merchandise_ID`),
-    UNIQUE (`Event_ID`, `Merchandise_Name`),
+    UNIQUE (`Merchandise_Name`),
+    
+    -- Crucial Stock Integrity Check
+    CHECK (`Quantity_Stock` <= `Initial_Stock`),
 
 	CHECK (`Merchandise_Price` >= 0),
-    CHECK (`Initial_Stock` >= 0),
-    CHECK (`Quantity_Stock` >= 0)
+    CHECK (`Initial_Stock` >= 1),
+    CHECK (`Quantity_Stock` >= 1)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -305,7 +307,7 @@ CREATE TABLE `Order` (
     `Order_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Fan_ID` INT(11) NOT NULL,
     `Order_Date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `Order_Status` ENUM('Pending', 'Paid', 'Cancelled', 'Refunded') NOT NULL DEFAULT 'Pending',
+    `Order_Status` ENUM('Pending', 'Paid', 'Cancelled') NOT NULL DEFAULT 'Pending',
 
     PRIMARY KEY (`Order_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
@@ -456,3 +458,14 @@ CREATE TABLE `Location_Country` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 
+DROP TABLE IF EXISTS `Merchandise_Event`;
+/*!40101 SET @saved_cs_client = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Merchandise_Event` (
+    `Merchandise_ID` INT NOT NULL,
+    `Event_ID` INT NOT NULL,
+
+    -- Define the composite primary key
+    PRIMARY KEY (`Merchandise_ID`, `Event_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
