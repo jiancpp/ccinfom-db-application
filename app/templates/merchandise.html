@@ -341,10 +341,10 @@
                                     
                                     {# Fanclub and Event Details #}
                                     <div class="merch-details-group">
-                                        {% if item.event_name %}
-                                        <span class="badge" style="background:rgb(255, 235, 211); color:rgb(119, 62, 1); font-size: 11px;">
-                                            {{ item.event_name }}
-                                        </span>
+                                        {% if item.event_names and item.event_names.strip() != 'N/A' %}
+                                            <span class="badge" style="background:rgb(255, 235, 211); color:rgb(119, 62, 1); font-size: 11px;">
+                                                {{ item.event_names }}
+                                            </span>
                                         {% endif %}
                                     </div>
                                 </div>

@@ -89,3 +89,37 @@ def get_updated_value(key, current_db_value):
             return current_db_value
             
         return submitted_value.strip()
+
+def execute_select_one_query(sql, params=()):
+    conn = None
+    cursor = None
+    new_id = None
+    
+    try:
+        conn = get_conn()
+        cursor = conn.cursor() 
+        
+        cursor.execute(sql, params)
+        
+        cursor.execute("SELECT LAST_INSERT_ID()")
+        
+        new_id = cursor.fetchone()[0] 
+        
+        conn.commit()
+        
+        if new_id and new_id > 0:
+            return int(new_id)
+        else:
+            return None
+        
+    except Exception as e:
+        print(f"Database Error in execute_insert_query: {e}")
+        if conn:
+            conn.rollback() 
+        return None 
+        
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
