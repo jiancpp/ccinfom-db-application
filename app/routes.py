@@ -239,35 +239,35 @@ def format_merch_row(row):
         'stock': row['Quantity_Stock'],
         'artist_id': row['Artist_ID'],
         'fanclub_id': row['Fanclub_ID'],
-        'event_id': row['Event_ID'],
+        'event_names': row.get('Event_Names', 'N/A'), 
         'artist_name': row['Artist_Name'],
         'fanclub_name': row['Fanclub_Name'],
-        'event_name': row['Event_Name'] 
     }
 
 
 @main_routes.route('/merchandise', methods=['GET'])
 def merchandise():
-    # --- 1. Get Filters and Display Mode ---
     artist_filter_id = request.args.get('artist_id', type=int)
     fanclub_filter_id = request.args.get('fanclub_id', type=int)
     search_query = request.args.get('search_query', '').strip()
     
-
     display_mode = request.args.get('filter', 'all') 
+    
     
     raw_query = """
     SELECT
         M.Merchandise_ID, M.Merchandise_Name, M.Merchandise_Description, M.Merchandise_Price,
-        M.Quantity_Stock, M.Artist_ID, M.Fanclub_ID, M.Event_ID,
+        M.Quantity_Stock, M.Artist_ID, M.Fanclub_ID,
         A.Artist_Name,
         F.Fanclub_Name,
-        E.Event_Name
+        -- Aggregate all linked event names into a single string
+        GROUP_CONCAT(DISTINCT E.Event_Name SEPARATOR ', ') AS Event_Names 
     FROM
         Merchandise M
     LEFT JOIN Artist A ON M.Artist_ID = A.Artist_ID
     LEFT JOIN Fanclub F ON M.Fanclub_ID = F.Fanclub_ID
-    LEFT JOIN Event E ON M.Event_ID = E.Event_ID
+    LEFT JOIN Merchandise_Event ME ON M.Merchandise_ID = ME.Merchandise_ID
+    LEFT JOIN Event E ON ME.Event_ID = E.Event_ID
     WHERE 1=1
     """
     
@@ -291,20 +291,26 @@ def merchandise():
         
         parameters.append(search_param)
         parameters.append(search_param)
-
-    raw_query += " ORDER BY M.Merchandise_Name"
-
+        
+    raw_query += """
+    GROUP BY
+        M.Merchandise_ID, M.Merchandise_Name, M.Merchandise_Description, M.Merchandise_Price,
+        M.Quantity_Stock, M.Artist_ID, M.Fanclub_ID, A.Artist_Name, F.Fanclub_Name
+    ORDER BY M.Merchandise_Name
+    """
     
     if parameters:
         filtered_merch_rows = execute_select_query(raw_query, tuple(parameters))
     else:
         filtered_merch_rows = execute_select_query(raw_query)
-        
+    
+
     if filtered_merch_rows is not None:
         formatted_merchandise = [format_merch_row(row) for row in filtered_merch_rows]
     else:
         formatted_merchandise = []
         
+    
     merch_by_artist = {}
     artist_names_map = {}
     artists_merch_data = [] 
@@ -337,10 +343,9 @@ def merchandise():
             'merchandise': merch_list
         })
     
-    # single list for the 'All Merchandise' view
+
     all_merch_data = [{'name': 'All Merchandise', 'merchandise': formatted_merchandise}]
     
-    # Query for All Artists/Fanclubs for Dropdowns
     raw_artists_data = execute_select_query("SELECT Artist_ID, Artist_Name FROM Artist ORDER BY Artist_Name") 
     all_artists_data = [{'id': row['Artist_ID'], 'name': row['Artist_Name']} for row in raw_artists_data]
 
@@ -1197,7 +1202,7 @@ def add_artist():
                 INSERT INTO Manager (Manager_Name, Agency, Contact_Num, Contact_Email)
                 VALUES (%s, %s, %s, %s)
                 '''
-                execute_insert_query(manager_insert_sql, (
+                cursor.execute(manager_insert_sql, (
                     artist_data['manager_name'], 
                     artist_data['agency_name'], 
                     artist_data['manager_phone'], 
@@ -1214,7 +1219,7 @@ def add_artist():
             INSERT INTO Artist (Artist_Name, Debut_Date, Activity_Status, Manager_ID)
             VALUES (%s, %s, %s, %s)
             '''
-            execute_insert_query(artist_insert_sql, (
+            cursor.execute(artist_insert_sql, (
                 artist_data['artist_name'],
                 artist_data['debut_date'],
                 artist_data['activity_status'],
@@ -1227,36 +1232,67 @@ def add_artist():
 
             for member_data in final_members_list:
                 
-                
-                for nation_name in member_data.get('nationality', []):
-                    nationality_id = get_updated_value('Nationality', nation_name)
-                    
-                    artist_nation_link_sql = '''
-                    INSERT INTO Artist_Nationality (Artist_ID, Nationality_ID)
-                    VALUES (%s, %s)
-                    '''
-                    execute_insert_query(artist_nation_link_sql, (artist_id, nationality_id))
-                
-                for role_name in member_data.get('role', []):
-                    role_id = get_updated_value('Role', role_name)
-                        
-                    artist_role_link_sql = '''
-                    INSERT INTO Artist_Role (Artist_ID, Role_ID)
-                    VALUES (%s, %s)
-                    '''
-                    execute_insert_query(artist_role_link_sql, (artist_id, role_id))
-
+            
                 member_insert_sql = '''
-                INSERT INTO Member (Artist_ID, Real_Name, Stage_Name, Birth_Date, Activity_Status)
-                VALUES (%s, %s, %s, %s, %s)
+                -- NOTE: The SQL MUST include Artist_ID as the first parameter
+                INSERT INTO Member (Artist_ID, Member_Name, Birth_Date, Activity_Status)
+                VALUES (%s, %s, %s, %s)
                 '''
-                execute_insert_query(member_insert_sql, (
-                    artist_id,
-                    member_data['name'],
-                    member_data['stage_name'],
-                    member_data.get('birth_date'),
+                cursor.execute(member_insert_sql, (
+                    artist_id,                  
+                    member_data['name'],          
+                    member_data.get('artist_name'), 
                     member_data['activity_status']
                 ))
+
+             
+                member_id = cursor.lastrowid
+                if not member_id:
+                    raise Exception(f"Failed to retrieve Member ID after insertion for member: {member_data['name']}")
+
+             
+                for nation_name in member_data.get('nationality', []):
+               
+                    nationality_lookup_sql = "SELECT Nationality_ID FROM REF_Nationality WHERE Nationality_Name = %s"
+                    cursor.execute(nationality_lookup_sql, (nation_name,))
+                    
+                    result = cursor.fetchone()
+                    
+                    if result:
+                        nationality_id = result[0]
+                    else:
+                        raise ValueError(f"Selected nationality '{nation_name}' not found in database.")
+                    
+  
+                    member_nation_link_sql = '''
+                    INSERT INTO LINK_Member_Nationality (Member_ID, Nationality_ID)
+                    VALUES (%s, %s)
+                    '''
+
+                    cursor.execute(member_nation_link_sql, (member_id, nationality_id))
+                
+                for role_name in member_data.get('role', []):
+                    
+                
+                    role_lookup_sql = "SELECT Role_ID FROM REF_Role WHERE Role_Name = %s"
+                    cursor.execute(role_lookup_sql, (role_name,))
+                    
+                
+                    result = cursor.fetchone()
+                    
+                    if result:
+                        role_id = result[0]
+                    else:
+                   
+                        raise ValueError(f"Selected role '{role_name}' not found in REF_Role database.")
+                
+                        
+                    member_role_link_sql = '''
+                    INSERT INTO LINK_Member_Role (Member_ID, Role_ID)
+                    VALUES (%s, %s)
+                    '''
+                    # Now 'role_id' is the correct integer
+                    cursor.execute(member_role_link_sql, (member_id, role_id))
 
             conn.commit()
             flash(f"Artist '{artist_data['artist_name']}' and {len(final_members_list)} members added successfully!", 'success')
@@ -2348,6 +2384,8 @@ def toggle_follow(artist_id):
         flash(f"💔 You have unfollowed {artist[0]['Artist_Name']}.", 'error')
 
     return redirect(request.referrer or url_for('main_routes.artists'))
+
+
 # =========================================================================
 # MERCH SUBPAGES
 # =========================================================================
@@ -2675,13 +2713,11 @@ def place_order():
             merch_name = row[4]
 
             if qty_stock < qty_purchased:
-                # Stock check failed, ROLLBACK and redirect
                 db_conn.rollback() 
                 flash(f"⚠️ Stock Error: '{merch_name}' is sold out. Please update your cart.", 'danger')
                 cursor.close()
                 return redirect(url_for('main_routes.cart'))
 
-            # Deduct stock
             cursor.execute(
                 """
                 UPDATE Merchandise
@@ -2723,21 +2759,31 @@ def place_order():
             cursor.close()
         if db_conn and db_conn.is_connected():
             db_conn.close()
-
+            
 @main_routes.route('/manage_merchandise')
 def manage_merchandise():
     query = '''
     SELECT 
-        m.*, 
-        a.Artist_Name,
-        f.Fanclub_Name,
-        e.Event_Name    
-    FROM Merchandise AS m
-        LEFT JOIN Artist AS a ON m.Artist_ID = a.Artist_ID -- Assuming link is on M
-        LEFT JOIN Fanclub AS f ON m.Fanclub_ID = f.Fanclub_ID
-        LEFT JOIN Event AS e ON m.Event_ID = e.Event_ID
+        M.*, 
+        A.Artist_Name,
+        F.Fanclub_Name,
+        GROUP_CONCAT(DISTINCT E.Event_ID SEPARATOR ', ') AS Event_IDs,
+        GROUP_CONCAT(DISTINCT E.Event_Name SEPARATOR ', ') AS Event_Names
+    FROM 
+        Merchandise AS M
+    LEFT JOIN 
+        Artist AS A ON M.Artist_ID = A.Artist_ID
+    LEFT JOIN 
+        Fanclub AS F ON M.Fanclub_ID = F.Fanclub_ID
+    LEFT JOIN Merchandise_Event ME ON M.Merchandise_ID = ME.Merchandise_ID
+    LEFT JOIN Event E ON ME.Event_ID = E.Event_ID
+    GROUP BY
+        M.Merchandise_ID, A.Artist_Name, F.Fanclub_Name 
+    ORDER BY
+        M.Merchandise_ID
     '''
 
+    # The result will contain an 'Event_Names' column with a comma-separated list
     merchandise = execute_select_query(query)
 
     return render_template(
@@ -2745,214 +2791,216 @@ def manage_merchandise():
         merchandise=merchandise
     )
             
-@main_routes.route('/manage_merchandise/add_merchandise', methods=['GET', 'POST'])
+@main_routes.route('/add_merchandise', methods=['GET', 'POST'])
 def add_merchandise():
-    artist_query = '''
-        SELECT Artist_ID, Artist_Name
-        FROM Artist
-        ORDER BY Artist_Name
-    '''
-    artists = execute_select_query(artist_query)
-    
-    events_query = '''
-        SELECT Event_ID, Event_Name
-        FROM Event
-        ORDER BY Event_Name
-    '''
-    events = execute_select_query(events_query)
-    
-    fanclub_query = '''
-        SELECT Fanclub_ID, Fanclub_Name
-        FROM Fanclub
-        ORDER BY Fanclub_Name
-    '''
-    fanclubs = execute_select_query(fanclub_query)
-
-
-    if request.method == 'POST':
+    if request.method == 'GET':
         try:
-            # Get required fields
-            merchandise_name = request.form.get('merchandise_name')
-            merchandise_price = float(request.form.get('merchandise_price'))
-            initial_stock = int(request.form.get('initial_stock'))
-            
-            event_id = request.form.get('event_id')
-            artist_id = request.form.get('artist_id')
-            fanclub_id = request.form.get('fanclub_id')
-
-            if not merchandise_name or not merchandise_price or not initial_stock:
-                flash("Merchandise Name, Price, and Initial Stock are required.", 'error')
-                return render_template('add_merchandise.html', artists=artists, fanclubs=fanclubs, events=events)
-
-            is_event_set = bool(event_id and event_id.strip())
-            is_artist_set = bool(artist_id and artist_id.strip())
-            is_fanclub_set = bool(fanclub_id and fanclub_id.strip())
-
-            if not (is_event_set or is_artist_set or is_fanclub_set):
-                flash("Merchandise must be associated with at least one: an Event, an Artist, or a Fanclub.", 'error')
-                return render_template('add_merchandise.html', artists=artists, fanclubs=fanclubs, events=events)
-            
-            insert_merchandise_query = '''
-                INSERT INTO Merchandise (
-                    Merchandise_Name, Merchandise_Price, Initial_Stock, Quantity_Stock,
-                    Artist_ID, Fanclub_ID, Event_ID 
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-            '''
-            
-            params = (
-                merchandise_name, 
-                merchandise_price, 
-                initial_stock, 
-                initial_stock,  # Quantity_Stock initialized to Initial_Stock
-                artist_id if is_artist_set else None,
-                fanclub_id if is_fanclub_set else None,
-                event_id if is_event_set else None
-            )
-
-            execute_insert_query(insert_merchandise_query, params)
-            
-            flash(f"Merchandise '{merchandise_name}' successfully created!", 'success')
-            
-            return redirect(url_for('main_routes.manage_merchandise'))
-                
+            events = execute_select_query("SELECT Event_ID, Event_Name FROM Event ORDER BY Event_Name")
+            artists = execute_select_query("SELECT Artist_ID, Artist_Name FROM Artist ORDER BY Artist_Name")
+            fanclubs = execute_select_query("SELECT Fanclub_ID, Fanclub_Name FROM Fanclub ORDER BY Fanclub_Name")
         except Exception as e:
-            flash(f"An unexpected error occurred: {e}", 'error')
-            return render_template('add_merchandise.html', artists=artists, fanclubs=fanclubs, events=events)
+            print(f"Error fetching form data: {e}")
+            flash('Could not load form options due to a database error.', 'error')
+            events, artists, fanclubs = [], [], []
 
-    else:
-        return render_template(
-            'add_merchandise.html', 
+        return render_template('add_merchandise.html', 
+            events=events, 
             artists=artists, 
-            fanclubs=fanclubs, 
-            events=events
+            fanclubs=fanclubs
         )
+
+    elif request.method == 'POST':
+        merch_name = request.form.get('merchandise_name')
+        merch_desc = request.form.get('merchandise_description')
+        merch_price = request.form.get('merchandise_price')
+        initial_stock = request.form.get('initial_stock')
+        
+
+        artist_id = request.form.get('artist_id') if request.form.get('artist_id') else None
+        fanclub_id = request.form.get('fanclub_id') if request.form.get('fanclub_id') else None
+        
+        selected_event_ids = request.form.getlist('event_ids')
+        
+        print("\n--- DEBUG START ---")
+        print(f"Received Name: {merch_name}")
+        print(f"Received Events IDs: {selected_event_ids}")
+        print("-------------------")
+
+        if not all([merch_name, merch_price, initial_stock]):
+            flash('Please fill in all required fields.', 'error')
+            return redirect(url_for('main_routes.add_merchandise'))
+
+        if not (artist_id or fanclub_id or selected_event_ids):
+            flash('Merchandise must be associated with at least one Event, Artist, or Fanclub.', 'error')
+            return redirect(url_for('main_routes.add_merchandise'))
+        
+        new_merchandise_id = None
+        
+        try:
+            price = float(merch_price)
+            stock = int(initial_stock)
+            
+
+            merchandise_insert_query = """
+                INSERT INTO Merchandise (Merchandise_Name, Merchandise_Description, Merchandise_Price, Initial_Stock, Quantity_Stock, Artist_ID, Fanclub_ID)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            merchandise_params = (merch_name, merch_desc, price, stock, stock, artist_id, fanclub_id)
+            
+            new_merchandise_id = execute_select_one_query(merchandise_insert_query, merchandise_params)
+            
+            flash(f'Merchandise "{merch_name}" successfully created!', 'success')
+            return redirect(url_for('main_routes.manage_merchandise'))
+
+        except Exception as e:
+            flash(f'An internal error occurred during creation: {e}', 'error')
+            return redirect(url_for('main_routes.add_merchandise'))
         
 
 @main_routes.route('/manage_merchandise/<int:merchandise_id>/edit_merchandise', methods=['GET', 'POST'])
 def edit_merchandise(merchandise_id):
-    artist_query = '''
-        SELECT Artist_ID, Artist_Name 
-        FROM Artist 
-        ORDER BY Artist_Name
-    '''
+    artist_query = "SELECT Artist_ID, Artist_Name FROM Artist ORDER BY Artist_Name"
     artists = execute_select_query(artist_query)
     
-    events_query = '''
-        SELECT Event_ID, Event_Name 
-        FROM Event 
-        ORDER BY Event_Name
-    '''
+    events_query = "SELECT Event_ID, Event_Name FROM Event ORDER BY Event_Name"
     events = execute_select_query(events_query)
     
-    fanclub_query = '''
-        SELECT Fanclub_ID, Fanclub_Name 
-        FROM Fanclub 
-        ORDER BY Fanclub_Name
-    '''
+    fanclub_query = "SELECT Fanclub_ID, Fanclub_Name FROM Fanclub ORDER BY Fanclub_Name"
     fanclubs = execute_select_query(fanclub_query)
-    
-    
+
     merchandise_query = '''
     SELECT 
-        Merchandise_ID, Merchandise_Name, Merchandise_Price, 
-        Initial_Stock, Quantity_Stock, Artist_ID, Fanclub_ID, Event_ID 
+        Merchandise_ID, Merchandise_Name, Merchandise_Description, Merchandise_Price, 
+        Initial_Stock, Quantity_Stock, Artist_ID, Fanclub_ID
     FROM Merchandise 
     WHERE Merchandise_ID = %s
     '''
     merchandise_data = execute_select_query(merchandise_query, (merchandise_id,))
     
-
     if not merchandise_data:
         flash("Merchandise not found.", 'error')
         return redirect(url_for('main_routes.manage_merchandise'))
         
     merchandise = merchandise_data[0]
-    
+
+    associated_events_query = '''
+        SELECT Event_ID
+        FROM Merchandise_Event
+        WHERE Merchandise_ID = %s
+    '''
+
+    associated_event_ids = [row['Event_ID'] for row in execute_select_query(associated_events_query, (merchandise_id,))]
+
     
     if request.method == 'POST':
+        selected_event_ids_int = []
+        
         try:
             new_name = request.form.get('merchandise_name')
+            new_description = request.form.get('merchandise_description', '') 
+            
             new_price = float(request.form.get('merchandise_price'))
             new_initial_stock = int(request.form.get('initial_stock'))
             new_quantity_stock = int(request.form.get('quantity_stock'))
             
-            new_event_id = request.form.get('event_id')
+            selected_event_ids_str = request.form.getlist('event_ids')
+            selected_event_ids_int = [int(eid) for eid in selected_event_ids_str if eid.isdigit()]
+
             new_artist_id = request.form.get('artist_id')
             new_fanclub_id = request.form.get('fanclub_id')
+            
+            def render_error_state(msg, event_ids_to_check):
+                flash(msg, 'error')
+                merchandise.update({
+                    'Merchandise_Name': new_name, 'Merchandise_Description': new_description, 
+                    'Merchandise_Price': new_price, 'Initial_Stock': new_initial_stock, 
+                    'Quantity_Stock': new_quantity_stock, 'Artist_ID': new_artist_id, 
+                    'Fanclub_ID': new_fanclub_id,
+                })
+                return render_template(
+                    'edit_merchandise.html', 
+                    merchandise=merchandise, 
+                    artists=artists, 
+                    events=events, 
+                    fanclubs=fanclubs, 
+                    associated_event_ids=event_ids_to_check 
+                )
 
-
-            if not new_name or new_price is None or new_initial_stock is None or new_quantity_stock is None:
-                flash("All basic fields (Name, Price, and Stock Quantities) are required.", 'error')
-                return render_template('edit_merchandise.html', merchandise=merchandise, artists=artists, events=events, fanclubs=fanclubs)
-
-            if new_quantity_stock > new_initial_stock:
-                flash("Quantity in Stock cannot be greater than Initial Stock Quantity.", 'error')
-                return render_template('edit_merchandise.html', merchandise=merchandise, artists=artists, events=events, fanclubs=fanclubs)
+            # --- Validation Checks ---
+            if not all([new_name, new_price is not None, new_initial_stock is not None, new_quantity_stock is not None]):
+                return render_error_state("All basic fields (Name, Price, and Stock Quantities) are required.", selected_event_ids_int)
                 
-            is_event_set = bool(new_event_id and new_event_id.strip())
+            if new_quantity_stock > new_initial_stock:
+                return render_error_state("Quantity in Stock cannot be greater than Initial Stock Quantity.", selected_event_ids_int)
+                
             is_artist_set = bool(new_artist_id and new_artist_id.strip())
             is_fanclub_set = bool(new_fanclub_id and new_fanclub_id.strip())
+            is_event_set = bool(selected_event_ids_int)
 
             if not (is_event_set or is_artist_set or is_fanclub_set):
-                flash("Merchandise must be associated with at least one: an Event, an Artist, or a Fanclub.", 'error')
-                return render_template('edit_merchandise.html', merchandise=merchandise, artists=artists, events=events, fanclubs=fanclubs)
+                return render_error_state("Merchandise must be associated with at least one: an Event, an Artist, or a Fanclub.", selected_event_ids_int)
 
+            # Check for name uniqueness
             if new_name != merchandise['Merchandise_Name']:
-                check_name_query = '''
-                SELECT Merchandise_ID FROM Merchandise WHERE Merchandise_Name = %s AND Merchandise_ID != %s
-                '''
+                check_name_query = "SELECT Merchandise_ID FROM Merchandise WHERE Merchandise_Name = %s AND Merchandise_ID != %s"
                 existing_merch = execute_select_query(check_name_query, (new_name, merchandise_id))
 
                 if existing_merch:
-                    flash(f"A merchandise item named '{new_name}' already exists. Please choose a unique name.", 'error')
-                    return render_template('edit_merchandise.html', merchandise=merchandise, artists=artists, events=events, fanclubs=fanclubs)
+                    return render_error_state(f"A merchandise item named '{new_name}' already exists. Please choose a unique name.", selected_event_ids_int)
 
 
+            artist_id_param = new_artist_id if is_artist_set else None
+            fanclub_id_param = new_fanclub_id if is_fanclub_set else None
+            
             update_merchandise_query = '''
             UPDATE Merchandise
             SET 
-                Merchandise_Name = %s, 
-                Merchandise_Price = %s,
-                Initial_Stock = %s,
-                Quantity_Stock = %s,
-                Artist_ID = %s, 
-                Fanclub_ID = %s,
-                Event_ID = %s
-            WHERE Merchandise_ID = %s
+                Merchandise_Name = %s, Merchandise_Description = %s, Merchandise_Price = %s,
+                Initial_Stock = %s, Quantity_Stock = %s, Artist_ID = %s, Fanclub_ID = %s
+                WHERE Merchandise_ID = %s
             '''
             
             params = (
-                new_name, 
-                new_price,
-                new_initial_stock,
-                new_quantity_stock,
-                new_artist_id if is_artist_set else None,
-                new_fanclub_id if is_fanclub_set else None,
-                new_event_id if is_event_set else None,
-                merchandise_id # The ID for the WHERE clause
+                new_name, new_description, new_price,
+                new_initial_stock, new_quantity_stock,
+                artist_id_param, fanclub_id_param,
+                merchandise_id 
             )
 
             execute_insert_query(update_merchandise_query, params)
 
+
+            delete_junction_query = "DELETE FROM Merchandise_Event WHERE Merchandise_ID = %s"
+            execute_insert_query(delete_junction_query, (merchandise_id,)) 
+
+
+            if selected_event_ids_int:
+                insert_junction_query = "INSERT INTO Merchandise_Event (Merchandise_ID, Event_ID) VALUES (%s, %s)"
+                
+                for event_id in selected_event_ids_int:
+                    junction_params = (merchandise_id, event_id)
+                    execute_select_one_query(insert_junction_query, junction_params)
+            
+            
             flash(f"Merchandise '{new_name}' updated successfully!", 'success')
             return redirect(url_for('main_routes.manage_merchandise'))
         
         except ValueError:
-            flash("Invalid input for Price or Stock quantities. Please enter valid numbers.", 'error')
-            return render_template('edit_merchandise.html', merchandise=merchandise, artists=artists, events=events, fanclubs=fanclubs)
+        
+            return render_error_state("Invalid input for Price or Stock quantities. Please enter valid numbers.", selected_event_ids_int)
             
         except Exception as e:
-            flash(f"An unexpected error occurred while updating the merchandise: {e}", 'error')
-            return render_template('edit_merchandise.html', merchandise=merchandise, artists=artists, events=events, fanclubs=fanclubs)
+            return render_error_state(f"An unexpected error occurred while updating the merchandise: {e}", associated_event_ids) # Use original IDs here
+
 
     return render_template(
         'edit_merchandise.html', 
         merchandise=merchandise, 
         artists=artists, 
         events=events, 
-        fanclubs=fanclubs
+        fanclubs=fanclubs,
+        associated_event_ids=associated_event_ids 
     )
-
 
 @main_routes.route('/manage_merchandise/<int:merchandise_id>/delete_merchandise', methods=['POST'])
 def delete_merchandise(merchandise_id):

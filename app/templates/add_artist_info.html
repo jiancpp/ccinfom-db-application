@@ -3,43 +3,43 @@
 
 {% block content %}
     <style>
-        /* CSS is kept brief here for clarity; assume existing styles are in place */
         .header-title {
             color: #667eea; 
             font-size: 2.5rem; 
             margin-bottom: 5px;
         }
 
-        /* Card for the Member section */
         .member-card {
             background-color: #f9f9ff;
             border: 1px solid #e9e9ff;
         }
 
-        /* Style for the individual member input rows */
         .member-row {
             display: flex;
             gap: 10px;
             padding: 10px 0;
-            border-bottom: 1px dashed #eee;
-            align-items: flex-end; /* Align inputs and button */
+            border-bottom: 2px solid #99a8ea;
+            align-items: flex-end; 
         }
         
         .member-row:last-of-type {
             border-bottom: none;
         }
 
-        /* NEW: Grid container for the 6 member inputs */
         .member-input-group {
             flex-grow: 1;
             display: grid;
-            /* Create 3 columns. Repeat 1fr twice to force 2 rows */
             grid-template-columns: repeat(3, 1fr); 
             gap: 10px; 
         }
+
+        .member-input-group .full-span-row {
+            grid-column: 1 / span 3; 
+            display: flex;    
+            gap: 15px;
+        }
         
-        /* Ensures the label is above the input */
-        .member-input-group > div {
+        .member-input-group > div:not(.full-span-row) {
             display: flex;
             flex-direction: column;
             width: 100%;
@@ -52,20 +52,19 @@
             display: block;
         }
         
-        /* Delete button styling */
         .btn-delete {
-            background-color: #ff4d4d;
+            background-color: rgb(201, 88, 88);
             color: white;
             border: none;
             padding: 8px 10px;
             cursor: pointer;
             border-radius: 4px;
-            height: 38px; /* Match input height */
+            height: 38px; 
             flex-shrink: 0;
         }
         
         .btn-add-member {
-            background-color: #28a745;
+            background-color: #667eea;
             color: white;
             border: none;
             padding: 10px 15px;
@@ -73,6 +72,39 @@
             border-radius: 6px;
             width: 100%;
             margin-top: 15px;
+        }
+
+
+        .btn-sm {
+            border: 1px solid #ccc;
+            padding: 4px 8px; 
+            font-size: 0.8rem;
+            line-height: 1.5;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s;
+            height: 30px; 
+        }
+
+        .btn-add-ref {
+            background-color: white;
+            color: #667eea;
+            border-color: #667eea;
+            align-self: flex-end;
+            height: 90px; 
+            padding: 0;
+            width: 30px;
+        }
+
+        .btn-add-ref i.fa {
+            font-size: 1rem;
+            line-height: 80px;
+            display: block;
+        }
+
+        .btn-add-ref:hover {
+            background-color: #667eea;
         }
 
     </style>
@@ -193,9 +225,9 @@
     }
 
 function getMemberRowHTML(index) {
-    // Generate options dynamically from JS variables (which Jinja populates)
     const roleOptions = generateOptionsHTML(availableRoles);
     const nationalityOptions = generateOptionsHTML(availableNationalities);
+    const selectSize = '4'; 
 
     return `
         <div class="member-row" id="member-row-${index}">
@@ -207,12 +239,12 @@ function getMemberRowHTML(index) {
                 </div>
                 
                 <div>
-                    <label for="member_birth_date_${index}">Birth Date</label>
-                    <input type="date" id="member_birth_date_${index}" name="members[${index}][birth_date]">
+                    <label for="member_birth_date_${index}">Birth Date *</label>
+                    <input type="date" id="member_birth_date_${index}" name="members[${index}][birth_date]" required>
                 </div>
 
                 <div>
-                    <label for="member_status_${index}">Status</label>
+                    <label for="member_status_${index}">Activity Status *</label>
                     <select id="member_status_${index}" name="members[${index}][activity_status]">
                         <option value="Active">Active</option>
                         <option value="Hiatus">Hiatus</option>
@@ -221,38 +253,32 @@ function getMemberRowHTML(index) {
                 </div>
 
 
-                <div style="grid-column: span 2;"> 
-                    <label for="member_role_${index}">Role(s)</label>
-                    <div style="display: flex; gap: 5px; align-items: flex-start;">
-                        <select id="member_role_${index}" name="members[${index}][role]" multiple style="height: 38px; flex-grow: 1;">
-                            ${roleOptions}
-                        </select>
-                        <button type="button" class="btn-sm btn-add-ref" 
-                                onclick="addNewValue('Role', ${index})"
-                                title="Add a new Role">
-                            <i class="fa fa-plus"></i>
-                        </button>
+                <div class="full-span-row"> 
+                    
+                    <div style="flex-grow: 1;"> 
+                        <label for="member_role_${index}">Role(s) *</label>
+                        <div style="display: flex; gap: 5px; align-items: flex-start;">
+                            <select id="member_role_${index}" name="members[${index}][role]" multiple size="${selectSize}" style="flex-grow: 1;">
+                                ${roleOptions}
+                            </select>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #888; margin-top: 2px;">
+                            Hold CTRL/CMD to select multiple.
+                        </p>
                     </div>
-                    <p style="font-size: 0.75rem; color: #888; margin-top: 2px;">
-                        Hold CTRL/CMD to select multiple.
-                    </p>
-                </div>
 
-                <div>
-                    <label for="member_nationality_${index}">Nationality</label>
-                    <div style="display: flex; gap: 5px; align-items: flex-start;">
-                        <select id="member_nationality_${index}" name="members[${index}][nationality]" multiple style="height: 38px; flex-grow: 1;">
-                            ${nationalityOptions}
-                        </select>
-                        <button type="button" class="btn-sm btn-add-ref" 
-                                onclick="addNewValue('Nationality', ${index})"
-                                title="Add a new Nationality">
-                            <i class="fa fa-plus"></i>
-                        </button>
+                    <div style="flex-grow: 1;">
+                        <label for="member_nationality_${index}">Nationality *</label>
+                        <div style="display: flex; gap: 5px; align-items: flex-start;">
+                            <select id="member_nationality_${index}" name="members[${index}][nationality]" multiple size="${selectSize}" style="flex-grow: 1;">
+                                ${nationalityOptions}
+                            </select>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #888; margin-top: 2px;">
+                            Hold CTRL/CMD to select multiple.
+                        </p>
                     </div>
-                    <p style="font-size: 0.75rem; color: #888; margin-top: 2px;">
-                        Hold CTRL/CMD to select multiple.
-                    </p>
+
                 </div>
 
             </div>
@@ -263,20 +289,6 @@ function getMemberRowHTML(index) {
         </div>
     `;
 }
-
-    /**
-     * Dummy function to simulate adding a new role/nationality.
-     * In a real application, this would open a modal, submit via AJAX, 
-     * and update the database/dropdown.
-     */
-    function addNewValue(type, index) {
-        const newValue = prompt(`Enter the new ${type} to add:`);
-        if (newValue && newValue.trim() !== "") {
-            alert(`New ${type} "${newValue.trim()}" would be processed and added to the database.`);
-            // You would then typically refresh the options in the select field
-            // or automatically select the new value if successfully added.
-        }
-    }
 
     /**
      * Adds a new member row to the container.
