@@ -101,16 +101,14 @@ def execute_select_one_query(sql, params=()):
         
         cursor.execute(sql, params)
         
-        cursor.execute("SELECT LAST_INSERT_ID()")
-        
-        new_id = cursor.fetchone()[0] 
+        new_id = cursor.lastrowid
         
         conn.commit()
         
         if new_id and new_id > 0:
             return int(new_id)
         else:
-            return None
+            return None 
         
     except Exception as e:
         print(f"Database Error in execute_insert_query: {e}")
