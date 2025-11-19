@@ -91,7 +91,7 @@ CREATE TABLE `Event` (
 
     PRIMARY KEY (`Event_ID`),
 	CONSTRAINT is_valid_date CHECK(`Start_Date` <= `End_Date`),
-    CONSTRAINT uk_venue_date UNIQUE(`Venue_ID`, `Start_Date`)
+    CONSTRAINT uk_event_name UNIQUE(`Event_Name`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

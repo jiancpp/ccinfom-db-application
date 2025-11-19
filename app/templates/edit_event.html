@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %} Create New Event - KSync {% endblock %}
+
+{% block content %}
+    <style>
+        .event-type-container {
+            display: grid;
+             /* This line creates columns that are at least 250px wide and fill the container. */
+            grid-template-columns: repeat(3, 1fr);
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .option-card {
+            display: flex;
+            align-items: center;
+            padding: 7px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background-color: #ebeef2;
+            text-align: left;
+        }
+
+        .option-card label {
+            font-size: 13px;
+            margin: auto;
+        }
+
+        .option-card .type-option {
+            height: 15px;
+            width: 15px;
+            border-radius: 5px;
+            position: relative;
+            display: inline-block; 
+            margin: 0 0 0 5px; /* Remove any unexpected margin that might push it */
+        }
+
+        input[type="radio"] {
+            width: auto;
+        }
+
+        .category-card {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 7px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background-color: #ebeef2;
+            text-align: left;
+        }
+
+        .selected {
+            background-color: #b19ecc;
+        }
+
+        .selected label{
+            color: white;
+        }
+
+        .category-card label {
+            margin: auto 0 auto 1rem;
+        }
+
+        .category-checkbox{
+            width: auto;
+        }
+
+        /* Styling for the entire option card when the 'is-disabled' class is present */
+        .option-card.is-disabled {
+            /* opacity: 0.6;
+            color: #999999;
+            cursor: not-allowed;
+            user-select: none; */
+            display: none;
+        }
+
+        .btn-add-tier {
+            background-color: #737077;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            width: 100%;
+            margin-top: 15px;
+        }
+    </style>
+    <button class="btn btn-outline" onclick="window.location.href='{{ url_for('main_routes.manage_events') }}'"><i class="fa fa-arrow-left"></i> Back</button>
+
+    <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
+        <h1 style="color: #667eea; font-size: 2.5rem; margin-bottom: 5px;">
+            Create new Artist or Fanclub Event
+        </h1>
+        <p style="color: #555;">
+            All fields marked with * are required.
+        </p>
+    </header>
+
+    <form id="create-event-form" method="POST" action="{{ url_for('main_routes.add_event') }}">
+        
+        <div id="page-one" class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+            
+            <div class="card">
+                <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                    Event Details
+                </h3>
+
+                <div class="form-group">
+                    <label for="event_name">Event Name *</label>
+                    <input 
+                        type="text" 
+                        id="event_name" 
+                        name="event_name" 
+                        required placeholder="e.g., KSync Comeback Party"
+                        value="{{ event_data.Event_Name }}">
+                </div>
+
+                <label for="event-category">Event Category *</label> 
+
+                {% set current_category = 'artist-event' if event_data.Artist_ID is not none else ('fanclub-event' if event_data.Fanclub_ID is not none else '') %}
+
+                <div class="form-group" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;">
+                    <div class="category-card {% if current_category == 'artist-event' %}selected{% endif %}">
+                        <label for="artist-event">Artist Event</label> 
+                    </div>
+                    <div class="category-card {% if current_category == 'fanclub-event' %}selected{% endif %}">
+                        <label for="fanclub-event">Fanclub Event</label> 
+                    </div>
+                </div>
+                
+                <label>Event Type/s *</label>
+                {% set event_type_ids = event_data.Event_Types|map(attribute='Type_ID')|list %}
+                <div class="event-type-container"> 
+                    {% for type in event_types %}
+                        {% if not (current_category == 'fanclub-event' and type.Artist_Event_Only) %}
+                            <div class="option-card"> 
+                                <input class="type-option"
+                                    type="checkbox" 
+                                    name="event-type" 
+                                    id="type-{{type.Type_ID}}"
+                                    value="{{type.Type_ID}}"
+                                    data-is-artist-only="{{ type.Artist_Event_Only }}"
+                                    {% if type.Type_ID in event_type_ids %}checked{% endif %}>
+                                <label for="type-{{type.Type_ID}}" style="display: inline-block; margin-left: 10px;" required>{{type.Type_Name}}</label>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+            </div>
+
+            <div class="card">
+                <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                    Location & Time
+                </h3>
+
+                <div class="form-group">
+                    <label for="venue_id">Venue *</label>
+                    <select id="venue_id" name="venue_id" required>
+                        <option value="">-- Select Venue --</option>
+                        {% for venue in venues %}
+                            <option value="{{ venue.Venue_ID }}"
+                                {% if venue.Venue_ID == event_data.Venue_ID %}selected{% endif %}>
+                                {{ venue.Venue_Name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label for="start_date">Start Date *</label>
+                        <input type="date" id="start_date" name="start_date" required
+                            value="{{ event_data.Start_Date }}">
+                    </div>
+                    <div>
+                        <label for="start_time">Start Time *</label>
+                        <input type="time" id="start_time" name="start_time" required
+                            value="{{ event_data.Start_Time }}">
+                    </div>
+                </div>
+
+                <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label for="end_date">End Date (Optional)</label>
+                        <input type="date" id="end_date" name="end_date"
+                            value="{{ event_data.End_Date and (event_data.End_Date) or '' }}">
+                    </div>
+                    <div>
+                        <label for="end_time">End Time *</label>
+                        <input type="time" id="end_time" name="end_time"
+                            value="{{ event_data.End_Time }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group" style="display: flex; margin-top: 30px; justify-content: center;">
+            <button id="btn-submit" type="submit" class="btn" style="background-color: #764ba2; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
+                <i class="fa fa-save"></i> Save Event Changes
+            </button>
+        </div>
+    </form>
+
+{% endblock %}

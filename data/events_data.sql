@@ -978,3 +978,7 @@ VALUES
     (297,14,3,11,68949,'2025-11-17 00:13:06');
 
 select	* from ticket_purchase;
+select	* from event;
+select	* from ticket_tier;
+select	* from fanclub_event;
+select	* from artist_event;

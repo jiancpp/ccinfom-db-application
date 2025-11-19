@@ -76,6 +76,7 @@
             margin-top: 15px;
         }
     </style>
+    <button class="btn btn-outline" onclick="window.location.href='{{ url_for('main_routes.manage_events') }}'"><i class="fa fa-arrow-left"></i> Back</button>
 
     <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
         <h1 style="color: #667eea; font-size: 2.5rem; margin-bottom: 5px;">
@@ -176,7 +177,7 @@
         </div>
 
 
-        <div id="page-two" class="grid" style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+        <div id="page-two" class="grid" style="display: none; grid-template-columns: 1fr; gap: 20px;">
             <div class="card">
                 <h3 id="organizer-header" style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
                 </h3>
@@ -249,13 +250,10 @@
     const fanclubNames = document.getElementById('fanclub-name')
     const organizerHeader = document.getElementById('organizer-header')
 
-    // --- NEW GLOBAL VARIABLES ---
     let venueSections = {};
     let tierCounter = 0;
     let isFetchingSections = false; // Add a flag to prevent duplicate fetches
-    // --- END NEW GLOBAL VARIABLES ---
 
-    // --- EXISTING HELPER FUNCTIONS (No major changes needed) ---
 
     function isPageOneValid() {
         const eventName = document.getElementById('event_name');
@@ -372,12 +370,8 @@
 
         const tierCard = selectElement.closest('.tier-card');
         const quantityInput = tierCard.querySelector('input[name="tier_quantity[]"]');
-        if (quantityInput) {
-            quantityInput.setAttribute('max', totalCapacity);
-        }
     }
 
-    // --- UPDATED renderVenueSections (Responsible for populating existing and adding initial tier) ---
     function renderVenueSections(sections) {
         console.log("RAW SECTIONS FROM API:", sections, "TYPE:", typeof sections, "ARRAY?", Array.isArray(sections));
 
@@ -431,7 +425,6 @@
         });
     }
 
-    // --- UPDATED fetchVenueSections (Handles fetch state) ---
     function fetchVenueSections(venueId) {
         if (!venueId) {
             venueSections = {};
@@ -464,7 +457,6 @@
             });
     }
 
-    // --- Venue Change Listener (Triggers the fetch) ---
     venueSelect.addEventListener('change', function() {
         const selectedVenueId = this.value;
         fetchVenueSections(selectedVenueId);
@@ -474,7 +466,6 @@
         updateTierCapacity(this);
     };
 
-    // --- UPDATED addTicketTier (Ensures data is used if available) ---
     function addTicketTier() {
         tierCounter++;
         const container = document.getElementById('tiers-container');
@@ -554,7 +545,7 @@
         newSelect.addEventListener('change', updateTierCapacityWrapper);
         updateTierCapacity(newSelect);
     }
-    // --- END UPDATED addTicketTier FUNCTION ---
+
 
 
     // --- UPDATED btnNext Listener (Primary Fix) ---
