@@ -927,14 +927,20 @@ def manage_artists():
 
 @main_routes.route('/manage_events')
 def manage_events():
-    query = '''
+    event_query = '''
     SELECT e.*, v.Venue_Name
     FROM Event e
     JOIN Venue v ON e.Venue_ID = v.Venue_ID
     ORDER BY e.Event_ID 
     '''
     
-    events = execute_select_query(query)
+    events = execute_select_query(event_query)
+
+    if artists:
+        print("artist")
+
+    if fanclubs:
+        print("fanclub")
 
     return render_template(
         'manage_events.html',
@@ -947,17 +953,50 @@ def add_event():
         print("Hello")
 
     type_query = '''
-    SELECT et.Type_ID, et.Type_Name
+    SELECT et.Type_ID, et.Type_Name, et.Artist_Event_Only
     FROM REF_Event_Type et
+    '''
+    artist_query = '''
+    SELECT Artist_ID, Artist_Name
+    FROM Artist
+    ORDER BY Artist_Name 
+    '''
+    fanclub_query = '''
+    SELECT Fanclub_ID, Fanclub_Name
+    FROM Fanclub
+    ORDER BY Fanclub_Name 
+    '''
+    venue_query = '''
+    SELECT Venue_ID, Venue_Name
+    FROM Venue
+    ORDER BY Venue_Name 
     '''
     
     event_types = execute_select_query(type_query)
-
+    artists = execute_select_query(artist_query)
+    fanclubs = execute_select_query(fanclub_query)
+    venues = execute_select_query(venue_query)
 
     return render_template(
         'add_event.html',
-        event_types=event_types
+        event_types=event_types,
+        artists=artists,
+        fanclubs=fanclubs,
+        venues=venues
     )
+
+@main_routes.route('/api/venue/<int:venue_id>/sections', methods=['GET'])
+def get_venue_sections(venue_id):  
+    sections_query = '''
+        SELECT Section_ID, Section_Name, Max_Capacity
+        FROM Section
+        WHERE Venue_ID = %s
+        ORDER BY Section_Name
+    '''
+    
+    sections_data = execute_select_query(sections_query, (venue_id,))
+    
+    return jsonify({'sections': sections_data})
 
 @main_routes.route('/manage_merchandise')
 def manage_merchandise():

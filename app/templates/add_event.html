@@ -4,32 +4,68 @@
 {% block content %}
     <style>
         .event-type-container {
-            display: flex;
+            display: grid;
+             /* This line creates columns that are at least 250px wide and fill the container. */
+            grid-template-columns: repeat(3, 1fr);
             align-items: flex-start;
-            flex-wrap: wrap;
             gap: 5px;
         }
 
-        .event-type {
+        .option-card {
             display: flex;
             align-items: center;
-            width: 50%;
-            padding: 15px;
+            padding: 7px;
             margin: 5px 0;
             border-radius: 5px;
             background-color: #ebeef2;
             text-align: left;
         }
 
-        .event-type * {
-            font-size: 15px;
+        .option-card label {
+            font-size: 13px;
+            margin: auto;
         }
 
-        .event-type .type-option {
-            height: 20px;
-            width: 20px;
+        .option-card .type-option {
+            height: 15px;
+            width: 15px;
+            border-radius: 5px;
             position: relative;
+            display: inline-block; 
+            margin: 0 0 0 5px; /* Remove any unexpected margin that might push it */
         }
+
+        input[type="radio"] {
+            width: auto;
+        }
+
+        .category-card {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 7px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background-color: #ebeef2;
+            text-align: left;
+        }
+
+        .category-card label {
+            margin: auto 0 auto 1rem;
+        }
+
+
+
+        /* Styling for the entire option card when the 'is-disabled' class is present */
+        .option-card.is-disabled {
+            /* opacity: 0.6;
+            color: #999999;
+            cursor: not-allowed;
+            user-select: none; */
+            display: none;
+        }
+
+
     </style>
 
     <header style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 25px;">
@@ -41,9 +77,9 @@
         </p>
     </header>
 
-    <form method="POST" action="{{ url_for('main_routes.add_event') }}">
+    <form id="create-event-form" method="POST" action="{{ url_for('main_routes.add_event') }}">
         
-        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div id="page-one" class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
             
             <div class="card">
                 <h3 style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
@@ -54,32 +90,31 @@
                     <label for="event_name">Event Name *</label>
                     <input type="text" id="event_name" name="event_name" required placeholder="e.g., KSync Comeback Party">
                 </div>
-
-                <div class="form-group" style="display: flex; gap: 5px;" >
-                    <div style="width: 50%;">
-                        <label>Artist</label>
-                        <p style="padding: 10px; background: #f0f5f0; border-radius: 6px; font-weight: 600; color: #764ba2;">
-                        </p>
-                        <input type="hidden" name="artist_id" value="">
+                
+                <label for="event-category">Event Category *</label>    
+                <div class="form-group" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;" >
+                    <div class="category-card">
+                        <input type="radio" name="event-category" id="artist-event" value="artist-event" required>
+                        <label for="artist-event">Artist Event</label>    
                     </div>
-                    <div style="width: 50%;">
-                        <label>Fanclub</label>
-                        <p style="padding: 10px; background: #f0f5f0; border-radius: 6px; font-weight: 600; color: #764ba2;">
-                        </p>
-                        <input type="hidden" name="artist_id" value="">
-                    </div>                   
+                    <div class="category-card">
+                        <input type="radio" name="event-category" id="fanclub-event" value="fanclub-event">
+                        <label for="fanclub-event">Fanclub Event</label>    
+                    </div>
                 </div>
 
-                <label>Event Type/s</label>
-                <div class="form-group event-type-container">
+                <label>Event Type/s *</label>
+                <div class="event-type-container"> 
                     {% for type in event_types %}
-                        <div class="event-type">
+                    {% set allowed_categories = type.Category_Constraint or 'artist-event,fanclub-event' %}
+                        <div class="option-card"> 
                             <input class="type-option"
                                 type="checkbox" 
                                 name="event-type" 
                                 id="type-{{type.Type_ID}}"
-                                value="{{type.Type_ID}}">
-                            <span style="display: inline-block; margin-left: 10px;">{{type.Type_Name}}</span>
+                                value="{{type.Type_ID}}"
+                                data-is-artist-only="{{ type.Artist_Event_Only }}">
+                            <label for="type-{{type.Type_ID}}" style="display: inline-block; margin-left: 10px;" required>{{type.Type_Name}}</label>
                         </div>
                     {% endfor %}
                 </div>
@@ -95,9 +130,9 @@
                     <label for="venue_id">Venue *</label>
                     <select id="venue_id" name="venue_id" required>
                         <option value="">-- Select Venue --</option>
-                        <!-- {% for venue in venues %}
+                        {% for venue in venues %}
                             <option value="{{ venue.Venue_ID }}">{{ venue.Venue_Name }}</option>
-                        {% endfor %} -->
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -125,11 +160,256 @@
             </div>
         </div>
         
-        <div class="form-group" style="margin-top: 30px; text-align: center;">
-            <button type="submit" class="btn" style="background-color: #764ba2; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
-                <i class="fa fa-calendar-check-o"></i> Submit Event
+        <div class="form-group" style="margin-top: 30px;">
+            <button id="btn-next" class="btn" style="background-color: #764ba2ca; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
+                Next Step <i class="fa fa-arrow-right"></i> 
+            </button>
+        </div>
+
+
+        <div id="page-two" class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="card">
+                <h3 id="organizer-header" style="color: #4a4a4a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                </h3>
+
+                <div class="form-group">
+                    <div id="artist-name" style="display: none;">
+                        <label>Artist</label>
+                        <select name="artist" id="artist-select">
+                            <option value="">--Choose artist--</option>
+                            {% for artist in artists %}
+                            <option value="{{artist.Artist_ID}}">{{artist.Artist_Name}}</option>
+                            {% endfor %}
+                        </select>                    
+                    </div>
+                    <div id="fanclub-name">
+                        <label>Fanclub</label>
+                        <select name="fanclub" id="fanclub-select">
+                            <option value="">--Choose fanclub--</option>
+                            {% for fanclub in fanclubs %}
+                                <option value="{{fanclub.Fanclub_ID}}">{{fanclub.Fanclub_Name}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>     
+                </div>
+            </div>
+           <div class="card">
+                <div class="form-group venue-sections-container"></div>
+           </div>     
+        </div>
+        <div class="form-group" style="display: flex; margin-top: 30px;">
+            <button id="btn-prev" class="btn" style="display:none; background-color: #764ba2ca; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
+                <i class="fa fa-arrow-left"></i> Previous Step 
+            </button>
+            <button id="btn-submit" type="submit" class="btn" style="display:none; background-color: #764ba2; width: 50%; max-width: 300px; padding: 12px; font-size: 1.1rem;">
+                <i class="fa fa-calendar-check"></i> Finish Event Details
             </button>
         </div>
 
     </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const form = document.getElementById('create-event-form'); // FIX: Select by unique ID
+    const pageOne = document.getElementById('page-one')
+    const pageTwo = document.getElementById('page-two')
+    const btnNext = document.getElementById('btn-next')
+    const btnPrev = document.getElementById('btn-prev')
+    const btnSubmit = document.getElementById('btn-submit')
+
+    // Page One
+    const artistSelect = document.getElementById('artist-select')
+    const fanclubSelect = document.getElementById('fanclub-select')
+    const artistEventRadio = document.getElementById('artist-event')
+    const fanclubEventRadio = document.getElementById('fanclub-event')
+    const categoryRadios = document.querySelectorAll('input[name="event-category"]');
+
+    // Page Two
+    const artistNames = document.getElementById('artist-name')
+    const fanclubNames = document.getElementById('fanclub-name')
+    const organizerHeader = document.getElementById('organizer-header')    
+
+    function isPageOneValid() {
+        const tempSubmit = document.createElement('button');
+        tempSubmit.type = 'submit';
+        tempSubmit.style.display = 'none';
+        form.appendChild(tempSubmit);
+        
+        const isValid = form.checkValidity();
+        
+        form.removeChild(tempSubmit);
+        return isValid;
+    }
+
+    artistSelect.addEventListener("change", function(){
+        if (artistSelect.value != "") {
+            fanclubSelect.setAttribute("disabled", "disabled")
+        } 
+        else {
+            fanclubSelect.removeAttribute("disabled")
+        }
+    })
+
+    fanclubSelect.addEventListener("change", function(){
+        if (fanclubSelect.value != "") {
+            artistSelect.setAttribute("disabled", "disabled")
+
+        } 
+        else {
+            artistSelect.removeAttribute("disabled")
+        }
+    })
+
+    function updateEventTypeVisibility(selectedCategoryValue) {
+        const allTypeCheckboxes = document.querySelectorAll('.type-option');
+        allTypeCheckboxes.forEach(checkbox => {
+            const parentCard = checkbox.closest('.option-card');
+            
+            const isArtistOnly = checkbox.getAttribute('data-is-artist-only') === '1';
+            const shouldBeDisabled = isArtistOnly && (selectedCategoryValue === 'fanclub-event');
+
+            if (shouldBeDisabled) {
+                // DISABLE the event type
+                checkbox.setAttribute("disabled", "disabled");
+                checkbox.checked = false; // Uncheck if it was previously checked
+                parentCard.classList.add('is-disabled'); 
+            } else {
+                // ENABLE the event type (It's an Artist Event, or it's a general type)
+                checkbox.removeAttribute("disabled");
+                parentCard.classList.remove('is-disabled'); 
+            }
+        });
+    }
+
+    categoryRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const selectedCategoryValue = this.value;
+
+            if (this.checked) {
+                updateEventTypeVisibility(this.value);
+            }
+
+            if (selectedCategoryValue === 'artist-event') {
+                artistNames.style.display = 'block'; // Show Artist select container
+                fanclubNames.style.display = 'none'
+                fanclubSelect.value = ""; // Clear fanclub selection
+                organizerHeader.textContent = "Performing Artists"
+            } else if (selectedCategoryValue === 'fanclub-event') {
+                fanclubNames.style.display = 'block'
+                artistNames.style.display = 'none'; // Hide Artist select container
+                artistSelect.value = ""; // Clear artist selection
+                organizerHeader.textContent = "Event Organizers"
+            }
+        });
+    });
+
+    const initialCheckedRadio = document.querySelector('input[name="event-category"]:checked');
+    if (initialCheckedRadio) {
+        updateEventTypeVisibility(initialCheckedRadio.value);
+    }
+
+    /* PAGE TWO */
+
+    // Function to fetch sections from the server
+    function fetchVenueSections(venueId) {
+        // If the user selects the default "-- Select Venue --" option
+        if (!venueId) {
+            document.getElementById('venue-sections-container').innerHTML = '';
+            return;
+        }
+
+        // Use the JavaScript Fetch API to call your Python backend
+        // The URL structure assumes you'll create a route like '/api/venue/123/sections'
+        fetch(`/api/venue/${venueId}/sections`)
+            .then(response => {
+                if (!response.ok) {
+                    // Throw an error if the server response is not successful
+                    throw new Error('Failed to fetch sections: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Success! The 'data' variable contains the JSON response from Python
+                renderVenueSections(data.sections);
+            })
+            .catch(error => {
+                console.error('Error fetching venue sections:', error);
+                // Optionally display an error message to the user
+                document.getElementById('venue-sections-container').innerHTML = 
+                    '<p style="color: red;">Could not load sections for this venue.</p>';
+            });
+    }
+
+    const venueSelect = document.getElementById('venue_id');
+    venueSelect.addEventListener('change', function() {
+        const selectedVenueId = this.value;
+        fetchVenueSections(selectedVenueId);
+    });
+
+    function renderVenueSections(sections) {
+        const container = document.getElementById('venue-sections-container');
+        let html = '';
+
+        if (sections.length === 0) {
+            html = '<p>No sections available for this venue.</p>';
+        } else {
+            html += '<label>Select Event Sections *</label>';
+            html += '<div class="event-section-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;">';
+            
+            sections.forEach(section => {
+                // Assuming your JSON returns Section_ID and Section_Name
+                html += `
+                    <div class="option-card">
+                        <input type="checkbox" 
+                            name="event-section" 
+                            value="${section.Section_ID}" 
+                            id="section-${section.Section_ID}"
+                            class="section-option">
+                        <label for="section-${section.Section_ID}" style="margin-left: 10px;">
+                            ${section.Section_Name} (Capacity: ${section.Capacity})
+                        </label>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+        }
+
+        container.innerHTML = html;
+    }
+
+    // General Form Buttons
+
+    btnNext.addEventListener("click", function(event){
+        event.preventDefault()
+        const eventTypeCount = document.querySelectorAll('.type-option').length
+
+        if (isPageOneValid() && eventTypeCount > 0) {
+            // Hide Page One elements
+            pageOne.style.display = "none";
+            btnNext.style.display = "none";
+            
+            // Show Page Two elements
+            pageTwo.style.display = "grid";
+            btnPrev.style.display = "block";
+            btnSubmit.style.display = "block";
+        } else {
+            // If invalid, trigger the native browser validation messages
+            alert('Please fill out all required fields on this page before proceeding.');
+            isPageOneValid(); // Reruns validation to show error messages
+        }
+    })
+
+    btnPrev.addEventListener("click", function(event){
+        event.preventDefault()
+
+        pageTwo.style.display = "none"
+        btnPrev.style.display = "none"
+        btnSubmit.style.display = "none"
+        pageOne.style.display = "grid"
+        btnNext.style.display = "block"
+    })
+
+</script>
 {% endblock %}

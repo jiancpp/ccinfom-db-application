@@ -2,18 +2,18 @@ USE dbApp;
 
 -- REFERENCE TABLES ===============================
 
-INSERT INTO REF_Event_Type (Type_ID, Type_Name)
-VALUES	(1, 'Concert'),
-		(2, 'Fanmeet'),
-		(3, 'Hi-Touch'),
-		(4, 'Cupsleeve'),
-		(5, 'Music Festival'),
-		(6, 'Birthday Event'),
-		(7, 'Anniversary Event'),
-		(8, 'Viewing Party'),
-		(9, 'KPOP Exhibit'),
-		(10, 'Photo Zone'),
-		(11, 'Showcase');
+INSERT INTO REF_Event_Type (Type_ID, Type_Name, Artist_Event_Only)
+VALUES	(1, 'Concert', 1),
+		(2, 'Fanmeet', 1),
+		(3, 'Hi-Touch', 1),
+		(4, 'Cupsleeve', 0),
+		(5, 'Music Festival', 1),
+		(6, 'Birthday Event', 0),
+		(7, 'Anniversary Event', 0),
+		(8, 'Viewing Party', 0),
+		(9, 'KPOP Exhibit', 0),
+		(10, 'Photo Zone', 0),
+		(11, 'Showcase', 1);
 
 INSERT INTO Location_Country (Location, Country)
 VALUES	("Bocaue, Bulacan", "Philippines"),

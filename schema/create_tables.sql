@@ -90,10 +90,8 @@ CREATE TABLE `Event` (
 	`End_Time` TIME,
 
     PRIMARY KEY (`Event_ID`),
-	CONSTRAINT is_valid_date CHECK(
-        NOT (`Start_Date` = `End_Date` AND `End_Time` < `Start_Time`)
-    )
-    CONSTRAINT uk_venue_date UNIQUE(`Venue_ID`. `Start_Date`)
+	CONSTRAINT is_valid_date CHECK(`Start_Date` <= `End_Date`),
+    CONSTRAINT uk_venue_date UNIQUE(`Venue_ID`, `Start_Date`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -391,6 +389,7 @@ DROP TABLE IF EXISTS `REF_Event_Type`;
 CREATE TABLE `REF_Event_Type` (
     `Type_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Type_Name` VARCHAR(255) NOT NULL,
+    `Artist_Event_Only` TINYINT DEFAULT 0,
     
     PRIMARY KEY (`Type_ID`),
     CONSTRAINT is_type_unique UNIQUE (`Type_Name`)
