@@ -55,14 +55,14 @@ DROP TABLE IF EXISTS `Merchandise`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Merchandise` (
-	`Merchandise_ID` INT NOT NULL AUTO_INCREMENT,
+	`Merchandise_ID` INT(11) NOT NULL AUTO_INCREMENT,
     `Merchandise_Name` VARCHAR(255) NOT NULL, -- Increased length
-    `Artist_ID` INT,
+    `Artist_ID` INT(11),
     `Fanclub_ID` INT,
     `Merchandise_Description` VARCHAR(1000) DEFAULT NULL, -- Increased length
     `Merchandise_Price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    `Initial_Stock` INT NOT NULL DEFAULT 0,
-    `Quantity_Stock` INT NOT NULL DEFAULT 0,
+    `Initial_Stock` INT(11) NOT NULL DEFAULT 0,
+    `Quantity_Stock` INT(11) NOT NULL DEFAULT 0,
 
     PRIMARY KEY (`Merchandise_ID`),
     UNIQUE (`Merchandise_Name`),
@@ -462,8 +462,8 @@ DROP TABLE IF EXISTS `Merchandise_Event`;
 /*!40101 SET @saved_cs_client = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Merchandise_Event` (
-    `Merchandise_ID` INT NOT NULL,
-    `Event_ID` INT NOT NULL,
+    `Merchandise_ID` INT(11) NOT NULL,
+    `Event_ID` INT(11) NOT NULL,
 
     -- Define the composite primary key
     PRIMARY KEY (`Merchandise_ID`, `Event_ID`)
