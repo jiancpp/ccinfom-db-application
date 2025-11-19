@@ -6,7 +6,7 @@ import datetime
 import re
 import mysql.connector
 
-from .db_utils import execute_select_query, execute_insert_query, get_conn, get_updated_value
+from .db_utils import execute_select_query, execute_insert_query, get_conn, get_updated_value, execute_modified_insert
 
 main_routes = Blueprint('main_routes', __name__)
 
@@ -1288,12 +1288,6 @@ def manage_events():
     
     events = execute_select_query(event_query)
 
-    if artists:
-        print("artist")
-
-    if fanclubs:
-        print("fanclub")
-
     return render_template(
         'manage_events.html',
         events=events
@@ -1329,6 +1323,140 @@ def add_event():
     fanclubs = execute_select_query(fanclub_query)
     venues = execute_select_query(venue_query)
 
+    if request.method == 'POST':
+        try:
+            form = request.form
+            # Event Record
+            event_name = form.get('event_name')
+            event_category = form.get('event-category')
+            event_types_list = form.getlist('event-type') # <-- Changed to getlist
+
+            venue_id = form.get('venue_id', type=int)
+            start_date_str = form.get('start_date')
+            end_date_str = form.get('end_date')
+            start_time_str = form.get('start_time')
+            end_time_str = form.get('end_time')
+            
+            if not all([event_name, event_types_list, venue_id, start_date_str, start_time_str, end_time_str]):
+                flash("Missing required event information.", 'error')
+                return redirect(request.url)
+            
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            start_time = datetime.datetime.strptime(start_time_str, '%H:%M').time()
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else start_date
+            end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time()
+
+            new_event = '''
+            INSERT INTO Event (Event_Name, Venue_ID, Start_Date, End_Date, Start_Time, End_Time)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            '''
+            new_event_params = (
+                event_name, venue_id, start_date, end_date, start_time, end_time, 
+            )
+
+            # Commit into database
+            event_id = execute_modified_insert(new_event, new_event_params)
+            print("EVENT_ID RECEIVED", event_id)
+            
+            if not event_id:
+                flash("Failed to create event record.", 'error')
+                return redirect(url_for('main_routes.add_event'))
+
+            # Determine event category:  [CHANGE TO LIST LATER]
+            artist_id = form.get('artist', type=int) if event_category == 'artist-event' else None
+            fanclub_id = form.get('fanclub', type=int) if event_category == 'fanclub-event' else None
+
+            # Artist_Event or Fanclub_Event
+            if event_category == 'artist-event' and not artist_id:
+                # Additional validation needed if no artist is selected
+                flash('Please select an artist for the event.', 'error')
+                return redirect(url_for('main_routes.add_event'))
+            elif event_category == 'fanclub-event' and not fanclub_id:
+                # Additional validation needed if no fanclub is selected
+                flash('Please select a fanclub for the event.', 'error')
+                return redirect(url_for('main_routes.add_event'))
+    
+            tier_ids = form.getlist('tier_id[]')
+            tier_names = form.getlist('tier_name[]')
+            tier_prices = form.getlist('tier_price[]')
+            tier_quantities = form.getlist('tier_quantity[]')
+            tier_benefits = form.getlist('tier_benefits[]')
+
+            ticket_tiers_data = []
+
+            type_junction_sql = "INSERT INTO LINK_Event_Type (Event_ID, Type_ID) VALUES (%s, %s)"
+            for type_id_str in event_types_list:
+                execute_insert_query(type_junction_sql, (event_id, int(type_id_str)))
+            
+            for tier_id, name, price_str, quantity_str, benefits in zip(
+                tier_ids, tier_names, tier_prices, tier_quantities, tier_benefits
+            ):
+                sections = form.getlist(f'tier_sections_{tier_id}[]')
+                is_reserved_seating = form.get(f'tier_reserved_seating_{tier_id}') == '1'
+
+                try:
+                # Convert strings to their appropriate types
+                    price = float(price_str)
+                    quantity = int(quantity_str)
+                except ValueError:
+                    flash(f"Invalid price or quantity for tier ID {tier_id}.", 'error')
+                    return redirect(url_for('main_routes.create_event_page'))
+            
+                tier_data = {
+                    'id': int(tier_id),
+                    'name': name,
+                    'price': price,
+                    'quantity': quantity,
+                    'benefits': benefits if benefits != "" else None,
+                    'sections': [int(s) for s in sections], # Convert section IDs to integers
+                    'is_reserved_seating': is_reserved_seating
+                }
+                ticket_tiers_data.append(tier_data)
+
+            # Ticket Tier Records
+            # Insert into Artist/Fanclub Junction Table
+            if event_category == 'artist-event':
+                execute_insert_query(
+                    "INSERT INTO Artist_Event (Artist_ID, Event_ID) VALUES(%s, %s)", 
+                    (artist_id, event_id)
+                )
+            elif event_category == 'fanclub-event':
+                execute_insert_query(
+                    "INSERT INTO Fanclub_Event (Fanclub_ID, Event_ID) VALUES(%s, %s)", 
+                    (fanclub_id, event_id) 
+                )
+            
+            # Insert into 
+            new_tier = '''
+            INSERT INTO Ticket_Tier(Event_ID, Tier_Name, Price, Total_Quantity, Benefits, Is_Reserved_Seating)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            '''
+            new_tier_section = '''
+            INSERT INTO Tier_Section(Tier_ID, Section_ID) VALUES (%s, %s)
+            '''
+
+            for tier in ticket_tiers_data:
+                tier_params = (
+                    event_id, tier['name'], tier['price'], tier['quantity'],
+                    tier['benefits'], tier['is_reserved_seating']
+                )
+
+                tier_id = execute_modified_insert(new_tier, tier_params)
+
+                if not tier_id:
+                    flash(f"Failed to create ticket tier: {tier['name']}.", 'warning')
+                    continue
+
+                for section_id in tier['sections']:
+                    execute_insert_query(new_tier_section, (tier_id, section_id))
+
+            
+            flash('Event and all associated data created successfully!', 'success')
+            return redirect(url_for('main_routes.manage_events', event_id=event_id))
+
+        except Exception as e:
+            flash(f"An unexpected error occurred. {e}", 'error')
+
     return render_template(
         'add_event.html',
         event_types=event_types,
@@ -1348,10 +1476,69 @@ def get_venue_sections(venue_id):
     '''
 
     sections_data = execute_select_query(sections_query, (venue_id,))
-    print("VENUE ID RECEIVED:", venue_id)
-    print("SECTIONS FROM DB:", sections_data)
 
     return jsonify({'sections': sections_data})
+
+def timedelta_to_time(td):
+    total_seconds = int(td.total_seconds())
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    return datetime.time(hour=hours, minute=minutes, second=seconds)
+
+@main_routes.route('/manage_events/edit_event/<int:event_id>', methods=["GET","POST"])
+def edit_event(event_id):  
+    event_detail_query = '''
+    SELECT 
+        e.Event_ID, e.Event_Name, e.Start_Date, e.End_Date, e.Start_Time, e.End_Time,
+        ae.Artist_ID, fe.Fanclub_ID
+    FROM Event e
+    LEFT JOIN Artist_Event ae ON e.Event_ID = ae.Event_ID
+    LEFT JOIN Fanclub_Event fe ON e.Event_ID = fe.Event_ID
+    WHERE e.Event_ID = %s
+    '''
+
+    event_types_query = "SELECT * FROM REF_Event_Type"
+    event_type_ids_query = "SELECT Type_ID FROM LINK_Event_Type WHERE Event_ID = %s"
+    event_types = execute_select_query(event_types_query)
+    event_type_ids = execute_select_query(event_type_ids_query, (event_id,))
+
+    event_data_sql = execute_select_query(event_detail_query, (event_id,))
+    event_data = event_data_sql[0]
+    if not event_data:
+        flash("Event not found.", 'error')
+        return redirect(url_for('main_routes.manage_events')) # Assuming this is the event list page
+
+    if event_data["Start_Date"]:
+        event_data["Start_Date"] = event_data["Start_Date"].strftime("%Y-%m-%d")
+
+    if event_data["End_Date"]:
+        event_data["End_Date"] = event_data["End_Date"].strftime("%Y-%m-%d")
+
+    if event_data["Start_Time"]:
+        if isinstance(event_data["Start_Time"], datetime.timedelta):
+            t = timedelta_to_time(event_data["Start_Time"])
+            event_data["Start_Time"] = t.strftime("%H:%M")  # for HTML <input type="time">
+        elif isinstance(event_data["Start_Time"], str):
+            t = datetime.datetime.strptime(event_data["Start_Time"], "%H:%M:%S").time()
+            event_data["Start_Time"] = t.strftime("%H:%M")
+
+    if event_data["End_Time"]:
+        if isinstance(event_data["End_Time"], datetime.timedelta):
+            t = timedelta_to_time(event_data["End_Time"])
+            event_data["End_Time"] = t.strftime("%H:%M")
+        elif isinstance(event_data["End_Time"], str):
+            t = datetime.datetime.strptime(event_data["End_Time"], "%H:%M:%S").time()
+            event_data["End_Time"] = t.strftime("%H:%M")
+
+
+
+    return render_template(
+        'edit_event.html',
+        event_data=event_data,
+        event_types=event_types,
+        event_type_ids=event_type_ids
+    )
 
 # ============================================
 #           Event Subpages

@@ -56,6 +56,33 @@ def execute_insert_query(sql, params=()):
 
     return is_successful
 
+def execute_modified_insert(sql, params=()):
+    conn = None
+    cursor = None
+    last_id = None
+
+    try:
+        conn = get_conn()
+        cursor = conn.cursor() 
+        cursor.execute(sql, params)
+        conn.commit()
+        last_id = cursor.lastrowid  # <--- THIS IS THE KEY CHANGE
+        
+    except Exception as e:
+        # In a real app, you should log this error
+        print(f"Error executing insert: {e}")
+        if conn:
+            conn.rollback() # Ensure rollback on error
+            
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    # Return the ID, which will be None if the insert failed or the table has no auto-increment key
+    return last_id
+
 def get_updated_value(key, current_db_value):
         submitted_value = request.form.get(key)
         if submitted_value is None or submitted_value.strip() == '':

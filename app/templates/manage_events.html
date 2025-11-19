@@ -58,8 +58,14 @@
                         <td>{{event.Event_Name}}</td>
                         <td>{{event.Venue_Name}}</td>
                         <td><span class="date">{{event.Start_Date}}</span> to <span class="date">{{event.End_Date}}</span></td>
-                        <td><span class="time"></span>{{event.Start_Time}}</span> to <span class="time">{{event.End_Time}}</span></td>
-                        <td><button class="btn btn-smaller">Edit</button><button class="btn btn-smaller">Delete</button></td>
+                        <td><span class="time">{{event.Start_Time}}</span> to <span class="time">{{event.End_Time}}</span></td>
+                        <td>
+                            <button class="btn btn-smaller"
+                                    onclick="window.location.href='{{ url_for('main_routes.edit_event', event_id=event.Event_ID) }}'">
+                                Edit
+                            </button>
+                            <button class="btn btn-smaller">Delete</button>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
