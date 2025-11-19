@@ -66,7 +66,8 @@
                 <h4 style="margin-top: 15px;">Performing Artist(s):</h4>
                 <ul>
                     {% for artist in artists %}
-                        <li>{{ artist.Artist_Name }} (ID: {{ artist.Artist_ID }})</li>
+                    <li class="setlist-item" style="list-style: none;">
+                        {{ artist.Artist_Name }}</li>
                     {% endfor %}
                 </ul>
             {% else %}
@@ -96,39 +97,6 @@
         </div>
         
     </div>
-    
-    <hr>
-    
-    <div class="card" style="margin-top: 30px;">
-        <div class="section-header">
-            <h3 style="color: #4a4a4a;">All Song Records</h3>
-            </div>
-        
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Song ID</th>
-                    <th>Song Name</th>
-                    </tr>
-            </thead>
-            <tbody>
-                {% if all_songs %}
-                    {% for song in all_songs %}
-                        <tr>
-                            <td>{{ song.Song_ID }}</td>
-                            <td>{{ song.Song_Name }}</td>
-                            </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="2">No songs found in the database.</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-
-    </div>
-
 </div>
 
 {% endblock %}

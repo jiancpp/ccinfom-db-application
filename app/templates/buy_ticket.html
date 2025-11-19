@@ -422,7 +422,10 @@
                 {{ event.Location }}, {{ event.Country }}
             </p>
         </div>
-        <button class="btn" onclick="window.location.href='{{ url_for('main_routes.view_setlist', event_id=event_id) }}'">View Setlist</button>
+        <button 
+            class="btn" 
+            style="margin-bottom: 1rem;"
+            onclick="window.location.href='{{ url_for('main_routes.view_setlist', event_id=event_id) }}'">View Setlist</button>
         <div id="purchase-summary" class="details-card">
             <h4>Ticket Purchase</h4>
             <p id="selected-tier">Ticket: </p>

@@ -1986,7 +1986,7 @@ def view_setlist(event_id):
     artists = execute_select_query(artist_query, (event_id,))
 
     setlist_query = """
-    SELECT sl.Setlist_ID, sl.Song_ID, sl.Play_Order, s.Song_Name
+    SELECT sl.Song_ID, sl.Play_Order, s.Song_Name
     FROM Setlist sl
     JOIN Song s ON sl.Song_ID = s.Song_ID
     WHERE sl.Event_ID = %s
