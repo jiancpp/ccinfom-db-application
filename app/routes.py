@@ -1594,7 +1594,7 @@ def edit_artist(artist_id):
 
                 
             flash("Artist details updated successfully!", 'success')
-            return redirect(url_for('main_routes.manage_artist'))
+            return redirect(url_for('main_routes.manage_artists'))
 
         except Exception as e:
             flash(f"An unexpected error occurred during update: {e}", 'error')
