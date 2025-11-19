@@ -656,8 +656,8 @@ def reports():
         LEFT JOIN (
             SELECT fe.Fanclub_ID, SUM(t.Price) AS Ticket_Sales
             FROM Fanclub_Event AS fe
-                LEFT JOIN Ticket_Purchase AS tp ON fe.Event_ID = tp.Event_ID
-                LEFT JOIN Ticket_Tier AS t ON tp.Tier_ID = t.Tier_ID
+                LEFT JOIN Ticket_Tier AS t ON fe.Event_ID = t.Event_ID
+                LEFT JOIN Ticket_Purchase AS tp ON t.Tier_ID = tp.Tier_ID
             WHERE YEAR(tp.Purchase_Date) = %s
             GROUP BY fe.Fanclub_ID
         ) AS list1 ON f.Fanclub_ID = list1.Fanclub_ID
@@ -675,7 +675,8 @@ def reports():
 				LEFT JOIN Ticket_Purchase AS tp ON fm.Fan_ID = tp.Fan_ID
                 LEFT JOIN Ticket_Tier AS t ON tp.Tier_ID = t.Tier_ID
                 LEFT JOIN Artist_Event AS ae ON t.Event_ID = ae.Event_ID
-            WHERE YEAR(tp.Purchase_Date) = %s
+                LEFT JOIN Fanclub AS fc ON fm.Fanclub_ID = fc.Fanclub_ID
+            WHERE YEAR(tp.Purchase_Date) = %s AND ae.Artist_ID = fc.Artist_ID
             GROUP BY fm.Fanclub_ID
 		) AS list3 ON f.Fanclub_ID = list3.Fanclub_ID
         LEFT JOIN (
