@@ -67,7 +67,6 @@ CREATE TABLE `Merchandise` (
     PRIMARY KEY (`Merchandise_ID`),
     UNIQUE (`Merchandise_Name`),
     
-    -- Crucial Stock Integrity Check
     CHECK (`Quantity_Stock` <= `Initial_Stock`),
 
 	CHECK (`Merchandise_Price` >= 0),
