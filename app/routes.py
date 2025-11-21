@@ -3387,3 +3387,71 @@ def delete_merchandise(merchandise_id):
     except Exception as e:
         flash(f"Error deleting merchandise '{merchandise_name}'. It is currently associated with active records (e.g., Orders). Please delete associated orders first. Error: {e}", 'error')
         return redirect(url_for('main_routes.manage_merchandise'))
+
+
+@main_routes.route('/purchase_list')
+def purchaseList():
+    current_fan_id = session.get('fan_id')
+    db_conn = None
+    
+    if not current_fan_id:
+        purchase_display_data = []
+        purchase_total = 0.0
+        item_count = 0
+    else:
+        purchase_display_data = []
+        purchase_total = 0.0
+        total_units = 0
+        
+        try:
+            db_conn = get_conn()
+            cursor = db_conn.cursor(dictionary=True)
+            
+            sql_query = """
+            SELECT
+                PL.Purchase_List_ID AS pl_id,
+                O.Order_ID AS order_id,
+                M.Merchandise_Name AS name,
+                COALESCE(A.Artist_Name, F.Fanclub_Name) AS artist,
+                M.Merchandise_Price AS price,
+                PL.Quantity_Purchased AS quantity,
+                O.Order_Status AS status
+            FROM
+                `Order` O
+            JOIN
+                Purchase_List PL ON O.Order_ID = PL.Order_ID
+            JOIN
+                Merchandise M ON PL.Merchandise_ID = M.Merchandise_ID
+            LEFT JOIN
+                Artist A ON M.Artist_ID = A.Artist_ID
+            LEFT JOIN
+                Fanclub F ON M.Fanclub_ID = F.Fanclub_ID
+            WHERE
+                O.Fan_ID = %s
+                AND O.Order_Status = 'Paid';
+            """
+            
+            cursor.execute(sql_query, (current_fan_id,))
+            
+            for item in cursor.fetchall():
+                purchase_display_data.append(item)
+                
+                try:
+                    purchase_total += int(item['quantity'])
+                except (ValueError, TypeError):
+                    total_units += 0
+
+            cursor.close()
+
+        except mysql.connector.Error as err:
+            print(f"Database error in cart: {err}")
+            flash("Error loading cart details.", 'danger')
+        finally:
+            if db_conn and db_conn.is_connected():
+                db_conn.close()
+
+    context = {
+        'purchase_items': purchase_display_data,
+        'item_count': purchase_total
+    }
+    return render_template('view_purchase.html', **context)
