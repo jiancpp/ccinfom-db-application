@@ -127,22 +127,22 @@
 
             <div class="form-group">
                 <label for="agency_name">Agency Name</label>
-                <input type="text" id="agency" name="agency_name" value="{{ manager.Agency_Name }}">
+                <input type="text" id="agency" name="agency" value="{{ manager['Agency'] }}">
             </div>
 
             <div class="form-group">
                 <label for="new_manager_name">Manager Contact Name</label>
-                <input type="text" id="new_manager_name" name="new_manager_name" value="{{ manager.Manager_Name }}">
+                <input type="text" id="manager_name" name="manager_name" value="{{ manager['Manager_Name'] }}">
             </div>
 
             <div class="form-group grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <label for="new_manager_phone">Contact Number</label>
-                    <input type="tel" id="new_manager_phone" name="new_manager_phone" value="{{ manager.Contact_Num }}">
+                    <input type="tel" id="contact_num" name="contact_num" value="{{ manager['Contact_Num'] }}">
                 </div>
                 <div>
                     <label for="new_manager_email">Email Address</label>
-                    <input type="email" id="new_manager_email" name="new_manager_email" value="{{ manager.Contact_Email }}">
+                    <input type="email" id="contact_email" name="contact_email" value="{{ manager['Contact_Email'] }}">
                 </div>
             </div>
         </div>

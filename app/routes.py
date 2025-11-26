@@ -1435,7 +1435,7 @@ def edit_artist(artist_id):
             
             debut_date = datetime.datetime.strptime(debut_date_str, '%Y-%m-%d').date()
 
-            # 2. Update Artist Table (No changes needed)
+    
             update_artist_query = '''
             UPDATE Artist 
             SET Artist_Name = %s, Debut_Date = %s, Activity_Status = %s
@@ -1444,48 +1444,42 @@ def edit_artist(artist_id):
             update_artist_params = (artist_name, debut_date, activity_status, artist_id)
             execute_modified_insert(update_artist_query, update_artist_params)
 
-            # 3. Update or Insert Manager Data (No changes needed)
+        
             manager_id = form.get('manager_id')
             agency = form.get('agency')
-            manager_name = form.get('new_manager_name')
-            contact_num = form.get('new_manager_phone')
-            contact_email = form.get('new_manager_email')
-            
-            # ... (Manager logic is correct) ...
+            manager_name = form.get('manager_name')
+            contact_num = form.get('contact_num')
+            contact_email = form.get('contact_email') 
+
             if manager_id:
-                # Update existing manager
+            
                 manager_query = '''
                 UPDATE Manager 
                 SET Agency = %s, Manager_Name = %s, Contact_Num = %s, Contact_Email = %s
                 WHERE Manager_ID = %s
-                '''
-                manager_params = (agency, manager_name, contact_num, contact_email, manager_id)
+                ''' 
+                manager_params = (agency, manager_name, contact_num, contact_email, manager_id) 
             elif any([agency, manager_name, contact_num, contact_email]):
-                # Insert new manager
+               
                 manager_query = '''
                 INSERT INTO Manager (Artist_ID, Agency, Manager_Name, Contact_Num, Contact_Email)
                 VALUES (%s, %s, %s, %s, %s)
                 '''
                 manager_params = (artist_id, agency, manager_name, contact_num, contact_email)
             else:
-                manager_query = None # No manager data provided, no action needed
+                manager_query = None 
 
             if manager_query:
                 execute_modified_insert(manager_query, manager_params)
-
-
-            # 4. Handle Member Updates, Inserts, and Deletes
-            
-            # Get IDs of all members currently in the database for this artist
+         
             existing_member_ids_query = "SELECT Member_ID FROM Member WHERE Artist_ID = %s"
             existing_member_ids = {m['Member_ID'] for m in execute_select_query(existing_member_ids_query, (artist_id,))}
             
-            # --- START FIX: Properly structure member data from flattened form ---
+         
             members_map = {}
             for key in form:
                 if key.startswith('members['):
-                    # Extract index and field name using regex or string splitting
-                    # Example: members[0][name] -> index=0, field='name'
+                   
                     import re
                     match = re.search(r'members\[(\d+)\]\[(.*?)\]', key)
                     if match:
@@ -1495,10 +1489,9 @@ def edit_artist(artist_id):
                         if index not in members_map:
                             members_map[index] = {'member_id': None, 'name': None, 'birth_date': None, 'activity_status': 'Active', 'role': [], 'nationality': []}
                         
-                        # Handle fields that are lists (like roles and nationalities)
+               
                         if field in ('role', 'nationality'):
-                            # Use getlist for fields that accept multiple values from the template's <select multiple>
-                            # This will correctly handle multiple selected items for the same key.
+                           
                             members_map[index][field] = form.getlist(key) 
                         else:
                             # Standard singular fields
@@ -1506,7 +1499,7 @@ def edit_artist(artist_id):
 
             # Convert the map to a list, sorted by index
             final_members_list = [v for k, v in sorted(members_map.items())]
-            # --- END FIX ---
+    
             
             form_member_ids = set()
 
@@ -1549,12 +1542,9 @@ def edit_artist(artist_id):
                     INSERT INTO Member (Artist_ID, Member_Name, Birth_Date, Activity_Status)
                     VALUES (%s, %s, %s, %s)
                     '''
-                    # Note: Real_Name is explicitly set to NULL (the third %s)
+           
                     member_id = execute_modified_insert(insert_member_query, (artist_id, member_name, birth_date, activity_status), return_id=True)
                     form_member_ids.add(member_id)
-
-
-                # Update Member Links (Roles and Nationalities) - Requires clearing and re-inserting
                 
                 # Delete old links
                 execute_modified_insert("DELETE FROM LINK_Member_Role WHERE Member_ID = %s", (member_id,))
