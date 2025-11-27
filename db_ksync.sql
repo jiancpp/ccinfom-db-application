@@ -1027,10 +1027,8 @@ VALUES	(1,1,"VIP Pit",15125,3900,"Early Entry, Sound Check Access",0),
 		(101,30,"Day 2 - VIP Seated",10000,3895,"Early Entry, Exclusive Lanyard and Ticket Holder",1),
 		(102,30,"Day 2 - Lower Box",9900,3990,"Priority Entry, Free Event Photocard",1),
 		(103,30,"Day 2 - Upper Box A",6600,1970,"Priority Entry, Free Event Photocard",1),
-		(104,30,"Day 2 - Upper Box B",4950,7185,"Free Event Photocard",1),
-		(105,32,"Exclusive Viewing Party",0,7,"Free Event Photocard",0);
-
-				
+		(104,30,"Day 2 - Upper Box B",4950,7185,"Free Event Photocard",1);
+        
 INSERT INTO Section(Section_ID,Venue_ID, Section_Name, Max_Capacity)
 VALUES	(1,1,"101",500), 
 		(2,1,"102",600),
