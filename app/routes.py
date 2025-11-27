@@ -1734,7 +1734,7 @@ def add_event():
                 tier_ids, tier_names, tier_prices, tier_quantities, tier_benefits
             ):
                 sections = form.getlist(f'tier_sections_{tier_id}[]')
-                is_reserved_seating = form.get(f'tier_reserved_seating_{tier_id}') == '1'
+                is_reserved_seating = int(form.get(f'tier_reserved_seating_{tier_id}'))
 
                 try:
                 # Convert strings to their appropriate types
@@ -1776,6 +1776,9 @@ def add_event():
             new_tier_section = '''
             INSERT INTO Tier_Section(Tier_ID, Section_ID) VALUES (%s, %s)
             '''
+
+            if not ticket_tiers_data:
+                execute_insert_query(new_tier, (event_id, "Event Entry", 0.0, None, None, 0))
 
             for tier in ticket_tiers_data:
                 tier_params = (
