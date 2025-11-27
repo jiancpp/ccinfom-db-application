@@ -1724,7 +1724,7 @@ def add_event():
                 tier_ids, tier_names, tier_prices, tier_quantities, tier_benefits
             ):
                 sections = form.getlist(f'tier_sections_{tier_id}[]')
-                is_reserved_seating = int(form.get(f'tier_reserved_seating_{tier_id}'))
+                is_reserved_seating = form.get(f'tier_reserved_seating_{tier_id}') == '1'
 
                 try:
                 # Convert strings to their appropriate types

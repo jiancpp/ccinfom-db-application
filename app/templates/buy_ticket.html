@@ -810,7 +810,7 @@
             const totalPrice = pricePerTicket * quantityTickets;
 
             // Update the Summary Display
-            quantityDisplay.textContent = `Quantity: ${quantityTickets} - ${maxAllowed}`;
+            quantityDisplay.textContent = `Quantity: ${quantityTickets}`;
             const formatted = toFormattedFloat(totalPrice.toFixed(2));
             totalPriceDisplay.textContent = `Total Price: ₱${formatted}`;
 
