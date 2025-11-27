@@ -921,8 +921,7 @@ VALUES  (1,"BLACKPINK Comeback Tour",1,"2026-08-10","2026-08-10","20:00:00","0:0
 		(28,"LISA: Lovesick Concert",3,"2026-01-15","2026-01-17","20:00:00","23:00:00"),
 		(29,"SEVENTEEN Comeback Tour",1,"2027-01-23","2027-01-24","17:00:00","22:00:00"),
 		(30,"ZB1 Summer in Manila Concert",2,"2026-02-28","2026-03-01","17:00:00","22:00:00"),
-		(31,"KPOP Con: Manila Stage",3,"2025-12-12","2025-12-14","17:00:00","22:00:00"),
-		(32,"Viewing Party",5,"2025-12-12","2025-12-12","17:00:00","18:00:00");
+		(31,"KPOP Con: Manila Stage",3,"2025-12-12","2025-12-14","17:00:00","22:00:00");
         
 INSERT INTO Ticket_Tier(Tier_ID, Event_ID,Tier_Name,Price,Total_Quantity,Benefits,Is_Reserved_Seating)
 VALUES	(1,1,"VIP Pit",15125,3900,"Early Entry, Sound Check Access",0),
