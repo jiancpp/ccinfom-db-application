@@ -425,7 +425,7 @@ def fanclubs():
 
     fanclub_query = f'''
     SELECT fm.Fan_Id AS is_member_fan_id, f.Fanclub_ID, f.Fanclub_Name, a.Artist_Name, 
-           COUNT(fm.Fan_Id) AS Member_Count
+           COUNT(m.Fan_Id) AS Member_Count
     FROM Fanclub AS f
         LEFT JOIN Artist AS a ON f.Artist_ID = a.Artist_ID
         LEFT JOIN Fanclub_Membership AS m ON f.Fanclub_ID = m.Fanclub_ID
@@ -2325,7 +2325,7 @@ def fanclub_details(fanclub_id):
     '''
 
     merch_list_query = '''
-    SELECT m.Merchandise_ID, m.Merchandise_Name, m.Merchandise_Price
+    SELECT m.Merchandise_ID, m.Merchandise_Name, m.Merchandise_Price, m.Quantity_Stock
     FROM Merchandise AS m 
         JOIN Fanclub AS f ON m.Fanclub_ID = f.Fanclub_ID
             AND f.Fanclub_ID = %s
