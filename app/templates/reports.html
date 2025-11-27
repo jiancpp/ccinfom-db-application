@@ -198,7 +198,7 @@
 {% elif report_filter == 'artist-engagement-index' %}
     <h2>Artist Engagement Index</h2>
     <p style="margin-top: 1rem; margin-bottom: 2rem; color: #999;">
-        Tracks contributions through ticket sales, merchandise sales, and fan-driven events.
+        Tracks contributions through ticket sales, merchandise sales, and fan-driven events. Artist Engagement Index (AEI Score) is calculated based on 15% followers, 25% new fanclub members, and 30% for ticket and merch sales individually.
     </p>
     <form id="artist-year-filter" method="GET" action="{{ url_for('main_routes.reports') }}">
         <label for="year">Generate Yearly Report</label>
