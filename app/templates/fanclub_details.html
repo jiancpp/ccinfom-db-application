@@ -82,8 +82,15 @@
                             <h5 style="margin-top: 0; margin-bottom: 0.5rem; color: #333; font-size: 1.1rem;">{{ merch.Merchandise_Name }}</h5>
                             <p style="color: #4CAF50; font-weight: 700; font-size: 1.2rem; margin-bottom: 1rem;">${{ merch.Merchandise_Price }}</p>
 
-                            <a href="/merchandise/{{ merch.Merchandise_ID }}" class="btn btn-small" 
-                               style="background: #667eea; color: white; padding: 8px 15px; border-radius: 6px; font-weight: 500;">View</a>
+                            {% if merch.Quantity_Stock > 0 %}
+                                <a href="{{ url_for('main_routes.add_to_cart', merchandise_id=merch.Merchandise_ID)}}" class="btn btn-small" 
+                               style="background: #667eea; color: white; padding: 8px 15px; border-radius: 6px; font-weight: 500;">Add to Cart 🛍️</a>
+                            {% else %}
+                                <button class="btn btn-small" 
+                               style="background: #667eea; color: white; padding: 8px 15px; border-radius: 6px; font-weight: 500;">
+                                    Sold Out 🚫
+                                </button>
+                            {% endif %}
                         </div>
                     {% endfor %}
                 </div>
