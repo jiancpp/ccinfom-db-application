@@ -645,7 +645,7 @@ DELIMITER ;
 ALTER TABLE Artist
 ADD CONSTRAINT fk_artist_manager
     FOREIGN KEY (`Manager_ID`) REFERENCES Manager(`Manager_ID`)
-    ON DELETE CASCADE ON UPDATE CASCADE;
+    ON DELETE CASCADE;
 
 -- 
 -- Constraints for `Member`
